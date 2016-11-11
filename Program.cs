@@ -29,11 +29,19 @@ namespace SGMessageBot
 
 			#region DB Init
 			var dbResult = DataLayerShortcut.loadConfig();
-			if(dbResult.success == false)
+			if(!dbResult.success)
 				Console.WriteLine(dbResult.message);
 			var dbTestResult = DataLayerShortcut.testConnection();
-			if (dbTestResult.success == false)
+			if (!dbTestResult.success)
+			{
 				Console.WriteLine(dbTestResult.message);
+				if(!DataLayerShortcut.schemaExists)
+				{
+					var createResult = DataLayerShortcut.createDataBase();
+					if(!createResult.success)
+						Console.WriteLine(createResult.message);
+				}
+			}
 			#endregion
 
 			#region Discord Client
@@ -81,7 +89,7 @@ namespace SGMessageBot
 				}
 				catch (Exception ex)
 				{
-					Console.WriteLine($"Token is wrong. Don't set a token if you don't have an official BOT account.");
+					Console.WriteLine("Incorrect Token");
 					Console.WriteLine(ex);
 					Console.ReadKey();
 					return;

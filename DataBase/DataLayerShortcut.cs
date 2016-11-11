@@ -14,6 +14,7 @@ namespace SGMessageBot.DataBase
 	{
 		public static DBConfig DBConfig { get; private set; }
 		private static MySqlConnection DBConn;
+		public static bool schemaExists { get; private set; } = true;
 
 		public static BaseResult loadConfig()
 		{
@@ -32,6 +33,9 @@ namespace SGMessageBot.DataBase
 			}
 			catch (MySqlException e)
 			{
+				if (e.InnerException.Message.ToUpperInvariant().Contains("UNKNOWN DATABASE"))
+					schemaExists = false;
+
 				result.success = false;
 				result.message = e.Message;
 				return result;
@@ -40,9 +44,26 @@ namespace SGMessageBot.DataBase
 			return result;
 		}
 
+		public static BaseResult createDataBase()
+		{
+			DatebaseCreate dataCreator = new DatebaseCreate();
+			var result = dataCreator.createDatabase();
+			if(!result.success)
+				return result;
+			else
+			{
+				result = dataCreator.buildDatabase();
+				if (!result.success)
+					return result;
+			}
+			schemaExists = true;
+			result.success = true;
+			return result;
+		}
+
 		public static void ExecuteReader<T>(Action<IDataReader, T> workFunction, T otherdata, string query, params MySqlParameter[] parameters)
 		{
-			if (DBConn == null || DBConn.State != ConnectionState.Open)
+			if (DBConn != null || DBConn.State != ConnectionState.Open)
 			{
 				DBConn = new MySqlConnection(DBConfig.connectionString);
 				DBConn.Open();
@@ -61,11 +82,11 @@ namespace SGMessageBot.DataBase
 			cmd.Dispose();
 		}
 
-		public static void ExecuteNonQuery(string query, params MySqlParameter[] parameters)
+		public static void ExecuteNonQuery(string query, string connection, params MySqlParameter[] parameters)
 		{
-			if (DBConn == null || DBConn.State != ConnectionState.Open)
+			if (DBConn != null || DBConn.State != ConnectionState.Open)
 			{
-				DBConn = new MySqlConnection(DBConfig.connectionString);
+				DBConn = new MySqlConnection(connection == null ? DBConfig.connectionString : connection);
 				DBConn.Open();
 			}
 			MySqlCommand cmd = new MySqlCommand(query, DBConn);
@@ -80,7 +101,7 @@ namespace SGMessageBot.DataBase
 		public static int? ExecuteScalar(string query, params MySqlParameter[] parameters)
 		{
 			int? result = null;
-			if (DBConn == null || DBConn.State != ConnectionState.Open)
+			if (DBConn != null || DBConn.State != ConnectionState.Open)
 			{
 				DBConn = new MySqlConnection(DBConfig.connectionString);
 				DBConn.Open();
@@ -102,6 +123,14 @@ namespace SGMessageBot.DataBase
 			}
 			cmd.Dispose();
 			return result;
+		}
+
+		public static void closeConnection()
+		{
+			if (DBConn != null || DBConn.State != ConnectionState.Closed)
+			{
+				DBConn.Close();
+			}
 		}
 	}
 }
