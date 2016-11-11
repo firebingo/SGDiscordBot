@@ -1,7 +1,9 @@
 ﻿using Discord;
 using Discord.Commands;
 using MySql.Data.MySqlClient;
+using SGMessageBot.Bot;
 using SGMessageBot.Config;
+using SGMessageBot.DataBase;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,31 +19,21 @@ namespace SGMessageBot
 		public static string BotMention = "";
 		public static bool Ready { get; set; }
 		public static Action OnReady = delegate { };
-
-		public static DBConfig DBConfig { get; private set; }
 		
-
 		static void Main(string[] args)
 		{
 			Client = new DiscordClient();
-			DBConfig = new DBConfig();
 			BotConfig = new BotConfig();
 			var botCResult = BotConfig.loadCredConfig();
-			var dbResult = DBConfig.loadDBConfig();
 			BotMention = $"<@{BotConfig.credInfo.botId}>";
 
-			#region DB Open
-			try
-			{
-				MySqlConnection conn;
-				conn = new MySql.Data.MySqlClient.MySqlConnection();
-				conn.ConnectionString = DBConfig.connectionString;
-				conn.Open();
-			}
-			catch (MySqlException e)
-			{
-				Console.WriteLine(e.Message);
-			}
+			#region DB Init
+			var dbResult = DataLayerShortcut.loadConfig();
+			if(dbResult.success == false)
+				Console.WriteLine(dbResult.message);
+			var dbTestResult = DataLayerShortcut.testConnection();
+			if (dbTestResult.success == false)
+				Console.WriteLine(dbTestResult.message);
 			#endregion
 
 			#region Discord Client
@@ -110,21 +102,12 @@ namespace SGMessageBot
 				SGMessageBot.OnReady();
 				Console.WriteLine("Ready!");
 				//reply to personal messages and forward if enabled.
-				Client.MessageReceived += Client_MessageReceived;
+				Client.MessageReceived += BotEventHandler.Client_MessageReceived;
 			});
 			Console.WriteLine("Exiting...");
 			Console.ReadKey();
 			#endregion
-		}
-
-		private static async void Client_MessageReceived(object sender, MessageEventArgs e)
-		{
-			try
-			{
-				await Task.Delay(2000).ConfigureAwait(false);
-			}
-			catch { }
-		}
+		}	
 	}
 }
 

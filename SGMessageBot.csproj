@@ -79,8 +79,12 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Bot\BotEventHandler.cs" />
     <Compile Include="Config\DBConfig.cs" />
     <Compile Include="Config\DiscordConfig.cs" />
+    <Compile Include="DataBase\DataHelper.cs" />
+    <Compile Include="DataBase\DataLayerShortcut.cs" />
+    <Compile Include="DataBase\DatebaseCreate.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
