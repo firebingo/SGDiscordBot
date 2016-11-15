@@ -82,14 +82,34 @@ namespace SGMessageBot.DataBase
 			cmd.Dispose();
 		}
 
-		public static void ExecuteNonQuery(string query, string connection, params MySqlParameter[] parameters)
+		public static void ExecuteNonQuery(string query, params MySqlParameter[] parameters)
 		{
-			if (DBConn != null || DBConn.State != ConnectionState.Open)
+			try
 			{
-				DBConn = new MySqlConnection(connection == null ? DBConfig.connectionString : connection);
-				DBConn.Open();
+				if (DBConn != null || DBConn.State != ConnectionState.Open)
+				{
+					DBConn = new MySqlConnection(DBConfig.connectionString);
+					DBConn.Open();
+				}
+				MySqlCommand cmd = new MySqlCommand(query, DBConn);
+				cmd.CommandType = CommandType.Text;
+				if (parameters != null)
+					DataHelper.addParams(ref cmd, parameters);
+
+				cmd.ExecuteNonQuery();
+				cmd.Dispose();
 			}
-			MySqlCommand cmd = new MySqlCommand(query, DBConn);
+			catch (Exception e)
+			{
+				return;
+			}
+		}
+
+		public static void ExecuteSpecialNonQuery(string query, string connection, params MySqlParameter[] parameters)
+		{
+			var conn = new MySqlConnection(connection);
+			conn.Open();
+			MySqlCommand cmd = new MySqlCommand(query, conn);
 			cmd.CommandType = CommandType.Text;
 			if (parameters != null)
 				DataHelper.addParams(ref cmd, parameters);

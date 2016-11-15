@@ -60,8 +60,7 @@ namespace SGMessageBot
 			//create a command service
 			var commandService = new CommandService(new CommandServiceConfigBuilder
 			{
-				AllowMentionPrefix = false,
-				CustomPrefixHandler = m => 0,
+				AllowMentionPrefix = true,
 				HelpMode = HelpMode.Disabled,
 				ErrorHandler = async (s, e) =>
 				{
@@ -79,6 +78,7 @@ namespace SGMessageBot
 
 			//add command service
 			Client.AddService<CommandService>(commandService);
+			BotCommandHandler.createCommands(Client);
 
 			//run the bot
 			Client.ExecuteAndWait(async () =>
@@ -95,27 +95,42 @@ namespace SGMessageBot
 					return;
 				}
 
-				await Task.Delay(1000).ConfigureAwait(false);
+				await Task.Delay(1500).ConfigureAwait(false);
 
-				Client.ClientAPI.SendingRequest += (s, e) =>
+				Client.ClientAPI.SentRequest += (s, e) =>
 				{
+					Console.WriteLine($"[Request of type {e.Request.GetType()} sent in {e.Milliseconds}]");
+
 					var request = e.Request as Discord.API.Client.Rest.SendMessageRequest;
 					if (request == null) return;
-					// meew0 is magic
-					request.Content = request.Content?.Replace("@everyone", "@everyοne").Replace("@here", "@һere") ?? "_error_";
-					if (string.IsNullOrWhiteSpace(request.Content))
-						e.Cancel = true;
+
+					Console.WriteLine($"[Content: { request.Content }");
 				};
+				await BotExamineServers.startupCheck(Client.Servers);
+				Console.WriteLine("Ready!");
 				SGMessageBot.Ready = true;
 				SGMessageBot.OnReady();
-				Console.WriteLine("Ready!");
-				//reply to personal messages and forward if enabled.
-				Client.MessageReceived += BotEventHandler.Client_MessageReceived;
+				Client.MessageReceived += BotEventHandler.ClientMessageReceived;
+				Client.MessageUpdated += BotEventHandler.ClientMessageUpdated;
+				Client.MessageDeleted += BotEventHandler.ClientMessageDeleted;
+				Client.JoinedServer += BotEventHandler.ClientJoinedServer;
+				Client.UserJoined += BotEventHandler.ClientUserJoined;
+				Client.UserUpdated += BotEventHandler.ClientUserUpdated;
+				Client.UserLeft += BotEventHandler.ClientUserLeft;
+				Client.UserBanned += BotEventHandler.ClientUserBanned;
+				Client.UserUnbanned += BotEventHandler.ClientUserUnbanned;
+				Client.ServerUpdated += BotEventHandler.ClientServerUpdated;
+				Client.RoleCreated += BotEventHandler.ClientRoleCreated;
+				Client.RoleUpdated += BotEventHandler.ClientRoleUpdated;
+				Client.RoleDeleted += BotEventHandler.ClientRoleDeleted;
+				Client.ChannelCreated += BotEventHandler.ClientChannelCreated;
+				Client.ChannelUpdated += BotEventHandler.ClientChannelUpdated;
+				Client.ChannelDestroyed += BotEventHandler.ClientChannelDestroyed;
 			});
 			Console.WriteLine("Exiting...");
 			Console.ReadKey();
 			#endregion
-		}	
+		}
 	}
 }
 

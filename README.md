@@ -1,2 +1,3 @@
 # SGDiscordBot
-This bot for now is going to be very specialized for a server I am using it for. Currently missing example config files.
+Bot can currently be used to store server/user information in a database. Along with log messages.
+The only current commands are restart and shutdown. These commands must be executed by mentioning the bot first.

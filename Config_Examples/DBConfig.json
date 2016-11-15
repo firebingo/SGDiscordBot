@@ -1,0 +1,8 @@
+//Comments need to be removed for file to work.
+{
+	"schemaName": "", //the name of the schema to create.
+	"userName": "", //the username for the mySQL server.
+	"password": "", //the password for the mySQL server.
+	"address": "", //The address of the mySQL server.
+	"port": "" //the port of the mySQL server.
+}

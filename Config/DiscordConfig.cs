@@ -51,6 +51,7 @@ namespace SGMessageBot.Config
 		public string token;
 		public string clientId;
 		public string botId;
-		public List<string> ownerIds;
+		public List<ulong> ownerIds;
+		public List<ulong> commandRoleIds;
 	}
 }

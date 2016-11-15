@@ -1,0 +1,8 @@
+//Comments need to be removed for file to work.
+{
+	"token": "", //The bot user token, can be accessed from bot application on discord developers.
+	"clientId": "", //the client id of the bot. Same place as token.
+	"botId": "", //The id of the bot on the server. Can be got by enabling development mode and right clicking on bot to copy id.
+	"ownerIds": [], //Id list of bot owners.
+	"commandRoleIds": [] //Id list of roles that can execute commands to the bot.
+}

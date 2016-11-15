@@ -80,6 +80,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Bot\BotCommandHandler.cs" />
     <Compile Include="Bot\BotEventHandler.cs" />
     <Compile Include="Bot\BotExamineServers.cs" />
     <Compile Include="Config\DBConfig.cs" />
