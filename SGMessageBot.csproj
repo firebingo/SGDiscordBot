@@ -83,6 +83,7 @@
     <Compile Include="Bot\BotCommandHandler.cs" />
     <Compile Include="Bot\BotEventHandler.cs" />
     <Compile Include="Bot\BotExamineServers.cs" />
+    <Compile Include="Bot\BotModels.cs" />
     <Compile Include="Config\DBConfig.cs" />
     <Compile Include="Config\DiscordConfig.cs" />
     <Compile Include="DataBase\DataHelper.cs" />
