@@ -1,154 +1,110 @@
 ﻿using Discord;
 using Discord.Commands;
+using Discord.WebSocket;
 using MySql.Data.MySqlClient;
 using SGMessageBot.DataBase;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace SGMessageBot.Bot
 {
-	public static class BotCommandHandler
+	public class BotCommandHandler
 	{
-		public static void createCommands(DiscordClient Client)
+		private CommandService commands;
+		private DiscordSocketClient Client;
+		private BotCommandProcessor processor;
+		private IDependencyMap map;
+
+		public async Task installCommandService(IDependencyMap _map)
 		{
-			Client.GetService<CommandService>().CreateCommand("shutdown").Alias("shutdown").Do(async e =>
-			{
-				var hasPerm = false;
-				foreach (var permRole in SGMessageBot.BotConfig.credInfo.commandRoleIds)
-				{
-					var checkMatch = e.User.Roles.Where(r => r.Id == permRole).FirstOrDefault();
-					if (checkMatch != null)
-						hasPerm = true;
-				}
-				if (hasPerm)
-				{
-					await e.Channel.SendMessage("Goodbye").ConfigureAwait(false);
-					await Task.Delay(2000).ConfigureAwait(false);
-					Environment.Exit(0);
-				}
-			});
-
-			Client.GetService<CommandService>().CreateCommand("restart").Alias("restart").Do(async e =>
-			{
-				var hasPerm = false;
-				foreach (var permRole in SGMessageBot.BotConfig.credInfo.commandRoleIds)
-				{
-					var checkMatch = e.User.Roles.Where(r => r.Id == permRole).FirstOrDefault();
-					if (checkMatch != null)
-						hasPerm = true;
-				}
-				if (hasPerm)
-				{
-					await e.Channel.SendMessage("Restarting...");
-					await Task.Delay(2000);
-					System.Diagnostics.Process.Start(System.Reflection.Assembly.GetExecutingAssembly().Location);
-					Environment.Exit(0);
-				}
-			});
-
-			Client.GetService<CommandService>().CreateCommand("messagecount")
-			.Alias("messagecount")
-			.Parameter("UserToCalc", ParameterType.Optional)
-			.Do(async e =>
-			{
-				var hasPerm = false;
-				foreach (var permRole in SGMessageBot.BotConfig.credInfo.commandRoleIds)
-				{
-					var checkMatch = e.User.Roles.Where(r => r.Id == permRole).FirstOrDefault();
-					if (checkMatch != null)
-						hasPerm = true;
-				}
-				if (hasPerm)
-				{
-					var userArg = e.GetArg(0);
-					var result = await calculateMessageCounts(userArg);
-					if(userArg == null || userArg.Trim() == String.Empty)
-					{
-						result = result.OrderBy(x => x.messageCount).ToList();
-						if (result.Count == 0)
-							await e.Channel.SendMessage($"No users have sent a message on this server.");
-						else
-						{
-							var mostCount = result.FirstOrDefault();
-							await e.Channel.SendMessage($"User with most messages: {mostCount.userMention} with {mostCount.messageCount} messages.");
-						}
-					}
-					else
-					{
-						if (result.Count == 0)
-							await e.Channel.SendMessage($"User {userArg} has not sent any messages.");
-						else
-						{
-							var userCount = result.FirstOrDefault();
-							await e.Channel.SendMessage($"User {userCount.userMention} has sent {userCount.messageCount} messages.");
-						}
-					}
-				}
-			});
+			Client = _map.Get<DiscordSocketClient>();
+			processor = _map.Get<BotCommandProcessor>();
+			commands = new CommandService();
+			_map.Add(commands);
+			map = _map;
+			await commands.AddModules(Assembly.GetEntryAssembly());
+			Client.MessageReceived += HandleCommand;
 		}
 
-		#region Calc Functions
-		private static async Task<DateTime> getEarlistMessage()
+		public async Task HandleCommand(SocketMessage e)
 		{
-			var result = new DateTime();
+			var uMessage = e as SocketUserMessage;
+			if (uMessage == null) return;
+			int argPos = 0;
+			if (uMessage.HasMentionPrefix(Client.CurrentUser, ref argPos))
+			{
+				var context = new CommandContext(Client, uMessage);
+				var result = await commands.Execute(context, argPos, map);
+				if (!result.IsSuccess)
+					await uMessage.Channel.SendMessageAsync(result.ErrorReason);
+			}
+		}
+	}
 
-			return Task.FromResult<DateTime>(result).Result;
+	[RequireGuildMessage]
+	[RequireModRole]
+	public class AdminModule : ModuleBase
+	{
+		[Command("shutdown"), Summary("Tells the bot to shutdown.")]
+		public async Task shutdown()
+		{
+			await Context.Channel.SendMessageAsync("Goodbye").ConfigureAwait(false);
+			await Task.Delay(2000).ConfigureAwait(false);
+			Environment.Exit(0);
 		}
 
-		private static async Task<List<UserCountModel>> calculateMessageCounts(string user)
+		[Command("restart"), Summary("Tells the bot to restart")]
+		public async Task restart()
 		{
-			var queryString = "";
-			List<UserCountModel> results = new List<UserCountModel>();
+			await Context.Channel.SendMessageAsync("Restarting...");
+			await Task.Delay(2000);
+			System.Diagnostics.Process.Start(System.Reflection.Assembly.GetExecutingAssembly().Location);
+			Environment.Exit(0);
+		}
+	}
+
+	//[Group("||")]
+	[RequireGuildMessage]
+	public class StatsModule : ModuleBase
+	{
+		private BotCommandProcessor processor;
+
+		public StatsModule(IDependencyMap m)
+		{
+			processor = m.Get<BotCommandProcessor>();
+		}
+
+		[Command("messagecount"), Summary("Gets message counts for the server.")]
+		public async Task messageCounts([Summary("the user to get message counts for")] string user = null)
+		{
+			user = user.Replace("!", String.Empty);
+			var result = await processor.calculateMessageCounts(user);
 			if (user == null || user.Trim() == String.Empty)
 			{
-				queryString = "SELECT messages.userID, usersinservers.nickNameMention, count(messages.userID) from messages LEFT JOIN usersinservers ON messages.userID=usersinservers.userID WHERE usersinservers.serverID=messages.serverID GROUP BY userID";
-				DataLayerShortcut.ExecuteReader<List<UserCountModel>>(readMessageCounts, results, queryString);
+				result = result.OrderBy(x => x.messageCount).Reverse().ToList();
+				if (result.Count == 0)
+					await Context.Channel.SendMessageAsync($"No users have sent a message on this server.");
+				else
+				{
+					var mostCount = result.FirstOrDefault();
+					await Context.Channel.SendMessageAsync($"User with most messages: {mostCount.userMention} with {mostCount.messageCount} messages.");
+				}
 			}
 			else
 			{
-				queryString = "SELECT messages.userID, usersinservers.nickNameMention, count(messages.userID) from messages LEFT JOIN usersinservers ON messages.userID=usersinservers.userID WHERE usersinservers.serverID=messages.serverID AND usersinservers.nickNameMention=@mention GROUP BY userID";
-				DataLayerShortcut.ExecuteReader<List<UserCountModel>>(readMessageCounts, results, queryString, new MySqlParameter("@mention", user));
-			}
-			return Task.FromResult<List<UserCountModel>>(results).Result;
-		}
-		#endregion
-
-		#region Data Readers
-		private static void readEarliestDate(IDataReader reader, DateTime data)
-		{
-			reader = reader as MySqlDataReader;
-			if (reader != null)
-			{
-				while (reader.Read())
+				if (result.Count == 0)
+					await Context.Channel.SendMessageAsync($"User {user} has not sent any messages.");
+				else
 				{
-					data = reader.GetDateTime(0);
+					var userCount = result.FirstOrDefault();
+					await Context.Channel.SendMessageAsync($"User {userCount.userMention} has sent {userCount.messageCount} messages.");
 				}
 			}
 		}
-
-		private static void readMessageCounts(IDataReader reader, List<UserCountModel> data)
-		{
-			reader = reader as MySqlDataReader;
-			if (reader != null)
-			{
-				while (reader.Read())
-				{
-					if (reader.FieldCount >= 3)
-					{
-						var userObject = new UserCountModel();
-						ulong? temp = reader.GetValue(0) as ulong?;
-						userObject.userID = temp.HasValue ? temp.Value : 0;
-						userObject.userMention = reader.GetString(1);
-						userObject.messageCount = reader.GetInt32(2);
-						data.Add(userObject);
-					}
-				}
-			}
-		}
-		#endregion
 	}
 }

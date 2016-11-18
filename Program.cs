@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
+using Discord.WebSocket;
 using MySql.Data.MySqlClient;
 using SGMessageBot.Bot;
 using SGMessageBot.Config;
@@ -9,126 +10,104 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Runtime.Serialization;
 
 namespace SGMessageBot
 {
 	class SGMessageBot
 	{
-		public static DiscordClient Client { get; private set; }
-		public static BotConfig BotConfig { get; private set; }
-		public static string BotMention = "";
-		public static bool Ready { get; set; }
-		public static Action OnReady = delegate { };
-		
 		static void Main(string[] args)
 		{
-			Client = new DiscordClient();
-			BotConfig = new BotConfig();
-			var botCResult = BotConfig.loadCredConfig();
-			BotMention = $"<@{BotConfig.credInfo.botId}>";
+			new SGMessageBot().runBot().GetAwaiter().GetResult();
+		}
 
-			#region DB Init
-			var dbResult = DataLayerShortcut.loadConfig();
-			if(!dbResult.success)
-				Console.WriteLine(dbResult.message);
-			var dbTestResult = DataLayerShortcut.testConnection();
-			if (!dbTestResult.success)
+		public static DiscordSocketClient Client { get; private set; }
+		public static BotConfig botConfig { get; private set; }
+		public static string BotMention = "";
+		public static bool ready { get; set; }
+		private static BotCommandHandler cHandler;
+		private static BotCommandProcessor cProcessor;
+
+		public async Task runBot()
+		{
+			try
 			{
-				Console.WriteLine(dbTestResult.message);
-				if(!DataLayerShortcut.schemaExists)
+				botConfig = new BotConfig();
+				var botCResult = botConfig.loadCredConfig();
+				BotMention = $"<@{botConfig.credInfo.botId}>";
+
+				#region DB Init
+				var dbResult = DataLayerShortcut.loadConfig();
+				if (!dbResult.success)
+					Console.WriteLine(dbResult.message);
+				var dbTestResult = DataLayerShortcut.testConnection();
+				if (!dbTestResult.success)
 				{
-					var createResult = DataLayerShortcut.createDataBase();
-					if(!createResult.success)
-						Console.WriteLine(createResult.message);
-				}
-			}
-			#endregion
-
-			#region Discord Client
-			//create new discord client and log
-			Client = new DiscordClient(new DiscordConfigBuilder()
-			{
-				MessageCacheSize = 10,
-				ConnectionTimeout = int.MaxValue,
-				LogLevel = LogSeverity.Warning,
-				LogHandler = (s, e) =>
-					Console.WriteLine($"Severity: {e.Severity}" +
-									  $"ExceptionMessage: {e.Exception?.Message ?? "-"}" +
-									  $"Message: {e.Message}"),
-			});
-
-			//create a command service
-			var commandService = new CommandService(new CommandServiceConfigBuilder
-			{
-				AllowMentionPrefix = true,
-				HelpMode = HelpMode.Disabled,
-				ErrorHandler = async (s, e) =>
-				{
-					if (e.ErrorType != CommandErrorType.BadPermissions)
-						return;
-					if (string.IsNullOrWhiteSpace(e.Exception?.Message))
-						return;
-					try
+					Console.WriteLine(dbTestResult.message);
+					if (!DataLayerShortcut.schemaExists)
 					{
-						await e.Channel.SendMessage(e.Exception.Message).ConfigureAwait(false);
+						var createResult = DataLayerShortcut.createDataBase();
+						if (!createResult.success)
+							Console.WriteLine(createResult.message);
 					}
-					catch { }
 				}
-			});
+				#endregion
 
-			//add command service
-			Client.AddService<CommandService>(commandService);
-			BotCommandHandler.createCommands(Client);
-
-			//run the bot
-			Client.ExecuteAndWait(async () =>
-			{
-				try
+				#region Discord Client
+				//create new discord client and log
+				Client = new DiscordSocketClient(new DiscordSocketConfig()
 				{
-					await Client.Connect(BotConfig.credInfo.token, TokenType.Bot).ConfigureAwait(false);
-				}
-				catch (Exception ex)
-				{
-					Console.WriteLine("Incorrect Token");
-					Console.WriteLine(ex);
-					Console.ReadKey();
-					return;
-				}
+					MessageCacheSize = 10,
+					ConnectionTimeout = int.MaxValue,
+					LogLevel = LogSeverity.Warning
+				});
+				Client.Log += async (message) => Console.WriteLine($"{message.ToString()}");
+				await Client.LoginAsync(TokenType.Bot, botConfig.credInfo.token);
+				await Client.ConnectAsync();
 
-				await Task.Delay(1500).ConfigureAwait(false);
+				var map = new DependencyMap();
+				map.Add(Client);
 
-				Client.ClientAPI.SentRequest += (s, e) =>
-				{
-					Console.WriteLine($"[Request of type {e.Request.GetType()} sent in {e.Milliseconds}]");
+				//setup and add command service.
+				cHandler = new BotCommandHandler();
+				cProcessor = new BotCommandProcessor();
+				map.Add(cHandler);
+				map.Add(cProcessor);
+				await cHandler.installCommandService(map);
 
-					var request = e.Request as Discord.API.Client.Rest.SendMessageRequest;
-					if (request == null) return;
+				await BotExamineServers.startupCheck(Client.Guilds);
 
-					Console.WriteLine($"[Content: { request.Content }");
-				};
-				await BotExamineServers.startupCheck(Client.Servers);
-				Console.WriteLine("Ready!");
-				SGMessageBot.Ready = true;
-				SGMessageBot.OnReady();
+				//Event hooks
 				Client.MessageReceived += BotEventHandler.ClientMessageReceived;
 				Client.MessageUpdated += BotEventHandler.ClientMessageUpdated;
 				Client.MessageDeleted += BotEventHandler.ClientMessageDeleted;
-				Client.JoinedServer += BotEventHandler.ClientJoinedServer;
+				Client.JoinedGuild += BotEventHandler.ClientJoinedServer;
+				Client.GuildUpdated += BotEventHandler.ClientServerUpdated;
 				Client.UserJoined += BotEventHandler.ClientUserJoined;
-				Client.UserUpdated += BotEventHandler.ClientUserUpdated;
-				Client.UserLeft += BotEventHandler.ClientUserLeft;
-				Client.UserBanned += BotEventHandler.ClientUserBanned;
 				Client.UserUnbanned += BotEventHandler.ClientUserUnbanned;
-				Client.ServerUpdated += BotEventHandler.ClientServerUpdated;
+				Client.UserBanned += BotEventHandler.ClientUserBanned;
+				Client.UserLeft += BotEventHandler.ClientUserLeft;
+				Client.UserUpdated += BotEventHandler.ClientUserUpdated;
+				Client.GuildMemberUpdated += BotEventHandler.ClientServerUserUpdated;
 				Client.RoleCreated += BotEventHandler.ClientRoleCreated;
 				Client.RoleUpdated += BotEventHandler.ClientRoleUpdated;
 				Client.RoleDeleted += BotEventHandler.ClientRoleDeleted;
 				Client.ChannelCreated += BotEventHandler.ClientChannelCreated;
 				Client.ChannelUpdated += BotEventHandler.ClientChannelUpdated;
 				Client.ChannelDestroyed += BotEventHandler.ClientChannelDestroyed;
-			});
-			Console.WriteLine("Exiting...");
-			Console.ReadKey();
+
+				ready = true;
+				Console.WriteLine("Ready!");
+
+				//Delay until application quit
+				await Task.Delay(-1);
+
+				Console.WriteLine("Exiting!");
+			}
+			catch (Exception e)
+			{
+				return;
+			}
 			#endregion
 		}
 	}
