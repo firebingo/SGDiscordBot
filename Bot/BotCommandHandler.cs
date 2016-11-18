@@ -95,7 +95,7 @@ namespace SGMessageBot.Bot
 				{
 					var mostCount = result.FirstOrDefault();
 					var percent = Math.Round(((float)mostCount.messageCount / (float)totalCount) * 100, 2);
-					await Context.Channel.SendMessageAsync($"User with most messages: {mostCount.userMention} with {mostCount.messageCount} messages which is {percent}% of the server's messages. As of {earliest.date.ToString("yyyy/MM/dd")}");
+					await Context.Channel.SendMessageAsync($"User with most messages: {mostCount.userMention} with {mostCount.messageCount} messages which is {percent}% of the server's messages. Starting at {earliest.date.ToString("yyyy/MM/dd")}");
 				}
 			}
 			else
@@ -106,7 +106,7 @@ namespace SGMessageBot.Bot
 				{
 					var userCount = result.FirstOrDefault();
 					var percent = Math.Round(((float)userCount.messageCount / (float)totalCount) * 100, 2);
-					await Context.Channel.SendMessageAsync($"User {userCount.userMention} has sent {userCount.messageCount} messages which is {percent}% of the server's messages. As of {earliest.date.ToString("yyyy/MM/dd")}");
+					await Context.Channel.SendMessageAsync($"User {userCount.userMention} has sent {userCount.messageCount} messages which is {percent}% of the server's messages. Starting at {earliest.date.ToString("yyyy/MM/dd")}");
 				}
 			}
 		}
