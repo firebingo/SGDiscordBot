@@ -12,11 +12,20 @@ namespace SGMessageBot.Bot
 	public class BotCommandProcessor
 	{
 		#region Calc Functions
-		public async Task<DateTime> getEarlistMessage()
+		public async Task<DateModel> getEarlistMessage()
 		{
-			var result = new DateTime();
+			var result = new DateModel();
+			var queryString = "SELECT mesTime FROM messages ORDER BY mesTime LIMIT 1;";
+			DataLayerShortcut.ExecuteReader<DateModel>(readEarliestDate, result, queryString);
+			return Task.FromResult<DateModel>(result).Result;
+		}
 
-			return Task.FromResult<DateTime>(result).Result;
+		public async Task<int> getTotalMessageCount()
+		{
+			int? result = 0;
+			var queryString = "SELECT COUNT(*) FROM messages";
+			result = DataLayerShortcut.ExecuteScalar(queryString);
+			return Task.FromResult<int>(result.HasValue ? result.Value : 0).Result;
 		}
 
 		public async Task<List<UserCountModel>> calculateMessageCounts(string user)
@@ -38,15 +47,12 @@ namespace SGMessageBot.Bot
 		#endregion
 
 		#region Data Readers
-		private void readEarliestDate(IDataReader reader, DateTime data)
+		private void readEarliestDate(IDataReader reader, DateModel data)
 		{
 			reader = reader as MySqlDataReader;
 			if (reader != null)
 			{
-				while (reader.Read())
-				{
-					data = reader.GetDateTime(0);
-				}
+				data.date = reader.GetDateTime(0);
 			}
 		}
 

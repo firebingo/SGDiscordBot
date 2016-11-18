@@ -13,4 +13,10 @@ namespace SGMessageBot.Bot
 		public string userMention;
 		public int messageCount;
 	}
+
+	[Serializable]
+	public class DateModel
+	{
+		public DateTime date;
+	}
 }
