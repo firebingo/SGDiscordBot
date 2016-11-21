@@ -80,35 +80,26 @@ namespace SGMessageBot.Bot
 		}
 
 		[Command("messagecount"), Summary("Gets message counts for the server.")]
-		public async Task messageCounts([Summary("the user to get message counts for")] string user = null)
+		public async Task messageCounts([Summary("the user to get message counts for")] string input = null)
 		{
-			user = user != null ? user.Replace("!", String.Empty) : user;
-			var result = await processor.calculateMessageCounts(user);
-			var earliest = await processor.getEarlistMessage();
-			var totalCount = await processor.getTotalMessageCount();
-			if (user == null || user.Trim() == String.Empty)
+			var result = "";
+			var inputParsed = -1;
+			bool pRes = int.TryParse(input, out inputParsed);
+			inputParsed = pRes ? inputParsed : -1;
+			if (input == null || input == String.Empty)
+				inputParsed = 0;
+
+			if (inputParsed > -1)
 			{
-				result = result.OrderBy(x => x.messageCount).Reverse().ToList();
-				if (result.Count == 0)
-					await Context.Channel.SendMessageAsync($"No users have sent a message on this server.");
-				else
-				{
-					var mostCount = result.FirstOrDefault();
-					var percent = Math.Round(((float)mostCount.messageCount / (float)totalCount) * 100, 2);
-					await Context.Channel.SendMessageAsync($"User with most messages: {mostCount.userMention} with {mostCount.messageCount} messages which is {percent}% of the server's messages. Starting at {earliest.date.ToString("yyyy/MM/dd")}");
-				}
+				result = await processor.calculateTopMessageCounts(inputParsed);
+				await Context.Channel.SendMessageAsync(result);
+				return;
 			}
-			else
-			{
-				if (result.Count == 0)
-					await Context.Channel.SendMessageAsync($"User {user} has not sent any messages.");
-				else
-				{
-					var userCount = result.FirstOrDefault();
-					var percent = Math.Round(((float)userCount.messageCount / (float)totalCount) * 100, 2);
-					await Context.Channel.SendMessageAsync($"User {userCount.userMention} has sent {userCount.messageCount} messages which is {percent}% of the server's messages. Starting at {earliest.date.ToString("yyyy/MM/dd")}");
-				}
-			}
+
+			input = input != null ? input.Replace("!", String.Empty) : input;
+			result = await processor.calculateUserMessageCounts(input);
+			await Context.Channel.SendMessageAsync(result);
+			return;
 		}
 	}
 }
