@@ -15,36 +15,36 @@ namespace SGMessageBot.Bot
 	public class BotCommandProcessor
 	{
 		#region Calc Functions
-		public async Task<DateModel> getEarlistMessage()
+		public async Task<DateModel> getEarliestMessage(CommandContext context)
 		{
 			var result = new DateModel();
-			var queryString = "SELECT mesTime FROM messages ORDER BY mesTime LIMIT 1;";
-			DataLayerShortcut.ExecuteReader<DateModel>(readEarliestDate, result, queryString);
+			var queryString = "SELECT mesTime FROM messages WHERE serverID = @serverID ORDER BY mesTime LIMIT 1";
+			DataLayerShortcut.ExecuteReader<DateModel>(readEarliestDate, result, queryString, new MySqlParameter("@serverID", context.Guild.Id));
 			return Task.FromResult<DateModel>(result).Result;
 		}
 
-		public async Task<int> getTotalMessageCount()
+		public async Task<int> getTotalMessageCount(CommandContext context)
 		{
 			int? result = 0;
-			var queryString = "SELECT COUNT(*) FROM messages WHERE isDeleted = false";
-			result = DataLayerShortcut.ExecuteScalar(queryString);
+			var queryString = "SELECT COUNT(*) FROM messages WHERE isDeleted = false AND serverID = @serverID";
+			result = DataLayerShortcut.ExecuteScalar(queryString, new MySqlParameter("@serverID", context.Guild.Id));
 			return Task.FromResult<int>(result.HasValue ? result.Value : 0).Result;
 		}
 
-		public async Task<string> calculateTopMessageCounts(int count)
+		public async Task<string> calculateTopMessageCounts(int count, CommandContext context)
 		{
 			var result = "";
-			var earliest = await getEarlistMessage();
-			var totalCount = await getTotalMessageCount();
+			var earliest = await getEarliestMessage(context);
+			var totalCount = await getTotalMessageCount(context);
 			List<UserCountModel> results = new List<UserCountModel>();
 			var queryString = "";
 			if (count == 0)
-				queryString = $@"SELECT messages.userID, usersinservers.nickNameMention, count(messages.userID) as mesCount from messages 
-				LEFT JOIN usersinservers ON messages.userID=usersinservers.userID WHERE usersinservers.serverID=messages.serverID AND messages.isDeleted = false GROUP BY userID ORDER BY mesCount DESC LIMIT 1";
+				queryString = $@"SELECT messages.userID, usersinservers.nickNameMention, count(messages.userID) AS mesCount FROM messages 
+				LEFT JOIN usersinservers ON messages.userID=usersinservers.userID WHERE messages.serverID=@serverID AND usersinservers.serverID=@serverID AND messages.isDeleted = false GROUP BY userID ORDER BY mesCount DESC LIMIT 1";
 			else
-				queryString = $@"SELECT messages.userID, usersinservers.nickNameMention, count(messages.userID) as mesCount from messages 
-				LEFT JOIN usersinservers ON messages.userID=usersinservers.userID WHERE usersinservers.serverID=messages.serverID AND messages.isDeleted = false GROUP BY userID ORDER BY mesCount DESC LIMIT {count}";
-			DataLayerShortcut.ExecuteReader<List<UserCountModel>>(readMessageCounts, results, queryString);
+				queryString = $@"SELECT messages.userID, usersinservers.nickNameMention, count(messages.userID) AS mesCount FROM messages 
+				LEFT JOIN usersinservers ON messages.userID=usersinservers.userID WHERE messages.serverID=@serverID AND usersinservers.serverID=@serverID AND messages.isDeleted = false GROUP BY userID ORDER BY mesCount DESC LIMIT {count}";
+			DataLayerShortcut.ExecuteReader<List<UserCountModel>>(readMessageCounts, results, queryString, new MySqlParameter("@serverID", context.Guild.Id));
 			if(count == 0)
 			{
 				var mostCount = results.FirstOrDefault();
@@ -57,7 +57,7 @@ namespace SGMessageBot.Bot
 				result = $"Top {resultsCount} users:";
 				foreach(var user in results)
 				{
-					result += $"\n{user.userMention}: {user.messageCount} messages, {Math.Round(((float)user.messageCount / (float)totalCount) * 100, 2)}";
+					result += $"\n{user.userMention}: {user.messageCount} messages, {Math.Round(((float)user.messageCount / (float)totalCount) * 100, 2)}%";
 				}
 				result += $"\nStarting at {earliest.date.ToString("yyyy/MM/dd")}";
 			}
@@ -65,15 +65,15 @@ namespace SGMessageBot.Bot
 			return Task.FromResult<string>(result).Result;
 		}
 
-		public async Task<string> calculateUserMessageCounts(string user)
+		public async Task<string> calculateUserMessageCounts(string user, CommandContext context)
 		{
 			var result = "";
-			var earliest = await getEarlistMessage();
-			var totalCount = await getTotalMessageCount();
+			var earliest = await getEarliestMessage(context);
+			var totalCount = await getTotalMessageCount(context);
 			List<UserCountModel> results = new List<UserCountModel>();
-			var queryString = @"SELECT messages.userID, usersinservers.nickNameMention, count(messages.userID) from messages LEFT JOIN usersinservers ON messages.userID=usersinservers.userID 
-			WHERE usersinservers.serverID=messages.serverID AND usersinservers.nickNameMention=@mention AND messages.isDeleted = false GROUP BY userID";
-			DataLayerShortcut.ExecuteReader<List<UserCountModel>>(readMessageCounts, results, queryString, new MySqlParameter("@mention", user));
+			var queryString = @"SELECT messages.userID, usersinservers.nickNameMention, count(messages.userID) FROM messages LEFT JOIN usersinservers ON messages.userID=usersinservers.userID 
+			WHERE messages.serverID=@serverID AND usersinservers.serverID=@serverID AND usersinservers.nickNameMention=@mention AND messages.isDeleted = false GROUP BY userID";
+			DataLayerShortcut.ExecuteReader<List<UserCountModel>>(readMessageCounts, results, queryString, new MySqlParameter("@mention", user), new MySqlParameter("@serverID", context.Guild.Id));
 			var userCount = results.FirstOrDefault();
 			var percent = Math.Round(((float)userCount.messageCount / (float)totalCount) * 100, 2);
 			result = $"User {userCount.userMention} has sent {userCount.messageCount} messages which is {percent}% of the server's messages. Starting at {earliest.date.ToString("yyyy/MM/dd")}";
@@ -84,8 +84,8 @@ namespace SGMessageBot.Bot
 		{
 			var result = "";
 			var totalRoleCount = 0;
-			var earliest = await getEarlistMessage();
-			var totalCount = await getTotalMessageCount();
+			var earliest = await getEarliestMessage(context);
+			var totalCount = await getTotalMessageCount(context);
 
 			//parse the roleID from the mention passed in.
 			var roleId = Regex.Replace(role, "[<|>|@|&]", "");

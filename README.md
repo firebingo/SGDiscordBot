@@ -1,18 +1,18 @@
-# SGDiscordBot
+<h1># SGDiscordBot</h1>
 Bot can currently be used to store server/user information in a database. Along with log messages.
 Config .json files go in a folder called Data in the same path as the .exe
 
-Commands:
+<h2>Commands</h2>:
 
-shutdown:
+<b>shutdown</b>:
 Shuts the bot down. Can only be used by a user with a role in commandRoleIds in CredConfig.json.
 ex. @bot shutdown
 
-restart:
+<b>restart</b>:
 restarts the bot. Can only be used by a user with a role in commandRoleIds in CredConfig.json.
 ex. @bot shutdown
 
-messagecount:
+<b>messagecount</b>:
 Can get several message count statistics for the server.<br />
 
 | Command                    | Description   |

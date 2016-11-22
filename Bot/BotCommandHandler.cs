@@ -92,7 +92,7 @@ namespace SGMessageBot.Bot
 
 			if (inputParsed > -1)
 			{
-				result = await processor.calculateTopMessageCounts(inputParsed);
+				result = await processor.calculateTopMessageCounts(inputParsed, Context);
 				await Context.Channel.SendMessageAsync(result);
 				return;
 			}
@@ -105,7 +105,7 @@ namespace SGMessageBot.Bot
 			}
 
 			input = input != null ? input.Replace("!", String.Empty) : input;
-			result = await processor.calculateUserMessageCounts(input);
+			result = await processor.calculateUserMessageCounts(input, Context);
 			await Context.Channel.SendMessageAsync(result);
 			return;
 		}
