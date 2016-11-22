@@ -13,8 +13,11 @@ restarts the bot. Can only be used by a user with a role in commandRoleIds in Cr
 ex. @bot shutdown
 
 messagecount:
-Can get several message count statistics for the server.
-@bot messagecount 			Will get the top message count on the server. 
-@bot messagecount [number]  Will get the top n message counts on the server.
-@bot messagecount @user 	Will get a user's message count.
-@bot messagecount @role 	Will get the message count for a role and it's top user.
+Can get several message count statistics for the server.<br />
+
+| Command                    | Description   |
+| -------------------------- | ------------- |
+| @bot messagecount          |Top message count on the server.                         |
+| @bot messagecount [number] |Top n message counts on the server.                      | 
+| @bot messagecount @user    |Will get a user's message count.                         | 
+| @bot messagecount @role    |Will get the message count for a role and it's top user. |
