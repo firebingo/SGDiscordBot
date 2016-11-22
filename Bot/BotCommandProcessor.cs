@@ -1,10 +1,13 @@
-﻿using MySql.Data.MySqlClient;
+﻿using Discord.Commands;
+using Discord.WebSocket;
+using MySql.Data.MySqlClient;
 using SGMessageBot.DataBase;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace SGMessageBot.Bot
@@ -54,9 +57,9 @@ namespace SGMessageBot.Bot
 				result = $"Top {resultsCount} users:";
 				foreach(var user in results)
 				{
-					result += $"/n{user.userMention}: {user.messageCount} messages, {Math.Round(((float)user.messageCount / (float)totalCount) * 100, 2)}";
+					result += $"\n{user.userMention}: {user.messageCount} messages, {Math.Round(((float)user.messageCount / (float)totalCount) * 100, 2)}";
 				}
-				result += $"/nStarting at {earliest.date.ToString("yyyy/MM/dd")}";
+				result += $"\nStarting at {earliest.date.ToString("yyyy/MM/dd")}";
 			}
 
 			return Task.FromResult<string>(result).Result;
@@ -77,13 +80,53 @@ namespace SGMessageBot.Bot
 			return Task.FromResult<string>(result).Result;
 		}
 
-		//public async Task<List<UserCountModel>> calculateRoleMessageCounts(string role)
-		//{
-		//	List<UserCountModel> results = new List<UserCountModel>();
-		//	var queryString = "SELECT messages.userID, usersinservers.nickNameMention, count(messages.userID) from messages LEFT JOIN usersinservers ON messages.userID=usersinservers.userID WHERE usersinservers.serverID=messages.serverID AND usersinservers.nickNameMention=@mention GROUP BY userID";
-		//	DataLayerShortcut.ExecuteReader<List<UserCountModel>>(readMessageCounts, results, queryString, new MySqlParameter("@mention", role));
-		//	return Task.FromResult<List<UserCountModel>>(results).Result;
-		//}
+		public async Task<string> calculateRoleMessageCounts(string role, CommandContext context)
+		{
+			var result = "";
+			var totalRoleCount = 0;
+			var earliest = await getEarlistMessage();
+			var totalCount = await getTotalMessageCount();
+
+			//parse the roleID from the mention passed in.
+			var roleId = Regex.Replace(role, "[<|>|@|&]", "");
+			ulong roleIdParse = 0;
+			var parseRes = ulong.TryParse(roleId, out roleIdParse);
+			if (!parseRes) //if the roleid was not parseable.
+				return Task.FromResult<string>("Could not find role").Result;
+			//Go through every user in the guild and check if their roleids contains our role.
+			//Because why would SocketRole have a list of users in the role, that would make sense.
+			var UsersInRole = new List<SocketGuildUser>();
+			var UsersInGuild = context.Guild.GetUsersAsync().Result;
+			foreach(var user in UsersInGuild)
+			{
+				if (user.RoleIds.Contains(roleIdParse))
+					UsersInRole.Add(user as SocketGuildUser);
+			}
+			List<UserCountModel> results = new List<UserCountModel>();
+			//iterate over each user and get their message count on the server.
+			foreach (var user in UsersInRole)
+			{
+				List<UserCountModel> userResults = new List<UserCountModel>();
+				var queryString = @"SELECT messages.userID, usersinservers.nickNameMention, count(messages.userID) from messages LEFT JOIN usersinservers ON messages.userID=usersinservers.userID 
+				WHERE usersinservers.serverID=messages.serverID AND usersinservers.nickNameMention=@mention AND messages.isDeleted = false GROUP BY userID LIMIT 1";
+				DataLayerShortcut.ExecuteReader<List<UserCountModel>>(readMessageCounts, userResults, queryString, new MySqlParameter("@mention", user.Mention.Replace("!", string.Empty)));
+				var userFound = userResults.FirstOrDefault();
+				if (userFound == null)
+					continue;
+				totalRoleCount += userFound.messageCount;
+				results.AddRange(userResults);
+			}
+			if(results.Count == 0) //if no user's were found for the Guild or Role.
+				return Task.FromResult<string>("This role has no users with sent messages.").Result;
+			results = results.OrderByDescending(r => r.messageCount).ToList();
+			var topUser = results.FirstOrDefault();
+			var percent = Math.Round(((float)totalRoleCount / (float)totalCount) * 100, 2);
+			var topuserPercent = Math.Round(((float)topUser.messageCount / (float)totalCount) * 100, 2);
+			var topUserRolePercent = Math.Round(((float)topUser.messageCount / (float)totalRoleCount) * 100, 2);
+			result = $"Role {role} has {results.Count} users with {totalRoleCount} messages, which is {percent}% of the server's messages.\nThe user with the most messages in the role is {topUser.userMention} with {topUser.messageCount} which is {topUserRolePercent}% of the role's messages, and {topuserPercent}% of the server's messages.\nStarting at {earliest.date.ToString("yyyy/MM/dd")}";
+			
+			return Task.FromResult<string>(result).Result;
+		}
 		#endregion
 
 		#region Data Readers

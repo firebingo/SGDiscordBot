@@ -9,6 +9,7 @@ using System.Data;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace SGMessageBot.Bot
@@ -92,6 +93,13 @@ namespace SGMessageBot.Bot
 			if (inputParsed > -1)
 			{
 				result = await processor.calculateTopMessageCounts(inputParsed);
+				await Context.Channel.SendMessageAsync(result);
+				return;
+			}
+
+			if(Regex.IsMatch(input, @"<@&\d*>"))
+			{
+				result = await processor.calculateRoleMessageCounts(input, Context);
 				await Context.Channel.SendMessageAsync(result);
 				return;
 			}
