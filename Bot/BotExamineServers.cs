@@ -113,17 +113,21 @@ namespace SGMessageBot.Bot
 		{
 			try
 			{
+				Console.WriteLine($"Reloading messages for channel{context.Channel.Name}/{context.Channel.Id}");
 				var messages = context.Channel.GetMessagesAsync(Int32.MaxValue).ToList().Result;
 				foreach (var messageList in messages)
 				{
 					List<string> mesRows = new List<string>();
 					List<string> attachRows = new List<string>();
+					var cCount = 0;
+					++cCount;
+					Console.WriteLine($"{Math.Round(((float)cCount / (float)messages.Count) * 100, 2)}% complete on current Channel");
 					foreach (var message in messageList)
 					{
 						mesRows.Add($"({context.Guild.Id}, {message.Author.Id}, {context.Channel.Id}, {message.Id}, '{MySqlHelper.EscapeString(message.Content)}', '{MySqlHelper.EscapeString(message.Content)}', 0, {message.Timestamp.UtcDateTime.ToString("yyyyMMddHHmmss")})");
 						foreach (var attach in message.Attachments)
 						{
-							attachRows.Add($"({message.Id}, {attach.Id}, '{MySqlHelper.EscapeString(attach.Filename)}', {attach.Height}, {attach.Width}, '{MySqlHelper.EscapeString(attach.ProxyUrl)}', '{MySqlHelper.EscapeString(attach.Url)}', {attach.Size})");
+							attachRows.Add($"({message.Id}, {attach.Id}, '{MySqlHelper.EscapeString(attach.Filename)}', {(attach.Height.HasValue ? attach.Height.Value : -1)}, {(attach.Width.HasValue ? attach.Width.Value : -1)}, '{MySqlHelper.EscapeString(attach.ProxyUrl)}', '{MySqlHelper.EscapeString(attach.Url)}', {attach.Size})");
 						}
 					}
 					if (mesRows.Count > 0)
@@ -144,7 +148,20 @@ namespace SGMessageBot.Bot
 			}
 			catch (Exception e)
 			{
-				return e.Message;
+				var aE = e as AggregateException;
+				if (aE != null)
+				{
+					List<string> exceptions = new List<string>();
+					foreach (var ex in aE.InnerExceptions)
+					{
+						exceptions.Add(ex.Message);
+					}
+					return $"Exceptions: {string.Join(", ", exceptions)}";
+				}
+				else
+				{
+					return $"Exception: {e.Message}";
+				}
 			}
 			return "Operation Complete";
 		}
@@ -157,51 +174,98 @@ namespace SGMessageBot.Bot
 		/// <returns></returns>
 		public static async Task<string> updateMessageHistoryServer(CommandContext context)
 		{
+			var exceptionsResult = new List<string>();
+			Console.WriteLine("Reloading all server messages");
 			try
 			{
 				var channels = context.Guild.GetChannelsAsync().Result;
 				foreach (var channel in channels)
 				{
-					var messageChannel = channel as Discord.IMessageChannel;
-					//Voice channels will be null obviously.
-					if (messageChannel != null)
+					try
 					{
-						var messages = messageChannel.GetMessagesAsync(Int32.MaxValue).ToList().Result;
-						foreach (var messageList in messages)
+						Console.WriteLine($"Working on channel{channel.Name}/{channel.Id}");
+						var messageChannel = channel as Discord.IMessageChannel;
+						//Voice channels will be null obviously.
+						if (messageChannel != null)
 						{
-							List<string> mesRows = new List<string>();
-							List<string> attachRows = new List<string>();
-							foreach (var message in messageList)
+							var messages = messageChannel.GetMessagesAsync(Int32.MaxValue).ToList().Result;
+							var cCount = 0;
+							foreach (var messageList in messages)
 							{
-								mesRows.Add($"({context.Guild.Id}, {message.Author.Id}, {context.Channel.Id}, {message.Id}, '{MySqlHelper.EscapeString(message.Content)}', '{MySqlHelper.EscapeString(message.Content)}', 0, {message.Timestamp.UtcDateTime.ToString("yyyyMMddHHmmss")})");
-								foreach (var attach in message.Attachments)
+								++cCount;
+								Console.WriteLine($"{Math.Round(((float)cCount / (float)messages.Count) * 100, 2)}% complete on current Channel");
+								List<string> mesRows = new List<string>();
+								List<string> attachRows = new List<string>();
+								foreach (var message in messageList)
 								{
-									attachRows.Add($"({message.Id}, {attach.Id}, '{MySqlHelper.EscapeString(attach.Filename)}', {attach.Height}, {attach.Width}, '{MySqlHelper.EscapeString(attach.ProxyUrl)}', '{MySqlHelper.EscapeString(attach.Url)}', {attach.Size})");
+									mesRows.Add($"({context.Guild.Id}, {message.Author.Id}, {context.Channel.Id}, {message.Id}, '{MySqlHelper.EscapeString(message.Content)}', '{MySqlHelper.EscapeString(message.Content)}', 0, {message.Timestamp.UtcDateTime.ToString("yyyyMMddHHmmss")})");
+									foreach (var attach in message.Attachments)
+									{
+										attachRows.Add($"({message.Id}, {attach.Id}, '{MySqlHelper.EscapeString(attach.Filename)}', {(attach.Height.HasValue ? attach.Height.Value : -1)}, {(attach.Width.HasValue ? attach.Width.Value : -1)}, '{MySqlHelper.EscapeString(attach.ProxyUrl)}', '{MySqlHelper.EscapeString(attach.Url)}', {attach.Size})");
+									}
+								}
+								if (mesRows.Count > 0)
+								{
+									var mesQueryString = $"INSERT IGNORE messages (serverID, userID, channelID, messageID, rawText, mesText, mesStatus, mesTime) VALUES {string.Join(",", mesRows)}";
+									var mesRes = DataLayerShortcut.ExecuteNonQuery(mesQueryString);
+									if (mesRes != String.Empty)
+										return mesRes;
+								}
+								if (attachRows.Count > 0)
+								{
+									var attachQueryString = $"INSERT IGNORE attachments (messageID, attachID, fileName, height, width, proxyURL, attachURL, attachSize) VALUES {string.Join(",", attachRows)}";
+									var mesRes = DataLayerShortcut.ExecuteNonQuery(attachQueryString);
+									if (mesRes != String.Empty)
+										return mesRes;
 								}
 							}
-							if (mesRows.Count > 0)
-							{
-								var mesQueryString = $"INSERT IGNORE messages (serverID, userID, channelID, messageID, rawText, mesText, mesStatus, mesTime) VALUES {string.Join(",", mesRows)}";
-								var mesRes = DataLayerShortcut.ExecuteNonQuery(mesQueryString);
-								if (mesRes != String.Empty)
-									return mesRes;
-							}
-							if (attachRows.Count > 0)
-							{
-								var attachQueryString = $"INSERT IGNORE attachments (messageID, attachID, fileName, height, width, proxyURL, attachURL, attachSize) VALUES {string.Join(",", attachRows)}";
-								var mesRes = DataLayerShortcut.ExecuteNonQuery(attachQueryString);
-								if (mesRes != String.Empty)
-									return mesRes;
-							}
 						}
+					}
+					catch (Exception e) //Something something don't use exceptions for flow control something something.
+					{
+						var aE = e as AggregateException;
+						if (aE != null)
+						{
+							List<string> exceptions = new List<string>();
+							foreach (var ex in aE.InnerExceptions)
+							{
+								exceptions.Add(ex.Message);
+							}
+							exceptionsResult.Add($"Exceptions: {string.Join(", ", exceptions)}");
+						}
+						else
+						{
+							exceptionsResult.Add($"Exception: {e.Message}");
+						}
+						continue;
 					}
 				}
 			}
 			catch (Exception e)
 			{
-				return e.Message;
+				var aE = e as AggregateException;
+				if (aE != null)
+				{
+					List<string> exceptions = new List<string>();
+					foreach(var ex in aE.InnerExceptions)
+					{
+						exceptions.Add(ex.Message);
+					}
+					return $"Exceptions: {string.Join(", ", exceptions)}";
+				}
+				else
+				{
+					return $"Exception: {e.Message}";
+				}
 			}
-			return "Operation Complete";
+			if (exceptionsResult.Count > 0)
+			{
+				return $"Operation complete with exceptions, {string.Join(",", exceptionsResult)}";
+			}
+			else
+			{
+				return "Operation Complete";
+			}
 		}
 	}
 }

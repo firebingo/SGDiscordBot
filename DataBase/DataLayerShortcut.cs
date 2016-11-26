@@ -102,7 +102,7 @@ namespace SGMessageBot.DataBase
 			}
 			catch (Exception e)
 			{
-				return e.Message;
+				return $"Exception: {e.Message}, Query: {query}";
 			}
 		}
 

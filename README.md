@@ -30,5 +30,5 @@ Can only be used by a user with a role in commandRoleIds in CredConfig.json.
 
 | Command                    | Description   |
 | -------------------------- | ------------- |
-| @bot reloadmessages        |Reloads messages for channel messages was sent in.       |
+| @bot reloadmessages        |Reloads messages for channel message was sent in.        |
 | @bot messagecount all      |Reloads messages for every channel on server.            | 

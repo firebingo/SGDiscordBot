@@ -61,7 +61,7 @@ namespace SGMessageBot
 					ConnectionTimeout = int.MaxValue,
 					LogLevel = LogSeverity.Warning
 				});
-				Client.Log += async (message) => Console.WriteLine($"{message.ToString()}");
+				Client.Log += async (message) => Console.WriteLine($"Discord Error:{message.ToString()}");
 				await Client.LoginAsync(TokenType.Bot, botConfig.credInfo.token);
 				await Client.ConnectAsync();
 
