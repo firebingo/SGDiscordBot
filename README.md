@@ -21,3 +21,14 @@ Can get several message count statistics for the server.<br />
 | @bot messagecount [number] |Top n message counts on the server.                      | 
 | @bot messagecount @user    |Will get a user's message count.                         | 
 | @bot messagecount @role    |Will get the message count for a role and it's top user. |
+
+<b>reloadmessages</b>:
+Will reload all the messages for the channel the messages was sent in. Or all on the server if all is passed in.
+Does not overwrite messages already in the database.
+Can be an expensive operation, only use if the bot has missed a significant amount of messages or when the bot is first added to server.
+Can only be used by a user with a role in commandRoleIds in CredConfig.json.
+
+| Command                    | Description   |
+| -------------------------- | ------------- |
+| @bot reloadmessages        |Reloads messages for channel messages was sent in.       |
+| @bot messagecount all      |Reloads messages for every channel on server.            | 

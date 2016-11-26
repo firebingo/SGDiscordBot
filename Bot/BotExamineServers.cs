@@ -7,6 +7,7 @@ using MySql.Data.MySqlClient;
 using SGMessageBot.DataBase;
 using System.Data;
 using Discord.WebSocket;
+using Discord.Commands;
 
 namespace SGMessageBot.Bot
 {
@@ -17,7 +18,7 @@ namespace SGMessageBot.Bot
 	{
 		public static async Task startupCheck(IEnumerable<SocketGuild> servers)
 		{
-			foreach(var server in servers)
+			foreach (var server in servers)
 			{
 				await updateDatabaseServer(server);
 			}
@@ -59,7 +60,7 @@ namespace SGMessageBot.Bot
 							new MySqlParameter("@channelMention", tChannel.Mention), new MySqlParameter("@channelName", channel.Name), new MySqlParameter("@channelPosition", channel.Position),
 							new MySqlParameter("@channelType", "text"));
 					}
-					else if(vChannel != null)
+					else if (vChannel != null)
 					{
 						queryString = @"INSERT INTO channels (serverID, channelID, channelMention, channelName, channelPosition, channelType)
 						VALUES (@serverID, @channelID, @channelMention, @channelName, @channelPosition, @channelType)
@@ -100,6 +101,107 @@ namespace SGMessageBot.Bot
 			{
 				return;
 			}
+		}
+
+		/// <summary>
+		/// Goes through the message history of a channel and gets all messages sent in the channel.
+		/// Note this can be an expensive operation and should not be done commonly.
+		/// </summary>
+		/// <param name="context">The context from the command, used to get the channel to reload</param>
+		/// <returns></returns>
+		public static async Task<string> updateMessageHistoryChannel(CommandContext context)
+		{
+			try
+			{
+				var messages = context.Channel.GetMessagesAsync(Int32.MaxValue).ToList().Result;
+				foreach (var messageList in messages)
+				{
+					List<string> mesRows = new List<string>();
+					List<string> attachRows = new List<string>();
+					foreach (var message in messageList)
+					{
+						mesRows.Add($"({context.Guild.Id}, {message.Author.Id}, {context.Channel.Id}, {message.Id}, '{MySqlHelper.EscapeString(message.Content)}', '{MySqlHelper.EscapeString(message.Content)}', 0, {message.Timestamp.UtcDateTime.ToString("yyyyMMddHHmmss")})");
+						foreach (var attach in message.Attachments)
+						{
+							attachRows.Add($"({message.Id}, {attach.Id}, '{MySqlHelper.EscapeString(attach.Filename)}', {attach.Height}, {attach.Width}, '{MySqlHelper.EscapeString(attach.ProxyUrl)}', '{MySqlHelper.EscapeString(attach.Url)}', {attach.Size})");
+						}
+					}
+					if (mesRows.Count > 0)
+					{
+						var mesQueryString = $"INSERT IGNORE messages (serverID, userID, channelID, messageID, rawText, mesText, mesStatus, mesTime) VALUES {string.Join(",", mesRows)}";
+						var mesRes = DataLayerShortcut.ExecuteNonQuery(mesQueryString);
+						if (mesRes != String.Empty)
+							return mesRes;
+					}
+					if (attachRows.Count > 0)
+					{
+						var attachQueryString = $"INSERT IGNORE attachments (messageID, attachID, fileName, height, width, proxyURL, attachURL, attachSize) VALUES {string.Join(",", attachRows)}";
+						var mesRes = DataLayerShortcut.ExecuteNonQuery(attachQueryString);
+						if (mesRes != String.Empty)
+							return mesRes;
+					}
+				}
+			}
+			catch (Exception e)
+			{
+				return e.Message;
+			}
+			return "Operation Complete";
+		}
+
+		/// <summary>
+		/// Goes through the message history of every channel on a server and gets all messages sent in the channel.
+		/// Note this can be an expensive operation and should not be done commonly.
+		/// </summary>
+		/// <param name="context">The context from the command, used to get the server to reload</param>
+		/// <returns></returns>
+		public static async Task<string> updateMessageHistoryServer(CommandContext context)
+		{
+			try
+			{
+				var channels = context.Guild.GetChannelsAsync().Result;
+				foreach (var channel in channels)
+				{
+					var messageChannel = channel as Discord.IMessageChannel;
+					//Voice channels will be null obviously.
+					if (messageChannel != null)
+					{
+						var messages = messageChannel.GetMessagesAsync(Int32.MaxValue).ToList().Result;
+						foreach (var messageList in messages)
+						{
+							List<string> mesRows = new List<string>();
+							List<string> attachRows = new List<string>();
+							foreach (var message in messageList)
+							{
+								mesRows.Add($"({context.Guild.Id}, {message.Author.Id}, {context.Channel.Id}, {message.Id}, '{MySqlHelper.EscapeString(message.Content)}', '{MySqlHelper.EscapeString(message.Content)}', 0, {message.Timestamp.UtcDateTime.ToString("yyyyMMddHHmmss")})");
+								foreach (var attach in message.Attachments)
+								{
+									attachRows.Add($"({message.Id}, {attach.Id}, '{MySqlHelper.EscapeString(attach.Filename)}', {attach.Height}, {attach.Width}, '{MySqlHelper.EscapeString(attach.ProxyUrl)}', '{MySqlHelper.EscapeString(attach.Url)}', {attach.Size})");
+								}
+							}
+							if (mesRows.Count > 0)
+							{
+								var mesQueryString = $"INSERT IGNORE messages (serverID, userID, channelID, messageID, rawText, mesText, mesStatus, mesTime) VALUES {string.Join(",", mesRows)}";
+								var mesRes = DataLayerShortcut.ExecuteNonQuery(mesQueryString);
+								if (mesRes != String.Empty)
+									return mesRes;
+							}
+							if (attachRows.Count > 0)
+							{
+								var attachQueryString = $"INSERT IGNORE attachments (messageID, attachID, fileName, height, width, proxyURL, attachURL, attachSize) VALUES {string.Join(",", attachRows)}";
+								var mesRes = DataLayerShortcut.ExecuteNonQuery(attachQueryString);
+								if (mesRes != String.Empty)
+									return mesRes;
+							}
+						}
+					}
+				}
+			}
+			catch (Exception e)
+			{
+				return e.Message;
+			}
+			return "Operation Complete";
 		}
 	}
 }

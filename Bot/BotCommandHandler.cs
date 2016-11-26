@@ -67,6 +67,25 @@ namespace SGMessageBot.Bot
 			System.Diagnostics.Process.Start(System.Reflection.Assembly.GetExecutingAssembly().Location);
 			Environment.Exit(0);
 		}
+
+		[Command("reloadmessages"), Summary("Regets all the messages for a given channel.")]
+		public async Task reloadMessages([Summary("The channel to reload")] string input = null)
+		{
+			if(input == null || input == string.Empty)
+			{
+				var result = await BotExamineServers.updateMessageHistoryChannel(Context);
+				await Context.Channel.SendMessageAsync(result);
+			}
+			else if (input == "all")
+			{
+				var result = await BotExamineServers.updateMessageHistoryServer(Context);
+				await Context.Channel.SendMessageAsync(result);
+			}
+			else
+			{
+				await Context.Channel.SendMessageAsync("Invalid input");
+			}
+		}
 	}
 
 	//[Group("||")]

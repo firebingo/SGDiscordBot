@@ -82,7 +82,7 @@ namespace SGMessageBot.DataBase
 			cmd.Dispose();
 		}
 
-		public static void ExecuteNonQuery(string query, params MySqlParameter[] parameters)
+		public static string ExecuteNonQuery(string query, params MySqlParameter[] parameters)
 		{
 			try
 			{
@@ -98,10 +98,11 @@ namespace SGMessageBot.DataBase
 
 				cmd.ExecuteNonQuery();
 				cmd.Dispose();
+				return "";
 			}
 			catch (Exception e)
 			{
-				return;
+				return e.Message;
 			}
 		}
 
