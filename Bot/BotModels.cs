@@ -19,4 +19,15 @@ namespace SGMessageBot.Bot
 	{
 		public DateTime date;
 	}
+
+	[Serializable]
+	public class EmojiMessageModel
+	{
+		public ulong userID;
+		public ulong messageID;
+		public string mention;
+		public string mesText;
+		public int useCount;
+		public ulong emojiID;
+	}
 }

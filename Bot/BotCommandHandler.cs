@@ -128,5 +128,23 @@ namespace SGMessageBot.Bot
 			await Context.Channel.SendMessageAsync(result);
 			return;
 		}
+
+		[Command("emojicount"), Summary("Gets counts of emojis used")]
+		public async Task emojiCounts([Summary("The emoji or user to get counts for")] string input = null)
+		{
+			var result = "";
+			var inputParsed = -1;
+			bool pRes = int.TryParse(input, out inputParsed);
+			inputParsed = pRes ? inputParsed : -1;
+			if (input == null || input == String.Empty)
+				inputParsed = 0;
+
+			if (inputParsed > -1)
+			{
+				result = await processor.calculateTopEmojiCounts(inputParsed, Context);
+				await Context.Channel.SendMessageAsync(result);
+				return;
+			}
+		}
 	}
 }
