@@ -139,7 +139,7 @@ namespace SGMessageBot.Bot
 			if (count > context.Guild.Emojis.Count)
 				count = context.Guild.Emojis.Count;
 			var totalCount = 0;
-			getEmojiModelsOrdered(context, ref emojiModels);
+			getEmojiModels(context, ref emojiModels);
 			//go through every messages and get the count of the emoji usage in the message.
 			foreach(var res in emojiModels)
 			{
@@ -149,6 +149,7 @@ namespace SGMessageBot.Bot
 					totalCount += emoji.useCount;
 				}
 			}
+			emojiModels = emojiModels.OrderByDescending(e => e.Value.Sum(se => se.useCount)).ToDictionary(e => e.Key, e => e.Value);
 			if (count == 0)
 			{
 				var topEmoji = emojiModels.FirstOrDefault();
@@ -186,7 +187,7 @@ namespace SGMessageBot.Bot
 				var max = 0;
 				foreach (var res in emojiModels)
 				{
-					if (max > count)
+					if (max >= count)
 						break;
 
 					var totalEmojiCount = 0;
@@ -215,7 +216,7 @@ namespace SGMessageBot.Bot
 			var earliest = await getEarliestMessage(context);
 			var emojiModels = new Dictionary<string, List<EmojiMessageModel>>();
 			var totalCount = 0;
-			getEmojiModelsOrdered(context, ref emojiModels);
+			getEmojiModels(context, ref emojiModels);
 			if (!emojiModels.ContainsKey(emojiMention))
 				return $"Requested emoji does not belong to this server.";
 			var reqEmojiCount = 0;
@@ -230,6 +231,7 @@ namespace SGMessageBot.Bot
 						reqEmojiCount += emoji.useCount;
 				}
 			}
+			emojiModels = emojiModels.OrderByDescending(e => e.Value.Sum(se => se.useCount)).ToDictionary(e => e.Key, e => e.Value);
 			if (reqEmojiCount == 0)
 				return $"{emojiMention} has not been used on this server.";
 			var topUsers = new Dictionary<string, int>();
@@ -258,7 +260,7 @@ namespace SGMessageBot.Bot
 			var earliest = await getEarliestMessage(context);
 			var emojiModels = new Dictionary<string, List<EmojiMessageModel>>();
 			var totalCount = 0;
-			getEmojiModelsOrdered(context, ref emojiModels);
+			getEmojiModels(context, ref emojiModels);
 			var userCounts = new Dictionary<string, int>();
 			var totalUserCount = 0;
 			//go through every messages and get the count of the emoji usage in the message.
@@ -278,6 +280,7 @@ namespace SGMessageBot.Bot
 					}
 				}
 			}
+			emojiModels = emojiModels.OrderByDescending(e => e.Value.Sum(se => se.useCount)).ToDictionary(e => e.Key, e => e.Value);
 			var topEmoji = userCounts.OrderByDescending(e => e.Value).ToDictionary(e => e.Key, e => e.Value).FirstOrDefault();
 			if (topEmoji.Key == null)
 				return "User has not used any emoji on this server";
@@ -341,7 +344,7 @@ namespace SGMessageBot.Bot
 		#endregion
 
 		#region Helper Functions
-		private void getEmojiModelsOrdered(CommandContext context, ref Dictionary<string, List<EmojiMessageModel>> emojiModels)
+		private void getEmojiModels(CommandContext context, ref Dictionary<string, List<EmojiMessageModel>> emojiModels)
 		{
 			var emojis = context.Guild.Emojis;
 			foreach (var emoji in emojis)
@@ -360,7 +363,7 @@ namespace SGMessageBot.Bot
 				}
 				emojiModels.Add($"<:{emoji.Name}:{emoji.Id}>", emojiCounter);
 			}
-			emojiModels.OrderByDescending(e => e.Value.Count).ToDictionary(e => e.Key, e => e.Value);
+			//emojiModels.OrderByDescending(e => e.Value.Count).ToDictionary(e => e.Key, e => e.Value);
 		}
 
 		private ulong getIDFromMention(string mention)
