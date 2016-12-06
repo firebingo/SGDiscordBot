@@ -136,30 +136,10 @@ namespace SGMessageBot.Bot
 			var result = "";
 			var earliest = await getEarliestMessage(context);
 			var emojiModels = new Dictionary<string, List<EmojiMessageModel>>();
-			var emojis = context.Guild.Emojis;
-			if (count > emojis.Count)
-				count = emojis.Count;
+			if (count > context.Guild.Emojis.Count)
+				count = context.Guild.Emojis.Count;
 			var totalCount = 0;
-			foreach (var emoji in emojis)
-			{
-				var emojiCounter = new List<EmojiMessageModel>();
-				var queryParams = new MySqlParameter[] {
-					new MySqlParameter("@serverID", context.Guild.Id),
-					new MySqlParameter("@emojiID", $"%{emoji.Id}%"),
-					new MySqlParameter("@botID", SGMessageBot.botConfig.credInfo.botId)
-				};
-				var queryString = $"SELECT mS.userID, mS.messageID, uS.nickNameMention, mS.rawText FROM messages AS mS LEFT JOIN usersinservers AS uS ON mS.userID = uS.userID WHERE uS.serverID = @serverID AND mS.mesText LIKE @emojiID AND mS.serverID = @serverID AND mS.isDeleted = 0 AND mS.userID != @botID AND mS.mesText NOT LIKE '%emojicount%'";
-				DataLayerShortcut.ExecuteReader<List<EmojiMessageModel>>(readEmojiCounts, emojiCounter, queryString, queryParams);
-				foreach(var res in emojiCounter)
-				{
-					res.emojiID = emoji.Id;
-				}
-				emojiModels.Add($"<:{emoji.Name}:{emoji.Id}>", emojiCounter);
-				//queryString = "SELECT count(*) FROM messages AS mS LEFT JOIN usersinservers AS uS ON mS.userID = uS.userID WHERE uS.serverID = @serverID AND mS.mesText LIKE @emojiID AND mS.serverID = @serverID AND mS.isDeleted = 0 AND mS.userID != @botID AND mS.mesText NOT LIKE '%emojicount%'";
-				//var emCount = DataLayerShortcut.ExecuteScalar(queryString, queryParams);
-				//totalCount += emCount.HasValue ? emCount.Value : 0;
-			}
-			emojiModels.OrderByDescending(e => e.Value.Count).ToDictionary(e => e.Key, e => e.Value);
+			getEmojiModelsOrdered(context, ref emojiModels);
 			//go through every messages and get the count of the emoji usage in the message.
 			foreach(var res in emojiModels)
 			{
@@ -225,6 +205,89 @@ namespace SGMessageBot.Bot
 
 			return Task.FromResult<string>(result).Result;
 		}
+
+		public async Task<string> calculateEmojiCounts(string emojiMention, CommandContext context)
+		{
+			var result = "";
+			var emojiID = getIDFromMention(emojiMention);
+			if (emojiID == 0)
+				return "Failed to find id from emoji";
+			var earliest = await getEarliestMessage(context);
+			var emojiModels = new Dictionary<string, List<EmojiMessageModel>>();
+			var totalCount = 0;
+			getEmojiModelsOrdered(context, ref emojiModels);
+			if (!emojiModels.ContainsKey(emojiMention))
+				return $"Requested emoji does not belong to this server.";
+			var reqEmojiCount = 0;
+			//go through every messages and get the count of the emoji usage in the message.
+			foreach (var res in emojiModels)
+			{
+				foreach (var emoji in res.Value)
+				{
+					emoji.useCount = Regex.Matches(emoji.mesText, $"{emoji.emojiID.ToString()}").Count;
+					totalCount += emoji.useCount;
+					if (res.Key == emojiMention)
+						reqEmojiCount += emoji.useCount;
+				}
+			}
+			if (reqEmojiCount == 0)
+				return $"{emojiMention} has not been used on this server.";
+			var topUsers = new Dictionary<string, int>();
+			foreach (var emResult in emojiModels[emojiMention])
+			{
+				if (topUsers.ContainsKey(emResult.mention))
+					topUsers[emResult.mention] += emResult.useCount;
+				else
+					topUsers.Add(emResult.mention, emResult.useCount);
+			}
+			var topUser = topUsers.OrderByDescending(e => e.Value).ToDictionary(e => e.Key, e => e.Value).FirstOrDefault();
+
+			var percent = Math.Round(((float)reqEmojiCount / (float)totalCount) * 100, 2);
+			var userPercent = Math.Round(((float)topUser.Value / (float)reqEmojiCount) * 100, 2);
+			result = $"{emojiMention} has been used {reqEmojiCount} times, which is {percent}% of emoji uses.\nThe emoji is most used by {topUser.Key} with {topUser.Value} uses, which is {userPercent}% of the emoji's use.\nStarting at {earliest.date.ToString("yyyy/MM/dd")}";
+
+			return result;
+		}
+
+		public async Task<string> calculateUserEmojiCounts(string userMention, CommandContext context)
+		{
+			var result = "";
+			var userID = getIDFromMention(userMention);
+			if (userID == 0)
+				return "Failed to find id from user mention";
+			var earliest = await getEarliestMessage(context);
+			var emojiModels = new Dictionary<string, List<EmojiMessageModel>>();
+			var totalCount = 0;
+			getEmojiModelsOrdered(context, ref emojiModels);
+			var userCounts = new Dictionary<string, int>();
+			var totalUserCount = 0;
+			//go through every messages and get the count of the emoji usage in the message.
+			foreach (var res in emojiModels)
+			{
+				foreach (var emoji in res.Value)
+				{
+					emoji.useCount = Regex.Matches(emoji.mesText, $"{emoji.emojiID.ToString()}").Count;
+					totalCount += emoji.useCount;
+					if (emoji.userID == userID)
+					{
+						totalUserCount += emoji.useCount;
+						if (userCounts.ContainsKey(res.Key))
+							userCounts[res.Key] += emoji.useCount;
+						else
+							userCounts.Add(res.Key, emoji.useCount);
+					}
+				}
+			}
+			var topEmoji = userCounts.OrderByDescending(e => e.Value).ToDictionary(e => e.Key, e => e.Value).FirstOrDefault();
+			if (topEmoji.Key == null)
+				return "User has not used any emoji on this server";
+
+			var totalPercent = Math.Round(((float)topEmoji.Value / (float)totalCount) * 100, 2);
+			var userPercent = Math.Round(((float)topEmoji.Value / (float)totalUserCount) * 100, 2);
+			result = $"{userMention} most used emoji is {topEmoji.Key} with {topEmoji.Value} uses which is {userPercent}% of the user's emoji use, and {totalPercent}% of the server's emoji use.\nStarting at {earliest.date.ToString("yyyy/MM/dd")}";
+
+			return result;
+		}
 		#endregion
 		#endregion
 
@@ -274,6 +337,42 @@ namespace SGMessageBot.Bot
 					data.Add(emojiObject);
 				}
 			}
+		}
+		#endregion
+
+		#region Helper Functions
+		private void getEmojiModelsOrdered(CommandContext context, ref Dictionary<string, List<EmojiMessageModel>> emojiModels)
+		{
+			var emojis = context.Guild.Emojis;
+			foreach (var emoji in emojis)
+			{
+				var emojiCounter = new List<EmojiMessageModel>();
+				var queryParams = new MySqlParameter[] {
+					new MySqlParameter("@serverID", context.Guild.Id),
+					new MySqlParameter("@emojiID", $"%{emoji.Id}%"),
+					new MySqlParameter("@botID", SGMessageBot.botConfig.credInfo.botId)
+				};
+				var queryString = $"SELECT mS.userID, mS.messageID, uS.nickNameMention, mS.rawText FROM messages AS mS LEFT JOIN usersinservers AS uS ON mS.userID = uS.userID WHERE uS.serverID = @serverID AND mS.mesText LIKE @emojiID AND mS.serverID = @serverID AND mS.isDeleted = 0 AND mS.userID != @botID AND mS.mesText NOT LIKE '%emojicount%'";
+				DataLayerShortcut.ExecuteReader<List<EmojiMessageModel>>(readEmojiCounts, emojiCounter, queryString, queryParams);
+				foreach (var res in emojiCounter)
+				{
+					res.emojiID = emoji.Id;
+				}
+				emojiModels.Add($"<:{emoji.Name}:{emoji.Id}>", emojiCounter);
+			}
+			emojiModels.OrderByDescending(e => e.Value.Count).ToDictionary(e => e.Key, e => e.Value);
+		}
+
+		private ulong getIDFromMention(string mention)
+		{
+			var match = Regex.Match(mention, @"\d+");
+			if(!match.Success)
+				return 0;
+			var result = (ulong)0;
+			var success = UInt64.TryParse(match.Value, out result);
+			if (!success)
+				return 0;
+			return result;
 		}
 		#endregion
 	}

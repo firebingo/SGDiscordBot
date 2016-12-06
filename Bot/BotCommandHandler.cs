@@ -116,7 +116,7 @@ namespace SGMessageBot.Bot
 				return;
 			}
 
-			if(Regex.IsMatch(input, @"<@&\d*>"))
+			if(Regex.IsMatch(input, @"<@&\d+>"))
 			{
 				result = await processor.calculateRoleMessageCounts(input, Context);
 				await Context.Channel.SendMessageAsync(result);
@@ -145,6 +145,23 @@ namespace SGMessageBot.Bot
 				await Context.Channel.SendMessageAsync(result);
 				return;
 			}
+
+			if(Regex.IsMatch(input, @"<:.+:\d+>"))
+			{
+				result = await processor.calculateEmojiCounts(input, Context);
+				await Context.Channel.SendMessageAsync(result);
+				return;
+			}
+
+			input = input.Replace("!", string.Empty);
+			if (Regex.IsMatch(input, @"<@\d+>"))
+			{
+				result = await processor.calculateUserEmojiCounts(input, Context);
+				await Context.Channel.SendMessageAsync(result);
+				return;
+			}
+
+			await Context.Channel.SendMessageAsync("Invalid Input");
 		}
 	}
 }
