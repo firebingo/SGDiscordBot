@@ -130,7 +130,8 @@ namespace SGMessageBot.Bot
 		}
 
 		[Command("emojicount"), Summary("Gets counts of emojis used")]
-		public async Task emojiCounts([Summary("The emoji or user to get counts for")] string input = null)
+		public async Task emojiCounts([Summary("The emoji or user to get counts for")] string input = null, 
+			[Summary("The emoji to get for a specific user, or the user to get top counts for")] string input2 = null)
 		{
 			var result = "";
 			var inputParsed = -1;
@@ -141,6 +142,13 @@ namespace SGMessageBot.Bot
 
 			if (inputParsed > -1)
 			{
+				//if we are getting a top n count for a user
+				if(input2 != null && Regex.IsMatch(input2, @"<@\d+>"))
+				{
+					result = await processor.calculateTopEmojiCountsUser(inputParsed, input2, Context);
+					await Context.Channel.SendMessageAsync(result);
+					return;
+				}
 				result = await processor.calculateTopEmojiCounts(inputParsed, Context);
 				await Context.Channel.SendMessageAsync(result);
 				return;

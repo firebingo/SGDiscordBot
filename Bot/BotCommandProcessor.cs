@@ -131,6 +131,12 @@ namespace SGMessageBot.Bot
 		#endregion
 
 		#region Emoji Counts
+		/// <summary>
+		/// Gets a top n count of emojis for a server
+		/// </summary>
+		/// <param name="count"></param>
+		/// <param name="context"></param>
+		/// <returns></returns>
 		public async Task<string> calculateTopEmojiCounts(int count, CommandContext context)
 		{
 			var result = "";
@@ -207,6 +213,77 @@ namespace SGMessageBot.Bot
 			return Task.FromResult<string>(result).Result;
 		}
 
+		/// <summary>
+		/// Gets the top n count of emojis for a user on a server
+		/// </summary>
+		/// <param name="count"></param>
+		/// <param name="user"></param>
+		/// <param name="context"></param>
+		/// <returns></returns>
+		public async Task<string> calculateTopEmojiCountsUser(int count, string user, CommandContext context)
+		{
+			var result = "";
+			var userId = getIDFromMention(user);
+			if(userId == 0)
+			{
+				return Task.FromResult<string>("Could not get user from mention.").Result;
+			}
+			var earliest = await getEarliestMessage(context);
+			var emojiModels = new Dictionary<string, List<EmojiMessageModel>>();
+			if (count > context.Guild.Emojis.Count)
+				count = context.Guild.Emojis.Count;
+			var totalCount = 0;
+			getEmojiModels(context, ref emojiModels);
+			//go through every messages and get the count of the emoji usage in the message.
+			foreach (var res in emojiModels)
+			{
+				foreach (var emoji in res.Value)
+				{
+					emoji.useCount = Regex.Matches(emoji.mesText, $"{emoji.emojiID.ToString()}").Count;
+					totalCount += emoji.useCount;
+				}
+			}
+			emojiModels = emojiModels.OrderByDescending(e => e.Value.Sum(se => se.useCount)).ToDictionary(e => e.Key, e => e.Value);
+			if (count == 0)
+			{
+				return Task.FromResult<string>("Count can not be 0. Use emojicount @user instead.").Result;
+			}
+			else
+			{
+				result = $"Top {count} emojis for {user}:";
+				var max = 0;
+				foreach (var res in emojiModels)
+				{
+					if (max >= count)
+						break;
+
+					var totalEmojiCount = 0;
+					var totalEmojiUserCount = 0;
+					foreach (var emoji in res.Value)
+					{
+						totalEmojiCount += emoji.useCount;
+						if (emoji.userID == userId)
+							totalEmojiUserCount += emoji.useCount;
+					}
+
+					var userPercent = Math.Round(((float)totalEmojiUserCount / (float)totalEmojiCount) * 100, 2);
+					var totalPercent = Math.Round(((float)totalEmojiCount / (float)totalCount) * 100, 2);
+					result += $"\n{res.Key}: {totalEmojiUserCount} uses, {userPercent}%, {totalPercent}%";
+					max++;
+				}
+				if (max == 0) //If the foreach didnt run that probally means there weren't any Emojis used in messages.
+					return Task.FromResult<string>("No emoji has been used on this server.").Result;
+				result += $"\nStarting at {earliest.date.ToString("yyyy/MM/dd")}";
+			}
+			return Task.FromResult<string>(result).Result;
+		}
+
+		/// <summary>
+		/// Gets the uses and top user for a specific emoji
+		/// </summary>
+		/// <param name="emojiMention"></param>
+		/// <param name="context"></param>
+		/// <returns></returns>
 		public async Task<string> calculateEmojiCounts(string emojiMention, CommandContext context)
 		{
 			var result = "";
@@ -251,6 +328,12 @@ namespace SGMessageBot.Bot
 			return result;
 		}
 
+		/// <summary>
+		/// Gets the most used emoji for a user
+		/// </summary>
+		/// <param name="userMention"></param>
+		/// <param name="context"></param>
+		/// <returns></returns>
 		public async Task<string> calculateUserEmojiCounts(string userMention, CommandContext context)
 		{
 			var result = "";

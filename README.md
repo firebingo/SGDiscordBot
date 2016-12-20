@@ -31,7 +31,7 @@ Can only be used by a user with a role in commandRoleIds in CredConfig.json.<br 
 | Command					 | Description	 |
 | -------------------------- | ------------- |
 | @bot reloadmessages		 | Reloads messages for channel message was sent in.		|
-| @bot messagecount all		 | Reloads messages for every channel on server.			|
+| @bot reloadmessages all	 | Reloads messages for every channel on server.			|
 
 <b>emojicount:</b>
 
@@ -39,9 +39,10 @@ Can get various emoji use statistics for the server. <br />
 Can only get custom emojis for the server. <br />
 Note this can be a slow operation on server's with a large message count. <br />
 
-| Command					 | Description	 |
-| -------------------------- | ------------- |
-| @bot emojicount			 | Gets the top used emoji and top user for emoji.			|
-| @bot emojicount [number]	 | Top n emoji counts.										|
-| @bot emojicount [emoji]	 | Use count of specific emoji and its top user.			|
-| @bot emojicount [user]	 | Get a user's most used emoji								|
+| Command							 | Description	 |
+| --------------------------		 | ------------- |
+| @bot emojicount					 | Gets the top used emoji and top user for emoji.			|
+| @bot emojicount [number]			 | Top n emoji counts.										|
+| @bot emojicount [emoji]			 | Use count of specific emoji and its top user.			|
+| @bot emojicount [user]			 | Get a user's most used emoji.							|
+| @bot emojicount [number] [user]	 | Top n emoji counts for a specific user.					|
