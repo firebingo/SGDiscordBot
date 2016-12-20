@@ -267,7 +267,7 @@ namespace SGMessageBot.Bot
 					}
 
 					var userPercent = Math.Round(((float)totalEmojiUserCount / (float)totalEmojiCount) * 100, 2);
-					var totalPercent = Math.Round(((float)totalEmojiCount / (float)totalCount) * 100, 2);
+					var totalPercent = Math.Round(((float)totalEmojiUserCount / (float)totalCount) * 100, 2);
 					result += $"\n{res.Key}: {totalEmojiUserCount} uses, {userPercent}%, {totalPercent}%";
 					max++;
 				}

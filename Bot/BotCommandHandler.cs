@@ -143,11 +143,15 @@ namespace SGMessageBot.Bot
 			if (inputParsed > -1)
 			{
 				//if we are getting a top n count for a user
-				if(input2 != null && Regex.IsMatch(input2, @"<@\d+>"))
+				if (input2 != null)
 				{
-					result = await processor.calculateTopEmojiCountsUser(inputParsed, input2, Context);
-					await Context.Channel.SendMessageAsync(result);
-					return;
+					input2 = input2.Replace("!", string.Empty);
+					if (Regex.IsMatch(input2, @"<@\d+>"))
+					{
+						result = await processor.calculateTopEmojiCountsUser(inputParsed, input2, Context);
+						await Context.Channel.SendMessageAsync(result);
+						return;
+					}
 				}
 				result = await processor.calculateTopEmojiCounts(inputParsed, Context);
 				await Context.Channel.SendMessageAsync(result);
