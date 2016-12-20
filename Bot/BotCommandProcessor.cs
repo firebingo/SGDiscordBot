@@ -58,7 +58,11 @@ namespace SGMessageBot.Bot
 				result = $"Top {resultsCount} users:";
 				foreach (var user in results)
 				{
-					result += $"\n{user.userMention}: {user.messageCount} messages, {Math.Round(((float)user.messageCount / (float)totalCount) * 100, 2)}%";
+					var toAdd = $"\n{user.userMention}: {user.messageCount} messages, {Math.Round(((float)user.messageCount / (float)totalCount) * 100, 2)}%";
+					if (result.Length + toAdd.Length + 2 > 2000)
+						result += $"||{toAdd}";
+					else
+						result += toAdd;
 				}
 				result += $"\nStarting at {earliest.date.ToString("yyyy/MM/dd")}";
 			}
@@ -202,7 +206,11 @@ namespace SGMessageBot.Bot
 						totalEmojiCount += emoji.useCount;
 					}
 
-					result += $"\n{res.Key}: {totalEmojiCount} uses, {Math.Round(((float)totalEmojiCount / (float)totalCount) * 100, 2)}%";
+					var toAdd = $"\n{res.Key}: {totalEmojiCount} uses, {Math.Round(((float)totalEmojiCount / (float)totalCount) * 100, 2)}%";
+					if (result.Length + toAdd.Length + 2 > 2000)
+						result += $"||{toAdd}";
+					else
+						result += toAdd;
 					max++;
 				}
 				if (max == 0) //If the foreach didnt run that probally means there weren't any Emojis used in messages.
@@ -268,7 +276,11 @@ namespace SGMessageBot.Bot
 
 					var userPercent = Math.Round(((float)totalEmojiUserCount / (float)totalEmojiCount) * 100, 2);
 					var totalPercent = Math.Round(((float)totalEmojiUserCount / (float)totalCount) * 100, 2);
-					result += $"\n{res.Key}: {totalEmojiUserCount} uses, {userPercent}%, {totalPercent}%";
+					var toAdd = $"\n{res.Key}: {totalEmojiUserCount} uses, {userPercent}%, {totalPercent}%";
+					if (result.Length + toAdd.Length + 2 > 2000)
+						result += $"||{toAdd}";
+					else
+						result += toAdd;
 					max++;
 				}
 				if (max == 0) //If the foreach didnt run that probally means there weren't any Emojis used in messages.

@@ -112,8 +112,20 @@ namespace SGMessageBot.Bot
 			if (inputParsed > -1)
 			{
 				result = await processor.calculateTopMessageCounts(inputParsed, Context);
-				await Context.Channel.SendMessageAsync(result);
-				return;
+				if(result.Contains("||"))
+				{
+					var results = result.Split(new string[] { "||" }, StringSplitOptions.None);
+					foreach(var res in results)
+					{
+						await Context.Channel.SendMessageAsync(res);
+					}
+					return;
+				}
+				else
+				{
+					await Context.Channel.SendMessageAsync(result);
+					return;
+				}
 			}
 
 			if(Regex.IsMatch(input, @"<@&\d+>"))
@@ -149,13 +161,37 @@ namespace SGMessageBot.Bot
 					if (Regex.IsMatch(input2, @"<@\d+>"))
 					{
 						result = await processor.calculateTopEmojiCountsUser(inputParsed, input2, Context);
-						await Context.Channel.SendMessageAsync(result);
-						return;
+						if (result.Contains("||"))
+						{
+							var results = result.Split(new string[] { "||" }, StringSplitOptions.None);
+							foreach (var res in results)
+							{
+								await Context.Channel.SendMessageAsync(res);
+							}
+							return;
+						}
+						else
+						{
+							await Context.Channel.SendMessageAsync(result);
+							return;
+						}
 					}
 				}
 				result = await processor.calculateTopEmojiCounts(inputParsed, Context);
-				await Context.Channel.SendMessageAsync(result);
-				return;
+				if (result.Contains("||"))
+				{
+					var results = result.Split(new string[] { "||" }, StringSplitOptions.None);
+					foreach (var res in results)
+					{
+						await Context.Channel.SendMessageAsync(res);
+					}
+					return;
+				}
+				else
+				{
+					await Context.Channel.SendMessageAsync(result);
+					return;
+				}
 			}
 
 			if(Regex.IsMatch(input, @"<:.+:\d+>"))
