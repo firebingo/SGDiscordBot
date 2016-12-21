@@ -28,6 +28,7 @@ namespace SGMessageBot.Bot
 		public string mention;
 		public string mesText;
 		public int useCount;
+		public int userUseCount;
 		public ulong emojiID;
 	}
 }

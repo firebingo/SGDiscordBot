@@ -37,6 +37,7 @@ namespace SGMessageBot.Bot
 			var result = "";
 			var earliest = await getEarliestMessage(context);
 			var totalCount = await getTotalMessageCount(context);
+			var nextSplitLength = 2000;
 			List<UserCountModel> results = new List<UserCountModel>();
 			var queryString = "";
 			if (count == 0)
@@ -59,8 +60,11 @@ namespace SGMessageBot.Bot
 				foreach (var user in results)
 				{
 					var toAdd = $"\n{user.userMention}: {user.messageCount} messages, {Math.Round(((float)user.messageCount / (float)totalCount) * 100, 2)}%";
-					if (result.Length + toAdd.Length + 2 > 2000)
+					if (result.Length + toAdd.Length + 2 > nextSplitLength)
+					{
 						result += $"||{toAdd}";
+						nextSplitLength += 2000;
+					}
 					else
 						result += toAdd;
 				}
@@ -149,6 +153,7 @@ namespace SGMessageBot.Bot
 			if (count > context.Guild.Emojis.Count)
 				count = context.Guild.Emojis.Count;
 			var totalCount = 0;
+			var nextSplitLength = 2000;
 			getEmojiModels(context, ref emojiModels);
 			//go through every messages and get the count of the emoji usage in the message.
 			foreach(var res in emojiModels)
@@ -207,8 +212,11 @@ namespace SGMessageBot.Bot
 					}
 
 					var toAdd = $"\n{res.Key}: {totalEmojiCount} uses, {Math.Round(((float)totalEmojiCount / (float)totalCount) * 100, 2)}%";
-					if (result.Length + toAdd.Length + 2 > 2000)
+					if (result.Length + toAdd.Length + 2 > nextSplitLength)
+					{
 						result += $"||{toAdd}";
+						nextSplitLength += 2000;
+					}
 					else
 						result += toAdd;
 					max++;
@@ -241,6 +249,8 @@ namespace SGMessageBot.Bot
 			if (count > context.Guild.Emojis.Count)
 				count = context.Guild.Emojis.Count;
 			var totalCount = 0;
+			var totalUserCount = 0;
+			var nextSplitLength = 2000;
 			getEmojiModels(context, ref emojiModels);
 			//go through every messages and get the count of the emoji usage in the message.
 			foreach (var res in emojiModels)
@@ -249,9 +259,14 @@ namespace SGMessageBot.Bot
 				{
 					emoji.useCount = Regex.Matches(emoji.mesText, $"{emoji.emojiID.ToString()}").Count;
 					totalCount += emoji.useCount;
+					if(emoji.userID == userId)
+					{
+						emoji.userUseCount += emoji.useCount;
+						totalUserCount += emoji.userUseCount;
+					}
 				}
 			}
-			emojiModels = emojiModels.OrderByDescending(e => e.Value.Sum(se => se.useCount)).ToDictionary(e => e.Key, e => e.Value);
+			emojiModels = emojiModels.OrderByDescending(e => e.Value.Sum(se => se.userUseCount)).ToDictionary(e => e.Key, e => e.Value);
 			if (count == 0)
 			{
 				return Task.FromResult<string>("Count can not be 0. Use emojicount @user instead.").Result;
@@ -270,15 +285,18 @@ namespace SGMessageBot.Bot
 					foreach (var emoji in res.Value)
 					{
 						totalEmojiCount += emoji.useCount;
-						if (emoji.userID == userId)
-							totalEmojiUserCount += emoji.useCount;
+						totalEmojiUserCount += emoji.userUseCount;
 					}
 
-					var userPercent = Math.Round(((float)totalEmojiUserCount / (float)totalEmojiCount) * 100, 2);
+					var userPercent = Math.Round(((float)totalEmojiUserCount / (float)totalUserCount) * 100, 2);
+					var emojiPercent = Math.Round(((float)totalEmojiUserCount / (float)totalEmojiCount) * 100, 2);
 					var totalPercent = Math.Round(((float)totalEmojiUserCount / (float)totalCount) * 100, 2);
-					var toAdd = $"\n{res.Key}: {totalEmojiUserCount} uses, {userPercent}%, {totalPercent}%";
-					if (result.Length + toAdd.Length + 2 > 2000)
+					var toAdd = $"\n{res.Key}: {totalEmojiUserCount} uses, user: {userPercent}%, emoji: {emojiPercent}%, total: {totalPercent}%";
+					if (result.Length + toAdd.Length + 2 > nextSplitLength)
+					{
 						result += $"||{toAdd}";
+						nextSplitLength += 2000;
+					}
 					else
 						result += toAdd;
 					max++;
