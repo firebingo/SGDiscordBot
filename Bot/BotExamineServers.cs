@@ -8,6 +8,9 @@ using SGMessageBot.DataBase;
 using System.Data;
 using Discord.WebSocket;
 using Discord.Commands;
+using Discord.Rest;
+using Discord;
+using Discord.Net;
 
 namespace SGMessageBot.Bot
 {
@@ -114,20 +117,35 @@ namespace SGMessageBot.Bot
 			try
 			{
 				Console.WriteLine($"Reloading messages for channel{context.Channel.Name}/{context.Channel.Id}");
+				//Old reactions must be removed since they have no identification of their own.
+				var reactRemove = $"DELETE FROM testsg.reactions WHERE channelID = @channelID";
+				var delRes = DataLayerShortcut.ExecuteNonQuery(reactRemove, new MySqlParameter("@channelID", context.Channel.Id));
+				if (delRes != String.Empty)
+					return delRes;
 				var messages = context.Channel.GetMessagesAsync(Int32.MaxValue).ToList().Result;
+				var cCount = 0;
+				var totalMessages = messages.Sum(m => m.Count);
 				foreach (var messageList in messages)
 				{
 					List<string> mesRows = new List<string>();
 					List<string> attachRows = new List<string>();
-					var cCount = 0;
-					++cCount;
-					Console.WriteLine($"{Math.Round(((float)cCount / (float)messages.Count) * 100, 2)}% complete on current Channel");
+					List<string> reactionsRows = new List<string>();
+					Console.WriteLine($"{Math.Round(((float)cCount / (float)totalMessages) * 100, 2)}% complete on current Channel");
 					foreach (var message in messageList)
 					{
+						++cCount;
 						mesRows.Add($"({context.Guild.Id}, {message.Author.Id}, {context.Channel.Id}, {message.Id}, '{MySqlHelper.EscapeString(message.Content)}', '{MySqlHelper.EscapeString(message.Content)}', 0, {message.Timestamp.UtcDateTime.ToString("yyyyMMddHHmmss")})");
 						foreach (var attach in message.Attachments)
 						{
 							attachRows.Add($"({message.Id}, {attach.Id}, '{MySqlHelper.EscapeString(attach.Filename)}', {(attach.Height.HasValue ? attach.Height.Value : -1)}, {(attach.Width.HasValue ? attach.Width.Value : -1)}, '{MySqlHelper.EscapeString(attach.ProxyUrl)}', '{MySqlHelper.EscapeString(attach.Url)}', {attach.Size})");
+						}
+						var userMes = message as RestUserMessage;
+						if (userMes != null && userMes.Reactions != null)
+						{
+							foreach (var reaction in userMes.Reactions)
+							{
+								reactionsRows.Add($"({context.Guild.Id}, {userMes.Author.Id}, {userMes.Channel.Id}, {userMes.Id}, {(reaction.Key.Id == null ? 0 : reaction.Key.Id)}, '{reaction.Key.Name}')");
+							}
 						}
 					}
 					if (mesRows.Count > 0)
@@ -141,6 +159,13 @@ namespace SGMessageBot.Bot
 					{
 						var attachQueryString = $"INSERT IGNORE attachments (messageID, attachID, fileName, height, width, proxyURL, attachURL, attachSize) VALUES {string.Join(",", attachRows)}";
 						var mesRes = DataLayerShortcut.ExecuteNonQuery(attachQueryString);
+						if (mesRes != String.Empty)
+							return mesRes;
+					}
+					if(reactionsRows.Count > 0)
+					{
+						var reactQueryString = $"INSERT reactions (serverID, userID, channelID, messageID, emojiID, emojiName) VALUES {string.Join(",", reactionsRows)}";
+						var mesRes = DataLayerShortcut.ExecuteNonQuery(reactQueryString);
 						if (mesRes != String.Empty)
 							return mesRes;
 					}
@@ -176,6 +201,11 @@ namespace SGMessageBot.Bot
 		{
 			var exceptionsResult = new List<string>();
 			Console.WriteLine("Reloading all server messages");
+			//Old reactions must be removed since they have no identification of their own.
+			var reactRemove = $"DELETE FROM testsg.reactions WHERE serverID = @serverID";
+			var delRes = DataLayerShortcut.ExecuteNonQuery(reactRemove, new MySqlParameter("@serverID", context.Guild.Id));
+			if (delRes != String.Empty)
+				return delRes;
 			try
 			{
 				var channels = context.Guild.GetChannelsAsync().Result;
@@ -190,18 +220,28 @@ namespace SGMessageBot.Bot
 						{
 							var messages = messageChannel.GetMessagesAsync(Int32.MaxValue).ToList().Result;
 							var cCount = 0;
+							var totalMessages = messages.Sum(m => m.Count);
 							foreach (var messageList in messages)
 							{
-								++cCount;
-								Console.WriteLine($"{Math.Round(((float)cCount / (float)messages.Count) * 100, 2)}% complete on current Channel");
+								Console.WriteLine($"{Math.Round(((float)cCount / (float)totalMessages) * 100, 2)}% complete on current Channel");
 								List<string> mesRows = new List<string>();
 								List<string> attachRows = new List<string>();
+								List<string> reactionsRows = new List<string>();
 								foreach (var message in messageList)
 								{
+									++cCount;
 									mesRows.Add($"({context.Guild.Id}, {message.Author.Id}, {context.Channel.Id}, {message.Id}, '{MySqlHelper.EscapeString(message.Content)}', '{MySqlHelper.EscapeString(message.Content)}', 0, {message.Timestamp.UtcDateTime.ToString("yyyyMMddHHmmss")})");
 									foreach (var attach in message.Attachments)
 									{
 										attachRows.Add($"({message.Id}, {attach.Id}, '{MySqlHelper.EscapeString(attach.Filename)}', {(attach.Height.HasValue ? attach.Height.Value : -1)}, {(attach.Width.HasValue ? attach.Width.Value : -1)}, '{MySqlHelper.EscapeString(attach.ProxyUrl)}', '{MySqlHelper.EscapeString(attach.Url)}', {attach.Size})");
+									}
+									var userMes = message as RestUserMessage;
+									if (userMes != null && userMes.Reactions != null)
+									{
+										foreach (var reaction in userMes.Reactions)
+										{
+											reactionsRows.Add($"({context.Guild.Id}, {userMes.Author.Id}, {userMes.Channel.Id}, {userMes.Id}, {(reaction.Key.Id == null ? 0 : reaction.Key.Id)}, '{reaction.Key.Name}')");
+										}
 									}
 								}
 								if (mesRows.Count > 0)
@@ -215,6 +255,13 @@ namespace SGMessageBot.Bot
 								{
 									var attachQueryString = $"INSERT IGNORE attachments (messageID, attachID, fileName, height, width, proxyURL, attachURL, attachSize) VALUES {string.Join(",", attachRows)}";
 									var mesRes = DataLayerShortcut.ExecuteNonQuery(attachQueryString);
+									if (mesRes != String.Empty)
+										return mesRes;
+								}
+								if (reactionsRows.Count > 0)
+								{
+									var reactQueryString = $"INSERT reactions (serverID, userID, channelID, messageID, emojiID, emojiName) VALUES {string.Join(",", reactionsRows)}";
+									var mesRes = DataLayerShortcut.ExecuteNonQuery(reactQueryString);
 									if (mesRes != String.Empty)
 										return mesRes;
 								}

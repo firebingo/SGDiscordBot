@@ -28,7 +28,7 @@ namespace SGMessageBot.Bot
 			commands = new CommandService();
 			_map.Add(commands);
 			map = _map;
-			await commands.AddModules(Assembly.GetEntryAssembly());
+			await commands.AddModulesAsync(Assembly.GetEntryAssembly());
 			Client.MessageReceived += HandleCommand;
 		}
 
@@ -40,7 +40,7 @@ namespace SGMessageBot.Bot
 			if (uMessage.HasMentionPrefix(Client.CurrentUser, ref argPos))
 			{
 				var context = new CommandContext(Client, uMessage);
-				var result = await commands.Execute(context, argPos, map);
+				var result = await commands.ExecuteAsync(context, argPos, map);
 				if (!result.IsSuccess)
 					await uMessage.Channel.SendMessageAsync(result.ErrorReason);
 			}
@@ -52,7 +52,7 @@ namespace SGMessageBot.Bot
 	public class AdminModule : ModuleBase
 	{
 		[Command("shutdown"), Summary("Tells the bot to shutdown.")]
-		public async Task shutdown()
+		public async Task Shutdown()
 		{
 			await Context.Channel.SendMessageAsync("Goodbye").ConfigureAwait(false);
 			await Task.Delay(2000).ConfigureAwait(false);
@@ -211,5 +211,20 @@ namespace SGMessageBot.Bot
 
 			await Context.Channel.SendMessageAsync("Invalid Input");
 		}
+
+		//This no longer works with newer versions of nadeko so its commented until i figure out an alternative.
+		//[Command("nadekocount"), Summary("Gets counts of commands sent to Nadeko Bot")]
+		//public async Task nadekoCount([Summary("The user to get counts for")] SocketUser user = null)
+		//{
+		//	var result = "";
+		//	if (user == null)
+		//	{
+		//		await Context.Channel.SendMessageAsync("Must Specify User");
+		//		return;
+		//	}
+		//	result = await processor.calculateNadekoUserCounts(user, Context);
+		//	await Context.Channel.SendMessageAsync(result);
+		//	return;
+		//}
 	}
 }

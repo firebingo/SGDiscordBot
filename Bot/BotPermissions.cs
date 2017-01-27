@@ -10,7 +10,7 @@ namespace SGMessageBot.Bot
 {
 	public class RequireModRoleAttribute : PreconditionAttribute
 	{
-		public override Task<PreconditionResult> CheckPermissions(CommandContext context, CommandInfo command, IDependencyMap map)
+		public override Task<PreconditionResult> CheckPermissions(ICommandContext context, CommandInfo command, IDependencyMap map)
 		{
 			var gUser = context.User as SocketGuildUser;
 			if (gUser == null)
@@ -33,7 +33,7 @@ namespace SGMessageBot.Bot
 
 	public class RequireGuildMessageAttribute : PreconditionAttribute
 	{
-		public override Task<PreconditionResult> CheckPermissions(CommandContext context, CommandInfo command, IDependencyMap map)
+		public override Task<PreconditionResult> CheckPermissions(ICommandContext context, CommandInfo command, IDependencyMap map)
 		{
 			var gChannel = context.Channel as SocketGuildChannel;
 			if (gChannel == null)

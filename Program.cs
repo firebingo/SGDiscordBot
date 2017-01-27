@@ -42,15 +42,10 @@ namespace SGMessageBot
 					Console.WriteLine(dbResult.message);
 				var dbTestResult = DataLayerShortcut.testConnection();
 				if (!dbTestResult.success)
-				{
 					Console.WriteLine(dbTestResult.message);
-					if (!DataLayerShortcut.schemaExists)
-					{
-						var createResult = DataLayerShortcut.createDataBase();
-						if (!createResult.success)
-							Console.WriteLine(createResult.message);
-					}
-				}
+				var createResult = DataLayerShortcut.createDataBase();
+				if (!createResult.success)
+					Console.WriteLine(createResult.message);
 				#endregion
 
 				#region Discord Client
@@ -95,6 +90,9 @@ namespace SGMessageBot
 				Client.ChannelCreated += BotEventHandler.ClientChannelCreated;
 				Client.ChannelUpdated += BotEventHandler.ClientChannelUpdated;
 				Client.ChannelDestroyed += BotEventHandler.ClientChannelDestroyed;
+				Client.ReactionAdded += BotEventHandler.ClientReactionAdded;
+				Client.ReactionRemoved += BotEventHandler.ClientReactionRemoved;
+				Client.ReactionsCleared += BotEventHandler.ClientReactionsCleared;
 
 				ready = true;
 				Console.WriteLine("Ready!");

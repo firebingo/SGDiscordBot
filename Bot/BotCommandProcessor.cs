@@ -5,6 +5,7 @@ using SGMessageBot.DataBase;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.SQLite;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -18,7 +19,7 @@ namespace SGMessageBot.Bot
 		public async Task<DateModel> getEarliestMessage(CommandContext context)
 		{
 			var result = new DateModel();
-			var queryString = "SELECT mesTime FROM messages WHERE serverID = @serverID ORDER BY mesTime LIMIT 1";
+			var queryString = "SELECT mesTime FROM messages WHERE serverID = @serverID AND mesTime IS NOT NULL ORDER BY mesTime LIMIT 1";
 			DataLayerShortcut.ExecuteReader<DateModel>(readEarliestDate, result, queryString, new MySqlParameter("@serverID", context.Guild.Id));
 			return Task.FromResult<DateModel>(result).Result;
 		}
@@ -403,6 +404,27 @@ namespace SGMessageBot.Bot
 			result = $"{userMention} most used emoji is {topEmoji.Key} with {topEmoji.Value} uses which is {userPercent}% of the user's emoji use, and {totalPercent}% of the server's emoji use.\nStarting at {earliest.date.ToString("yyyy/MM/dd")}";
 
 			return result;
+		}
+		#endregion
+
+		#region Nadeko Counts
+		public async Task<string> calculateNadekoUserCounts(SocketUser user, CommandContext context)
+		{
+			var result = "";
+			int? totalCommandCount = 0;
+			int? userCommandCount = 0;
+			var query = "SELECT COUNT(*) FROM Command WHERE ServerId = @serverId";
+			totalCommandCount = DataLayerShortcut.executeScalarLite(context.Guild.Id, query, new SQLiteParameter("@serverId", context.Guild.Id));
+			query = "SELECT COUNT(*) FROM Command WHERE UserId = @userId AND ServerId = @serverId";
+			userCommandCount = DataLayerShortcut.executeScalarLite(context.Guild.Id, query, new SQLiteParameter("@userId", user.Id), new SQLiteParameter("@serverId", context.Guild.Id));
+			if (!totalCommandCount.HasValue || !userCommandCount.HasValue)
+			{
+				result = "Failed to get command counts. Possible failure to connect to db.";
+				return Task.FromResult<string>(result).Result;
+			}
+			var percent = Math.Round(((float)userCommandCount.Value / (float)totalCommandCount.Value) * 100, 2);
+			result = $"{user.Mention} has sent {userCommandCount} commands to NadekoBot, which is {percent}% of commands sent.";
+			return Task.FromResult<string>(result).Result;
 		}
 		#endregion
 		#endregion

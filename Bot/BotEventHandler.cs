@@ -169,6 +169,34 @@ namespace SGMessageBot.Bot
 			catch { }
 		}
 		#endregion
+		#region Reactions
+		public static async Task ClientReactionAdded(ulong arg1, Optional<SocketUserMessage> arg2, SocketReaction arg3)
+		{
+			try
+			{
+				await BotEventProcessor.ProcessReactionAdded(arg1, arg2, arg3).ConfigureAwait(false);
+			}
+			catch { }
+		}
+
+		public static async Task ClientReactionRemoved(ulong arg1, Optional<SocketUserMessage> arg2, SocketReaction arg3)
+		{
+			try
+			{
+				await BotEventProcessor.ClientReactionRemoved(arg1, arg2, arg3).ConfigureAwait(false);
+			}
+			catch { }
+		}
+
+		public static async Task ClientReactionsCleared(ulong arg1, Optional<SocketUserMessage> arg2)
+		{
+			try
+			{
+				await BotEventProcessor.ClientReactionsCleared(arg1, arg2).ConfigureAwait(false);
+			}
+			catch { }
+		}
+		#endregion
 
 		protected static class BotEventProcessor
 		{
@@ -244,6 +272,8 @@ namespace SGMessageBot.Bot
 					var queryString = "UPDATE messages SET isDeleted=@isDeleted WHERE messageID=@messageID";
 					DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@isDeleted", true), new MySqlParameter("@messageID", mesID));
 					queryString = "UPDATE attachments SET isDeleted=@isDeleted WHERE messageID=@messageID";
+					DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@isDeleted", true), new MySqlParameter("@messageID", mesID));
+					queryString = "UPDATE reactions SET isDeleted=@isDeleted WHERE messageID=@messageID";
 					DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@isDeleted", true), new MySqlParameter("@messageID", mesID));
 				}
 				catch { }
@@ -390,6 +420,35 @@ namespace SGMessageBot.Bot
 			{
 				var queryString = "UPDATE channels SET isDeleted=@isDeleted WHERE channelID=@channelID";
 				DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@isDeleted", true), new MySqlParameter("@channelID", e.Id));
+			}
+			#endregion
+			#region Reactions
+			public static async Task ProcessReactionAdded(ulong arg1, Optional<SocketUserMessage> arg2, SocketReaction arg3)
+			{
+				var queryString = @"INSERT INTO reactions (serverID, userID, channelID, messageID, emojiID, emojiName, isDeleted)
+				VALUES(@serverID, @userID, @channelID, @messageID, @emojiID, @emojiName, @isDeleted)
+				ON DUPLICATE KEY UPDATE serverID=@serverID, userID=@userID, channelID=@channelID, messageID=@messageID, emojiID=@emojiID, emojiName=@emojiName, isDeleted=@isDeleted";
+				DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", (arg3.Channel as SocketTextChannel).Guild.Id), new MySqlParameter("@channelID", arg3.Channel.Id),
+				new MySqlParameter("@userID", arg3.UserId), new MySqlParameter("@messageID", arg3.MessageId), new MySqlParameter("@emojiID", arg3.Emoji.Id), new MySqlParameter("@emojiName", arg3.Emoji.Name), 
+				new MySqlParameter("@isDeleted", false));
+			}
+
+			public static async Task ClientReactionRemoved(ulong arg1, Optional<SocketUserMessage> arg2, SocketReaction arg3)
+			{
+				var queryString = "UPDATE reactions SET isDeleted=@isDeleted WHERE messageID=@messageID AND emojiID=@emojiID AND userID = @userID";
+				DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@isDeleted", true), new MySqlParameter("@messageID", arg3.MessageId),
+				new MySqlParameter("@emojiID", arg3.Emoji.Id), new MySqlParameter("@userID", arg3.UserId));
+			}
+
+			public static async Task ClientReactionsCleared(ulong arg1, Optional<SocketUserMessage> arg2)
+			{
+				ulong messageId = 0;
+				if (arg2.IsSpecified)
+					messageId = arg2.Value.Id;
+				else
+					messageId = arg1;
+				var queryString = "UPDATE reactions SET isDeleted=@isDeleted WHERE messageID=@messageID";
+				DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@isDeleted", true), new MySqlParameter("@messageID", messageId));
 			}
 			#endregion
 		}
