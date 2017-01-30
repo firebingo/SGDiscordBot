@@ -167,24 +167,24 @@ namespace SGMessageBot.DataBase
 			var result = new BaseResult();
 			try
 			{
-				if(!DBConfig.config.nadekoDbPath.ContainsKey(serverId))
-				{
-					result.success = false;
-					result.message = "No db path specified for this server.";
-					return result;
-				}
-				if (DBConfig.config.nadekoDbPath == null || DBConfig.config.nadekoDbPath[serverId] == string.Empty)
-				{
-					result.success = false;
-					result.message = "No path specified for NadekoBot Database.";
-				}
-				if (!File.Exists(DBConfig.config.nadekoDbPath[serverId]))
-				{
-					result.success = false;
-					result.message = "No NadekoBot Database at given path.";
-				}
-				liteDBConn = new SQLiteConnection($"Data Source={DBConfig.config.nadekoDbPath[serverId]};Version=3;");
-				liteDBConn.Open();
+				//if(!DBConfig.config.nadekoDbPath.ContainsKey(serverId))
+				//{
+				//	result.success = false;
+				//	result.message = "No db path specified for this server.";
+				//	return result;
+				//}
+				//if (DBConfig.config.nadekoDbPath == null || DBConfig.config.nadekoDbPath[serverId] == string.Empty)
+				//{
+				//	result.success = false;
+				//	result.message = "No path specified for NadekoBot Database.";
+				//}
+				//if (!File.Exists(DBConfig.config.nadekoDbPath[serverId]))
+				//{
+				//	result.success = false;
+				//	result.message = "No NadekoBot Database at given path.";
+				//}
+				//liteDBConn = new SQLiteConnection($"Data Source={DBConfig.config.nadekoDbPath[serverId]};Version=3;");
+				//liteDBConn.Open();
 			}
 			catch (SQLiteException e)
 			{
