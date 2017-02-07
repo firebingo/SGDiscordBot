@@ -31,4 +31,12 @@ namespace SGMessageBot.Bot
 		public int userUseCount;
 		public ulong emojiID;
 	}
+
+	[Serializable]
+	public class RoleCounts
+	{
+		public ulong roleID;
+		public string roleMention;
+		public int roleCount;
+	}
 }

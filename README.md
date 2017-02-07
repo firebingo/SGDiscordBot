@@ -46,3 +46,14 @@ Note this can be a slow operation on server's with a large message count. <br />
 | @bot emojicount [emoji]			 | Use count of specific emoji and its top user.			|
 | @bot emojicount [user]			 | Get a user's most used emoji.							|
 | @bot emojicount [number] [user]	 | Top n emoji counts for a specific user.					|
+
+
+<b>rolecounts:</b>
+Will get the counts of users in roles for the server.<br />
+Use mentions is true/false and determines if the list will mention the roles or just give names.<br />
+Can only be used by a user with a role in commandRoleIds in CredConfig.json.<br />
+
+| Command					 				| Description	 									|
+| -------------------------- 				| -------------  									|
+| @bot rolecounts [useMentions]	 			| Outputs list to channel command was used in.		|
+| @bot rolecounts [channel] [useMentions]	| Outputs list to given channel.					|

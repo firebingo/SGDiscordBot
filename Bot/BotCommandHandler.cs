@@ -51,6 +51,13 @@ namespace SGMessageBot.Bot
 	[RequireModRole]
 	public class AdminModule : ModuleBase
 	{
+		private BotCommandProcessor processor;
+
+		public AdminModule(IDependencyMap m)
+		{
+			processor = m.Get<BotCommandProcessor>();
+		}
+
 		[Command("shutdown"), Summary("Tells the bot to shutdown.")]
 		public async Task Shutdown()
 		{
@@ -85,6 +92,38 @@ namespace SGMessageBot.Bot
 			{
 				await Context.Channel.SendMessageAsync("Invalid input");
 			}
+		}
+
+		[Command("rolecounts"), Summary("Gets user role counts for server.")]
+		public async Task roleCounts([Summary("Whether to mention the roles in the list")]bool useMentions = true)
+		{
+			var result = "";
+			var textChannel = Context.Channel as SocketTextChannel;
+			if (textChannel == null)
+			{
+				await Context.Channel.SendMessageAsync("Channel is not a text channel");
+				return;
+			}
+			result = await processor.calculateRoleCounts(textChannel, useMentions, Context);
+			await textChannel.SendMessageAsync(result);
+		}
+
+		[Command("rolecounts"), Summary("Gets user role counts for server.")]
+		public async Task roleCounts([Summary("The channel to output the list to.")] SocketChannel outputChannel = null, [Summary("Whether to mention the roles in the list")]bool useMentions = true)
+		{
+			var result = "";
+			if (outputChannel == null)
+			{
+				outputChannel = Context.Channel as SocketChannel;
+			}
+			var textChannel = outputChannel as SocketTextChannel;
+			if(textChannel == null)
+			{
+				await Context.Channel.SendMessageAsync("Channel is not a text channel");
+				return;
+			}
+			result = await processor.calculateRoleCounts(textChannel, useMentions, Context);
+			await textChannel.SendMessageAsync(result);
 		}
 	}
 

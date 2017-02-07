@@ -15,6 +15,8 @@ namespace SGMessageBot.Bot
 {
 	public class BotCommandProcessor
 	{
+		private string dateFormat = "yyyy/MM/dd";
+
 		#region Calc Functions
 		public async Task<DateModel> getEarliestMessage(CommandContext context)
 		{
@@ -31,6 +33,48 @@ namespace SGMessageBot.Bot
 			result = DataLayerShortcut.ExecuteScalar(queryString, new MySqlParameter("@serverID", context.Guild.Id));
 			return Task.FromResult<int>(result.HasValue ? result.Value : 0).Result;
 		}
+
+		#region Admin Functions
+		public async Task<string> calculateRoleCounts(SocketTextChannel channel, bool useMentions, CommandContext context)
+		{
+			var result = "";
+			try
+			{
+				Dictionary<ulong, int> counts = new Dictionary<ulong, int>();
+				var roles = context.Guild.Roles;
+				foreach (var role in roles)
+				{
+					counts.Add(role.Id, 0);
+				}
+				var users = await context.Guild.GetUsersAsync();
+				foreach (var user in users)
+				{
+					foreach (var role in user.RoleIds)
+					{
+						if (counts.ContainsKey(role))
+						{
+							counts[role]++;
+						}
+					}
+				}
+				result = $"Current Role Counts: ({DateTime.UtcNow.ToString(dateFormat)})\n";
+				counts = counts.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
+				foreach (var count in counts)
+				{
+					var role = context.Guild.GetRole(count.Key);
+					if(role != null && role.Name != "@everyone" && count.Value > 0)
+					{
+						result += $"{(useMentions ? role.Mention : role.Name)}: {count.Value}\n";
+					}
+				}
+			}
+			catch (Exception e)
+			{
+				result = e.Message;
+			}
+			return Task.FromResult<string>(result).Result;
+		}
+		#endregion
 
 		#region Message Counts
 		public async Task<string> calculateTopMessageCounts(int count, CommandContext context)
@@ -52,7 +96,7 @@ namespace SGMessageBot.Bot
 			{
 				var mostCount = results.FirstOrDefault();
 				var percent = Math.Round(((float)mostCount.messageCount / (float)totalCount) * 100, 2);
-				result = $"User with most messages: {mostCount.userMention} with {mostCount.messageCount} messages which is {percent}% of the server's messages. Starting at {earliest.date.ToString("yyyy/MM/dd")}";
+				result = $"User with most messages: {mostCount.userMention} with {mostCount.messageCount} messages which is {percent}% of the server's messages. Starting at {earliest.date.ToString(dateFormat)}";
 			}
 			else
 			{
@@ -69,7 +113,7 @@ namespace SGMessageBot.Bot
 					else
 						result += toAdd;
 				}
-				result += $"\nStarting at {earliest.date.ToString("yyyy/MM/dd")}";
+				result += $"\nStarting at {earliest.date.ToString(dateFormat)}";
 			}
 
 			return Task.FromResult<string>(result).Result;
@@ -86,7 +130,7 @@ namespace SGMessageBot.Bot
 			DataLayerShortcut.ExecuteReader<List<UserCountModel>>(readMessageCounts, results, queryString, new MySqlParameter("@mention", user), new MySqlParameter("@serverID", context.Guild.Id));
 			var userCount = results.FirstOrDefault();
 			var percent = Math.Round(((float)userCount.messageCount / (float)totalCount) * 100, 2);
-			result = $"User {userCount.userMention} has sent {userCount.messageCount} messages which is {percent}% of the server's messages. Starting at {earliest.date.ToString("yyyy/MM/dd")}";
+			result = $"User {userCount.userMention} has sent {userCount.messageCount} messages which is {percent}% of the server's messages. Starting at {earliest.date.ToString(dateFormat)}";
 			return Task.FromResult<string>(result).Result;
 		}
 
@@ -133,7 +177,7 @@ namespace SGMessageBot.Bot
 			var percent = Math.Round(((float)totalRoleCount / (float)totalCount) * 100, 2);
 			var topuserPercent = Math.Round(((float)topUser.messageCount / (float)totalCount) * 100, 2);
 			var topUserRolePercent = Math.Round(((float)topUser.messageCount / (float)totalRoleCount) * 100, 2);
-			result = $"Role {role} has {results.Count} users with {totalRoleCount} messages, which is {percent}% of the server's messages.\nThe user with the most messages in the role is {topUser.userMention} with {topUser.messageCount} which is {topUserRolePercent}% of the role's messages, and {topuserPercent}% of the server's messages.\nStarting at {earliest.date.ToString("yyyy/MM/dd")}";
+			result = $"Role {role} has {results.Count} users with {totalRoleCount} messages, which is {percent}% of the server's messages.\nThe user with the most messages in the role is {topUser.userMention} with {topUser.messageCount} which is {topUserRolePercent}% of the role's messages, and {topuserPercent}% of the server's messages.\nStarting at {earliest.date.ToString(dateFormat)}";
 
 			return Task.FromResult<string>(result).Result;
 		}
@@ -189,7 +233,7 @@ namespace SGMessageBot.Bot
 					if (topUser.Key != null)
 					{
 						var userPercent = Math.Round(((float)topUser.Value / (float)totalEmojiCount) * 100, 2);
-						result = $"Emoji with most uses: {topEmoji.Key} with {totalEmojiCount} uses which is {percent}% of emoji uses.\nEmoji is most used by {topUser.Key} with {topUser.Value} uses, which is {userPercent}% of the emoji's use.\nStarting at {earliest.date.ToString("yyyy/MM/dd")}";
+						result = $"Emoji with most uses: {topEmoji.Key} with {totalEmojiCount} uses which is {percent}% of emoji uses.\nEmoji is most used by {topUser.Key} with {topUser.Value} uses, which is {userPercent}% of the emoji's use.\nStarting at {earliest.date.ToString(dateFormat)}";
 					}
 					else
 						return "Failed to find top user";
@@ -224,7 +268,7 @@ namespace SGMessageBot.Bot
 				}
 				if (max == 0) //If the foreach didnt run that probally means there weren't any Emojis used in messages.
 					return "No emoji has been used on this server.";
-				result += $"\nStarting at {earliest.date.ToString("yyyy/MM/dd")}";
+				result += $"\nStarting at {earliest.date.ToString(dateFormat)}";
 			}
 
 			return Task.FromResult<string>(result).Result;
@@ -304,7 +348,7 @@ namespace SGMessageBot.Bot
 				}
 				if (max == 0) //If the foreach didnt run that probally means there weren't any Emojis used in messages.
 					return Task.FromResult<string>("No emoji has been used on this server.").Result;
-				result += $"\nStarting at {earliest.date.ToString("yyyy/MM/dd")}";
+				result += $"\nStarting at {earliest.date.ToString(dateFormat)}";
 			}
 			return Task.FromResult<string>(result).Result;
 		}
@@ -354,7 +398,7 @@ namespace SGMessageBot.Bot
 
 			var percent = Math.Round(((float)reqEmojiCount / (float)totalCount) * 100, 2);
 			var userPercent = Math.Round(((float)topUser.Value / (float)reqEmojiCount) * 100, 2);
-			result = $"{emojiMention} has been used {reqEmojiCount} times, which is {percent}% of emoji uses.\nThe emoji is most used by {topUser.Key} with {topUser.Value} uses, which is {userPercent}% of the emoji's use.\nStarting at {earliest.date.ToString("yyyy/MM/dd")}";
+			result = $"{emojiMention} has been used {reqEmojiCount} times, which is {percent}% of emoji uses.\nThe emoji is most used by {topUser.Key} with {topUser.Value} uses, which is {userPercent}% of the emoji's use.\nStarting at {earliest.date.ToString(dateFormat)}";
 
 			return result;
 		}
@@ -401,7 +445,7 @@ namespace SGMessageBot.Bot
 
 			var totalPercent = Math.Round(((float)topEmoji.Value / (float)totalCount) * 100, 2);
 			var userPercent = Math.Round(((float)topEmoji.Value / (float)totalUserCount) * 100, 2);
-			result = $"{userMention} most used emoji is {topEmoji.Key} with {topEmoji.Value} uses which is {userPercent}% of the user's emoji use, and {totalPercent}% of the server's emoji use.\nStarting at {earliest.date.ToString("yyyy/MM/dd")}";
+			result = $"{userMention} most used emoji is {topEmoji.Key} with {topEmoji.Value} uses which is {userPercent}% of the user's emoji use, and {totalPercent}% of the server's emoji use.\nStarting at {earliest.date.ToString(dateFormat)}";
 
 			return result;
 		}
