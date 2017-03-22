@@ -62,6 +62,7 @@ namespace SGMessageBot.Bot
 		public async Task Shutdown()
 		{
 			await Context.Channel.SendMessageAsync("Goodbye").ConfigureAwait(false);
+			Context.Client.StopAsync();
 			await Task.Delay(2000).ConfigureAwait(false);
 			Environment.Exit(0);
 		}
@@ -70,6 +71,7 @@ namespace SGMessageBot.Bot
 		public async Task restart()
 		{
 			await Context.Channel.SendMessageAsync("Restarting...");
+			Context.Client.StopAsync();
 			await Task.Delay(2000);
 			System.Diagnostics.Process.Start(System.Reflection.Assembly.GetExecutingAssembly().Location);
 			Environment.Exit(0);

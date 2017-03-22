@@ -96,7 +96,7 @@ namespace SGMessageBot.Bot
 					joinedDate=@joinedDate, avatarID=@avatarID, avatarUrl=@avatarUrl, lastOnline=@lastOnline";
 					DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", user.Guild.Id), new MySqlParameter("@userID", user.Id),
 						new MySqlParameter("@discriminator", user.Discriminator), new MySqlParameter("@nickName", user.Nickname), new MySqlParameter("@nickNameMention", user.Mention.Replace("!", String.Empty)),
-						new MySqlParameter("@joinedDate", joinedAtDateTime), new MySqlParameter("@avatarID", user.AvatarId), new MySqlParameter("@avatarUrl", user.AvatarUrl),
+						new MySqlParameter("@joinedDate", joinedAtDateTime), new MySqlParameter("@avatarID", user.AvatarId), new MySqlParameter("@avatarUrl", user.GetAvatarUrl()),
 						new MySqlParameter("@lastOnline", joinedAtDateTime));
 				}
 			}

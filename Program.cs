@@ -56,46 +56,10 @@ namespace SGMessageBot
 					ConnectionTimeout = int.MaxValue,
 					LogLevel = LogSeverity.Warning
 				});
+				Client.Connected += onConnected;
 				Client.Log += async (message) => Console.WriteLine($"Discord Error:{message.ToString()}");
 				await Client.LoginAsync(TokenType.Bot, botConfig.credInfo.token);
-				await Client.ConnectAsync();
-
-				var map = new DependencyMap();
-				map.Add(Client);
-
-				//setup and add command service.
-				cHandler = new BotCommandHandler();
-				cProcessor = new BotCommandProcessor();
-				map.Add(cHandler);
-				map.Add(cProcessor);
-				await cHandler.installCommandService(map);
-
-				await BotExamineServers.startupCheck(Client.Guilds);
-
-				//Event hooks
-				Client.MessageReceived += BotEventHandler.ClientMessageReceived;
-				Client.MessageUpdated += BotEventHandler.ClientMessageUpdated;
-				Client.MessageDeleted += BotEventHandler.ClientMessageDeleted;
-				Client.JoinedGuild += BotEventHandler.ClientJoinedServer;
-				Client.GuildUpdated += BotEventHandler.ClientServerUpdated;
-				Client.UserJoined += BotEventHandler.ClientUserJoined;
-				Client.UserUnbanned += BotEventHandler.ClientUserUnbanned;
-				Client.UserBanned += BotEventHandler.ClientUserBanned;
-				Client.UserLeft += BotEventHandler.ClientUserLeft;
-				Client.UserUpdated += BotEventHandler.ClientUserUpdated;
-				Client.GuildMemberUpdated += BotEventHandler.ClientServerUserUpdated;
-				Client.RoleCreated += BotEventHandler.ClientRoleCreated;
-				Client.RoleUpdated += BotEventHandler.ClientRoleUpdated;
-				Client.RoleDeleted += BotEventHandler.ClientRoleDeleted;
-				Client.ChannelCreated += BotEventHandler.ClientChannelCreated;
-				Client.ChannelUpdated += BotEventHandler.ClientChannelUpdated;
-				Client.ChannelDestroyed += BotEventHandler.ClientChannelDestroyed;
-				Client.ReactionAdded += BotEventHandler.ClientReactionAdded;
-				Client.ReactionRemoved += BotEventHandler.ClientReactionRemoved;
-				Client.ReactionsCleared += BotEventHandler.ClientReactionsCleared;
-
-				ready = true;
-				Console.WriteLine("Ready!");
+				await Client.StartAsync();
 
 				//Delay until application quit
 				await Task.Delay(-1);
@@ -107,6 +71,51 @@ namespace SGMessageBot
 				return;
 			}
 			#endregion
+		}
+
+		private async Task onConnected()
+		{
+			var map = new DependencyMap();
+			map.Add(Client);
+
+			//setup and add command service.
+			cHandler = new BotCommandHandler();
+			cProcessor = new BotCommandProcessor();
+			map.Add(cHandler);
+			map.Add(cProcessor);
+			await cHandler.installCommandService(map);
+
+			await BotExamineServers.startupCheck(Client.Guilds);
+
+			//Event hooks
+			Client.MessageReceived += BotEventHandler.ClientMessageReceived;
+			Client.MessageUpdated += BotEventHandler.ClientMessageUpdated;
+			Client.MessageDeleted += BotEventHandler.ClientMessageDeleted;
+			Client.JoinedGuild += BotEventHandler.ClientJoinedServer;
+			Client.GuildUpdated += BotEventHandler.ClientServerUpdated;
+			Client.UserJoined += BotEventHandler.ClientUserJoined;
+			Client.UserUnbanned += BotEventHandler.ClientUserUnbanned;
+			Client.UserBanned += BotEventHandler.ClientUserBanned;
+			Client.UserLeft += BotEventHandler.ClientUserLeft;
+			Client.UserUpdated += BotEventHandler.ClientUserUpdated;
+			Client.GuildMemberUpdated += BotEventHandler.ClientServerUserUpdated;
+			Client.RoleCreated += BotEventHandler.ClientRoleCreated;
+			Client.RoleUpdated += BotEventHandler.ClientRoleUpdated;
+			Client.RoleDeleted += BotEventHandler.ClientRoleDeleted;
+			Client.ChannelCreated += BotEventHandler.ClientChannelCreated;
+			Client.ChannelUpdated += BotEventHandler.ClientChannelUpdated;
+			Client.ChannelDestroyed += BotEventHandler.ClientChannelDestroyed;
+			Client.ReactionAdded += BotEventHandler.ClientReactionAdded;
+			Client.ReactionRemoved += BotEventHandler.ClientReactionRemoved;
+			Client.ReactionsCleared += BotEventHandler.ClientReactionsCleared;
+
+			ready = true;
+			Console.WriteLine("Ready!");
+		}
+
+		private Task Client_ReactionsCleared(Cacheable<IUserMessage, ulong> arg1, ISocketMessageChannel arg2)
+		{
+			throw new NotImplementedException();
 		}
 	}
 }

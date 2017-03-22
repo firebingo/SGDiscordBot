@@ -20,8 +20,8 @@ namespace SGMessageBot.Bot
 			var hasPerm = false;
 			foreach (var permRole in SGMessageBot.botConfig.credInfo.commandRoleIds)
 			{
-				var checkMatch = gUser.RoleIds.Where(r => r == permRole).FirstOrDefault();
-				if (checkMatch != 0)
+				var checkMatch = gUser.Roles.Where(r => r.Id == permRole).FirstOrDefault()?.Id;
+				if (checkMatch.HasValue && checkMatch.Value != 0)
 					hasPerm = true;
 			}
 			if (hasPerm)
