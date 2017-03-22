@@ -26,7 +26,6 @@ namespace SGMessageBot.Bot
 			Client = _map.Get<DiscordSocketClient>();
 			processor = _map.Get<BotCommandProcessor>();
 			commands = new CommandService();
-			_map.Add(commands);
 			map = _map;
 			await commands.AddModulesAsync(Assembly.GetEntryAssembly());
 			Client.MessageReceived += HandleCommand;
