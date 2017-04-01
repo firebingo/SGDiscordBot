@@ -71,7 +71,7 @@ namespace SGMessageBot.DataBase
 
 		public static void ExecuteReader<T>(Action<IDataReader, T> workFunction, T otherdata, string query, params MySqlParameter[] parameters)
 		{
-			if (DBConn != null || DBConn.State != ConnectionState.Open)
+			if (DBConn == null || (DBConn != null && DBConn.State != ConnectionState.Open))
 			{
 				DBConn = new MySqlConnection(DBConfig.connectionString);
 				DBConn.Open();
@@ -94,7 +94,7 @@ namespace SGMessageBot.DataBase
 		{
 			try
 			{
-				if (DBConn != null || DBConn.State != ConnectionState.Open)
+				if (DBConn == null || (DBConn != null && DBConn.State != ConnectionState.Open))
 				{
 					DBConn = new MySqlConnection(DBConfig.connectionString);
 					DBConn.Open();
@@ -130,7 +130,7 @@ namespace SGMessageBot.DataBase
 		public static int? ExecuteScalar(string query, params MySqlParameter[] parameters)
 		{
 			int? result = null;
-			if (DBConn != null || DBConn.State != ConnectionState.Open)
+			if (DBConn == null || (DBConn != null && DBConn.State != ConnectionState.Open))
 			{
 				DBConn = new MySqlConnection(DBConfig.connectionString);
 				DBConn.Open();
@@ -156,7 +156,7 @@ namespace SGMessageBot.DataBase
 
 		public static void closeConnection()
 		{
-			if (DBConn != null || DBConn.State != ConnectionState.Closed)
+			if (DBConn != null && DBConn.State != ConnectionState.Closed)
 			{
 				DBConn.Close();
 			}
