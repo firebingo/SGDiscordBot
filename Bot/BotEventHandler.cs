@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace SGMessageBot.Bot
@@ -203,6 +204,14 @@ namespace SGMessageBot.Bot
 			#region Messages
 			public static async Task ProcessMessageReceived(SocketMessage e)
 			{
+				//From April Fools Day 2017
+				//Regex reg = new Regex("madoka.*\\?");
+				//Regex reg1 = new Regex("why.*madoka");
+				//if (reg.IsMatch(e.Content.ToLower()) || reg1.IsMatch(e.Content.ToLower()))
+				//{
+				//	e.Channel.SendMessageAsync("*Check the date*");
+				//}
+
 				try
 				{
 					var gChannel = e.Channel as SocketGuildChannel;

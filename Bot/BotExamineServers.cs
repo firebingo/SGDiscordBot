@@ -112,7 +112,7 @@ namespace SGMessageBot.Bot
 		/// </summary>
 		/// <param name="context">The context from the command, used to get the channel to reload</param>
 		/// <returns></returns>
-		public static async Task<string> updateMessageHistoryChannel(CommandContext context)
+		public static async Task<string> updateMessageHistoryChannel(ICommandContext context)
 		{
 			try
 			{
@@ -197,7 +197,7 @@ namespace SGMessageBot.Bot
 		/// </summary>
 		/// <param name="context">The context from the command, used to get the server to reload</param>
 		/// <returns></returns>
-		public static async Task<string> updateMessageHistoryServer(CommandContext context)
+		public static async Task<string> updateMessageHistoryServer(ICommandContext context)
 		{
 			var exceptionsResult = new List<string>();
 			Console.WriteLine("Reloading all server messages");

@@ -57,6 +57,7 @@ namespace SGMessageBot
 					LogLevel = LogSeverity.Warning
 				});
 				Client.Connected += onConnected;
+				Client.Disconnected += onDisconnected;
 				Client.Log += async (message) => Console.WriteLine($"Discord Error:{message.ToString()}");
 				await Client.LoginAsync(TokenType.Bot, botConfig.credInfo.token);
 				await Client.StartAsync();
@@ -71,6 +72,44 @@ namespace SGMessageBot
 				return;
 			}
 			#endregion
+		}
+
+		private async Task onDisconnected(Exception arg)
+		{
+			try
+			{
+				cHandler.removeCommandService();
+				cHandler = null;
+				cProcessor = null;
+				Client.MessageReceived -= BotEventHandler.ClientMessageReceived;
+				Client.MessageUpdated -= BotEventHandler.ClientMessageUpdated;
+				Client.MessageDeleted -= BotEventHandler.ClientMessageDeleted;
+				Client.JoinedGuild -= BotEventHandler.ClientJoinedServer;
+				Client.GuildUpdated -= BotEventHandler.ClientServerUpdated;
+				Client.UserJoined -= BotEventHandler.ClientUserJoined;
+				Client.UserUnbanned -= BotEventHandler.ClientUserUnbanned;
+				Client.UserBanned -= BotEventHandler.ClientUserBanned;
+				Client.UserLeft -= BotEventHandler.ClientUserLeft;
+				Client.UserUpdated -= BotEventHandler.ClientUserUpdated;
+				Client.GuildMemberUpdated -= BotEventHandler.ClientServerUserUpdated;
+				Client.RoleCreated -= BotEventHandler.ClientRoleCreated;
+				Client.RoleUpdated -= BotEventHandler.ClientRoleUpdated;
+				Client.RoleDeleted -= BotEventHandler.ClientRoleDeleted;
+				Client.ChannelCreated -= BotEventHandler.ClientChannelCreated;
+				Client.ChannelUpdated -= BotEventHandler.ClientChannelUpdated;
+				Client.ChannelDestroyed -= BotEventHandler.ClientChannelDestroyed;
+				Client.ReactionAdded -= BotEventHandler.ClientReactionAdded;
+				Client.ReactionRemoved -= BotEventHandler.ClientReactionRemoved;
+				Client.ReactionsCleared -= BotEventHandler.ClientReactionsCleared;
+			}
+			catch (Exception e)
+			{
+				Console.WriteLine(e.Message);
+			}
+
+			Console.WriteLine("Disconnected");
+			Console.WriteLine(arg.Message);
+			ready = false;
 		}
 
 		private async Task onConnected()

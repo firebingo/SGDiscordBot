@@ -37,24 +37,22 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Discord.Net.Commands, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>packages\Discord.Net.Commands.1.0.0-rc-00657\lib\netstandard1.3\Discord.Net.Commands.dll</HintPath>
-      <Private>True</Private>
+      <HintPath>packages\Discord.Net.Commands.1.0.0-rc2-00701\lib\netstandard1.3\Discord.Net.Commands.dll</HintPath>
     </Reference>
     <Reference Include="Discord.Net.Core, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>packages\Discord.Net.Core.1.0.0-rc-00657\lib\netstandard1.3\Discord.Net.Core.dll</HintPath>
-      <Private>True</Private>
+      <HintPath>packages\Discord.Net.Core.1.0.0-rc2-00701\lib\netstandard1.3\Discord.Net.Core.dll</HintPath>
     </Reference>
     <Reference Include="Discord.Net.Rest, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>packages\Discord.Net.Rest.1.0.0-rc-00657\lib\netstandard1.3\Discord.Net.Rest.dll</HintPath>
-      <Private>True</Private>
+      <HintPath>packages\Discord.Net.Rest.1.0.0-rc2-00701\lib\netstandard1.3\Discord.Net.Rest.dll</HintPath>
     </Reference>
     <Reference Include="Discord.Net.Rpc, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>packages\Discord.Net.Rpc.1.0.0-rc-00657\lib\netstandard1.3\Discord.Net.Rpc.dll</HintPath>
-      <Private>True</Private>
+      <HintPath>packages\Discord.Net.Rpc.1.0.0-rc2-00701\lib\netstandard1.3\Discord.Net.Rpc.dll</HintPath>
+    </Reference>
+    <Reference Include="Discord.Net.Webhook, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>packages\Discord.Net.Webhook.1.0.0-rc2-00701\lib\netstandard1.3\Discord.Net.Webhook.dll</HintPath>
     </Reference>
     <Reference Include="Discord.Net.WebSocket, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>packages\Discord.Net.WebSocket.1.0.0-rc-00657\lib\netstandard1.3\Discord.Net.WebSocket.dll</HintPath>
-      <Private>True</Private>
+      <HintPath>packages\Discord.Net.WebSocket.1.0.0-rc2-00701\lib\netstandard1.3\Discord.Net.WebSocket.dll</HintPath>
     </Reference>
     <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <HintPath>packages\EntityFramework.6.0.0\lib\net45\EntityFramework.dll</HintPath>

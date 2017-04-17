@@ -31,6 +31,15 @@ namespace SGMessageBot.Bot
 			Client.MessageReceived += HandleCommand;
 		}
 
+		public async Task removeCommandService()
+		{
+			foreach(var module in commands.Modules)
+			{
+				await commands.RemoveModuleAsync(module);
+			}
+			Client.MessageReceived -= HandleCommand;
+		}
+
 		public async Task HandleCommand(SocketMessage e)
 		{
 			var uMessage = e as SocketUserMessage;

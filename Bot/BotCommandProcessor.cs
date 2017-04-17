@@ -18,7 +18,7 @@ namespace SGMessageBot.Bot
 		private string dateFormat = "yyyy/MM/dd";
 
 		#region Calc Functions
-		public async Task<DateModel> getEarliestMessage(CommandContext context)
+		public async Task<DateModel> getEarliestMessage(ICommandContext context)
 		{
 			var result = new DateModel();
 			var queryString = "SELECT mesTime FROM messages WHERE serverID = @serverID AND mesTime IS NOT NULL ORDER BY mesTime LIMIT 1";
@@ -26,7 +26,7 @@ namespace SGMessageBot.Bot
 			return Task.FromResult<DateModel>(result).Result;
 		}
 
-		public async Task<int> getTotalMessageCount(CommandContext context)
+		public async Task<int> getTotalMessageCount(ICommandContext context)
 		{
 			int? result = 0;
 			var queryString = "SELECT COUNT(*) FROM messages WHERE isDeleted = false AND serverID = @serverID";
@@ -35,7 +35,7 @@ namespace SGMessageBot.Bot
 		}
 
 		#region Admin Functions
-		public async Task<string> calculateRoleCounts(SocketTextChannel channel, bool useMentions, CommandContext context)
+		public async Task<string> calculateRoleCounts(SocketTextChannel channel, bool useMentions, ICommandContext context)
 		{
 			var result = "";
 			try
@@ -77,7 +77,7 @@ namespace SGMessageBot.Bot
 		#endregion
 
 		#region Message Counts
-		public async Task<string> calculateTopMessageCounts(int count, CommandContext context)
+		public async Task<string> calculateTopMessageCounts(int count, ICommandContext context)
 		{
 			var result = "";
 			var earliest = await getEarliestMessage(context);
@@ -119,7 +119,7 @@ namespace SGMessageBot.Bot
 			return Task.FromResult<string>(result).Result;
 		}
 
-		public async Task<string> calculateUserMessageCounts(string user, CommandContext context)
+		public async Task<string> calculateUserMessageCounts(string user, ICommandContext context)
 		{
 			var result = "";
 			var earliest = await getEarliestMessage(context);
@@ -134,7 +134,7 @@ namespace SGMessageBot.Bot
 			return Task.FromResult<string>(result).Result;
 		}
 
-		public async Task<string> calculateRoleMessageCounts(string role, CommandContext context)
+		public async Task<string> calculateRoleMessageCounts(string role, ICommandContext context)
 		{
 			var result = "";
 			var totalRoleCount = 0;
@@ -190,7 +190,7 @@ namespace SGMessageBot.Bot
 		/// <param name="count"></param>
 		/// <param name="context"></param>
 		/// <returns></returns>
-		public async Task<string> calculateTopEmojiCounts(int count, CommandContext context)
+		public async Task<string> calculateTopEmojiCounts(int count, ICommandContext context)
 		{
 			var result = "";
 			var earliest = await getEarliestMessage(context);
@@ -281,7 +281,7 @@ namespace SGMessageBot.Bot
 		/// <param name="user"></param>
 		/// <param name="context"></param>
 		/// <returns></returns>
-		public async Task<string> calculateTopEmojiCountsUser(int count, string user, CommandContext context)
+		public async Task<string> calculateTopEmojiCountsUser(int count, string user, ICommandContext context)
 		{
 			var result = "";
 			var userId = getIDFromMention(user);
@@ -359,7 +359,7 @@ namespace SGMessageBot.Bot
 		/// <param name="emojiMention"></param>
 		/// <param name="context"></param>
 		/// <returns></returns>
-		public async Task<string> calculateEmojiCounts(string emojiMention, CommandContext context)
+		public async Task<string> calculateEmojiCounts(string emojiMention, ICommandContext context)
 		{
 			var result = "";
 			var emojiID = getIDFromMention(emojiMention);
@@ -409,7 +409,7 @@ namespace SGMessageBot.Bot
 		/// <param name="userMention"></param>
 		/// <param name="context"></param>
 		/// <returns></returns>
-		public async Task<string> calculateUserEmojiCounts(string userMention, CommandContext context)
+		public async Task<string> calculateUserEmojiCounts(string userMention, ICommandContext context)
 		{
 			var result = "";
 			var userID = getIDFromMention(userMention);
@@ -523,7 +523,7 @@ namespace SGMessageBot.Bot
 		#endregion
 
 		#region Helper Functions
-		private void getEmojiModels(CommandContext context, ref Dictionary<string, List<EmojiMessageModel>> emojiModels)
+		private void getEmojiModels(ICommandContext context, ref Dictionary<string, List<EmojiMessageModel>> emojiModels)
 		{
 			var emojis = context.Guild.Emojis;
 			foreach (var emoji in emojis)
