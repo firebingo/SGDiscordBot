@@ -78,7 +78,7 @@ namespace SGMessageBot
 		{
 			try
 			{
-				cHandler.removeCommandService();
+				await cHandler.removeCommandService();
 				cHandler = null;
 				cProcessor = null;
 				Client.MessageReceived -= BotEventHandler.ClientMessageReceived;

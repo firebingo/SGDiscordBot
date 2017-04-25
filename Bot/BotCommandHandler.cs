@@ -31,13 +31,15 @@ namespace SGMessageBot.Bot
 			Client.MessageReceived += HandleCommand;
 		}
 
-		public async Task removeCommandService()
+		public async Task<bool> removeCommandService()
 		{
-			foreach(var module in commands.Modules)
+			var modules = commands.Modules.ToList();
+			for(var i = modules.Count - 1; i > -1; --i)
 			{
-				await commands.RemoveModuleAsync(module);
+				await commands.RemoveModuleAsync(modules[i]);
 			}
 			Client.MessageReceived -= HandleCommand;
+			return Task.FromResult<bool>(true).Result;
 		}
 
 		public async Task HandleCommand(SocketMessage e)
@@ -84,6 +86,15 @@ namespace SGMessageBot.Bot
 			System.Diagnostics.Process.Start(System.Reflection.Assembly.GetExecutingAssembly().Location);
 			Environment.Exit(0);
 		}
+
+		#if DEBUG
+		[Command("disconnect"), Summary("For debug purpose, disconnects bot")]
+		public async Task removeCommands()
+		{
+			Context.Client.StopAsync();
+			return;
+		}
+		#endif
 
 		[Command("reloadmessages"), Summary("Regets all the messages for a given channel.")]
 		public async Task reloadMessages([Summary("The channel to reload")] string input = null)
