@@ -11,6 +11,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Runtime.Serialization;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace SGMessageBot
 {
@@ -27,6 +28,8 @@ namespace SGMessageBot
 		public static bool ready { get; set; }
 		private static BotCommandHandler cHandler;
 		private static BotCommandProcessor cProcessor;
+		private static IServiceProvider serviceProvider;
+		private static long connectedTimes = 0;
 
 		public async Task runBot()
 		{
@@ -46,6 +49,10 @@ namespace SGMessageBot
 				var createResult = DataLayerShortcut.createDataBase();
 				if (!createResult.success)
 					Console.WriteLine(createResult.message);
+				#endregion
+
+				#region Other Init
+				OtherFunctions.loadTimes();
 				#endregion
 
 				#region Discord Client
@@ -114,17 +121,11 @@ namespace SGMessageBot
 
 		private async Task onConnected()
 		{
-			var map = new DependencyMap();
-			map.Add(Client);
+			var serviceProvider = ConfigureServices();
+			await cHandler.installCommandService(serviceProvider);
 
-			//setup and add command service.
-			cHandler = new BotCommandHandler();
-			cProcessor = new BotCommandProcessor();
-			map.Add(cHandler);
-			map.Add(cProcessor);
-			await cHandler.installCommandService(map);
-
-			await BotExamineServers.startupCheck(Client.Guilds);
+			if(connectedTimes == 0)
+				await BotExamineServers.startupCheck(Client.Guilds);
 
 			//Event hooks
 			Client.MessageReceived += BotEventHandler.ClientMessageReceived;
@@ -150,11 +151,27 @@ namespace SGMessageBot
 
 			ready = true;
 			Console.WriteLine("Ready!");
+			connectedTimes++;
 		}
 
 		private Task Client_ReactionsCleared(Cacheable<IUserMessage, ulong> arg1, ISocketMessageChannel arg2)
 		{
 			throw new NotImplementedException();
+		}
+
+		private IServiceProvider ConfigureServices()
+		{
+			//setup and add command service.
+			cHandler = new BotCommandHandler();
+			cProcessor = new BotCommandProcessor();
+
+			var services = new ServiceCollection()
+				.AddSingleton(Client)
+				.AddSingleton(botConfig)
+				.AddSingleton(cHandler)
+				.AddSingleton(cProcessor);
+			var provider = new DefaultServiceProviderFactory().CreateServiceProvider(services);
+			return provider;
 		}
 	}
 }

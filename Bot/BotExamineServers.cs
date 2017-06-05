@@ -73,7 +73,7 @@ namespace SGMessageBot.Bot
 							new MySqlParameter("@channelType", "voice"));
 					}
 				}
-				foreach (var emoji in server.Emojis)
+				foreach (var emoji in server.Emotes)
 				{
 					queryString = @"INSERT INTO emojis (serverID, emojiID, emojiName, isManaged, colonsRequired)
 					VALUES(@serverID, @emojiID, @emojiName, @isManaged, @colonsRequired)
@@ -112,17 +112,19 @@ namespace SGMessageBot.Bot
 		/// </summary>
 		/// <param name="context">The context from the command, used to get the channel to reload</param>
 		/// <returns></returns>
-		public static async Task<string> updateMessageHistoryChannel(ICommandContext context)
+		public static async Task<string> updateMessageHistoryChannel(ICommandContext context, IMessageChannel channel)
 		{
 			try
 			{
-				Console.WriteLine($"Reloading messages for channel{context.Channel.Name}/{context.Channel.Id}");
+				if(channel == null)
+					channel = context.Channel;
+				Console.WriteLine($"Reloading messages for channel{channel.Name}/{channel.Id}");
 				//Old reactions must be removed since they have no identification of their own.
 				var reactRemove = $"DELETE FROM testsg.reactions WHERE channelID = @channelID";
-				var delRes = DataLayerShortcut.ExecuteNonQuery(reactRemove, new MySqlParameter("@channelID", context.Channel.Id));
+				var delRes = DataLayerShortcut.ExecuteNonQuery(reactRemove, new MySqlParameter("@channelID", channel.Id));
 				if (delRes != String.Empty)
 					return delRes;
-				var messages = context.Channel.GetMessagesAsync(Int32.MaxValue).ToList().Result;
+				var messages = channel.GetMessagesAsync(Int32.MaxValue).ToList().Result;
 				var cCount = 0;
 				var totalMessages = messages.Sum(m => m.Count);
 				foreach (var messageList in messages)
@@ -134,7 +136,7 @@ namespace SGMessageBot.Bot
 					foreach (var message in messageList)
 					{
 						++cCount;
-						mesRows.Add($"({context.Guild.Id}, {message.Author.Id}, {context.Channel.Id}, {message.Id}, '{MySqlHelper.EscapeString(message.Content)}', '{MySqlHelper.EscapeString(message.Content)}', 0, {message.Timestamp.UtcDateTime.ToString("yyyyMMddHHmmss")})");
+						mesRows.Add($"({context.Guild.Id}, {message.Author.Id}, {channel.Id}, {message.Id}, '{MySqlHelper.EscapeString(message.Content)}', '{MySqlHelper.EscapeString(message.Content)}', 0, {message.Timestamp.UtcDateTime.ToString("yyyyMMddHHmmss")})");
 						foreach (var attach in message.Attachments)
 						{
 							attachRows.Add($"({message.Id}, {attach.Id}, '{MySqlHelper.EscapeString(attach.Filename)}', {(attach.Height.HasValue ? attach.Height.Value : -1)}, {(attach.Width.HasValue ? attach.Width.Value : -1)}, '{MySqlHelper.EscapeString(attach.ProxyUrl)}', '{MySqlHelper.EscapeString(attach.Url)}', {attach.Size})");
@@ -144,7 +146,9 @@ namespace SGMessageBot.Bot
 						{
 							foreach (var reaction in userMes.Reactions)
 							{
-								reactionsRows.Add($"({context.Guild.Id}, {userMes.Author.Id}, {userMes.Channel.Id}, {userMes.Id}, {(reaction.Key.Id == null ? 0 : reaction.Key.Id)}, '{reaction.Key.Name}')");
+								var emote = reaction.Key as Emote;
+								ulong? emoteId = emote?.Id;
+								reactionsRows.Add($"({context.Guild.Id}, {userMes.Author.Id}, {userMes.Channel.Id}, {userMes.Id}, {(emoteId.HasValue ? emoteId : 0)}, '{reaction.Key.Name}')");
 							}
 						}
 					}
@@ -240,7 +244,9 @@ namespace SGMessageBot.Bot
 									{
 										foreach (var reaction in userMes.Reactions)
 										{
-											reactionsRows.Add($"({context.Guild.Id}, {userMes.Author.Id}, {userMes.Channel.Id}, {userMes.Id}, {(reaction.Key.Id == null ? 0 : reaction.Key.Id)}, '{reaction.Key.Name}')");
+											var emote = reaction.Key as Emote;
+											ulong? emoteId = emote?.Id;
+											reactionsRows.Add($"({context.Guild.Id}, {userMes.Author.Id}, {userMes.Channel.Id}, {userMes.Id}, {(emoteId.HasValue ? emoteId : 0)}, '{reaction.Key.Name}')");
 										}
 									}
 								}

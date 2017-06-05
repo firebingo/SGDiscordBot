@@ -19,12 +19,12 @@ namespace SGMessageBot.Bot
 		private CommandService commands;
 		private DiscordSocketClient Client;
 		private BotCommandProcessor processor;
-		private IDependencyMap map;
+		private IServiceProvider map;
 
-		public async Task installCommandService(IDependencyMap _map)
+		public async Task installCommandService(IServiceProvider _map)
 		{
-			Client = _map.Get<DiscordSocketClient>();
-			processor = _map.Get<BotCommandProcessor>();
+			Client = _map.GetService(typeof(DiscordSocketClient)) as DiscordSocketClient;
+			processor = _map.GetService(typeof(BotCommandProcessor)) as BotCommandProcessor;
 			commands = new CommandService();
 			map = _map;
 			await commands.AddModulesAsync(Assembly.GetEntryAssembly());
@@ -63,9 +63,9 @@ namespace SGMessageBot.Bot
 	{
 		private BotCommandProcessor processor;
 
-		public AdminModule(IDependencyMap m)
+		public AdminModule(IServiceProvider m)
 		{
-			processor = m.Get<BotCommandProcessor>();
+			processor = m.GetService(typeof(BotCommandProcessor)) as BotCommandProcessor;
 		}
 
 		[Command("shutdown"), Summary("Tells the bot to shutdown.")]
@@ -97,21 +97,17 @@ namespace SGMessageBot.Bot
 		#endif
 
 		[Command("reloadmessages"), Summary("Regets all the messages for a given channel.")]
-		public async Task reloadMessages([Summary("The channel to reload")] string input = null)
+		public async Task reloadMessages([Summary("The channel to reload")] IMessageChannel channel = null)
 		{
-			if(input == null || input == string.Empty)
+			if(channel != null)
 			{
-				var result = await BotExamineServers.updateMessageHistoryChannel(Context);
-				await Context.Channel.SendMessageAsync(result);
-			}
-			else if (input == "all")
-			{
-				var result = await BotExamineServers.updateMessageHistoryServer(Context);
+				var result = await BotExamineServers.updateMessageHistoryChannel(Context, channel);
 				await Context.Channel.SendMessageAsync(result);
 			}
 			else
 			{
-				await Context.Channel.SendMessageAsync("Invalid input");
+				var result = await BotExamineServers.updateMessageHistoryServer(Context);
+				await Context.Channel.SendMessageAsync(result);
 			}
 		}
 
@@ -154,9 +150,9 @@ namespace SGMessageBot.Bot
 	{
 		private BotCommandProcessor processor;
 
-		public StatsModule(IDependencyMap m)
+		public StatsModule(IServiceProvider m)
 		{
-			processor = m.Get<BotCommandProcessor>();
+			processor = m.GetService(typeof(BotCommandProcessor)) as BotCommandProcessor;
 		}
 
 		[Command("messagecount"), Summary("Gets message counts for the server.")]

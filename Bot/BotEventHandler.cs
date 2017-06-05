@@ -212,6 +212,12 @@ namespace SGMessageBot.Bot
 				//	e.Channel.SendMessageAsync("*Check the date*");
 				//}
 
+				//For the pre Symphogear AXZ rewatch
+				//if (e.Content.ToLower().Contains("!rewatch"))
+				//{
+				//	e.Channel.SendMessageAsync(OtherFunctions.SGRewatchNext());
+				//}
+
 				try
 				{
 					var gChannel = e.Channel as SocketGuildChannel;
@@ -434,19 +440,21 @@ namespace SGMessageBot.Bot
 			#region Reactions
 			public static async Task ProcessReactionAdded(Cacheable<IUserMessage, ulong> mes, ISocketMessageChannel channel, SocketReaction react)
 			{
+				var emote = react.Emote as Emote;
 				var queryString = @"INSERT INTO reactions (serverID, userID, channelID, messageID, emojiID, emojiName, isDeleted)
 				VALUES(@serverID, @userID, @channelID, @messageID, @emojiID, @emojiName, @isDeleted)
 				ON DUPLICATE KEY UPDATE serverID=@serverID, userID=@userID, channelID=@channelID, messageID=@messageID, emojiID=@emojiID, emojiName=@emojiName, isDeleted=@isDeleted";
 				DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", (channel as SocketTextChannel).Guild.Id), new MySqlParameter("@channelID", channel.Id),
-				new MySqlParameter("@userID", react.UserId), new MySqlParameter("@messageID", react.MessageId), new MySqlParameter("@emojiID", react.Emoji.Id), new MySqlParameter("@emojiName", react.Emoji.Name), 
+				new MySqlParameter("@userID", react.UserId), new MySqlParameter("@messageID", react.MessageId), new MySqlParameter("@emojiID", (emote == null ? 0 : emote.Id)), new MySqlParameter("@emojiName", react.Emote.Name), 
 				new MySqlParameter("@isDeleted", false));
 			}
 
 			public static async Task ClientReactionRemoved(Cacheable<IUserMessage, ulong> mes, ISocketMessageChannel channel, SocketReaction react)
 			{
+				var emote = react.Emote as Emote;
 				var queryString = "UPDATE reactions SET isDeleted=@isDeleted WHERE messageID=@messageID AND emojiID=@emojiID AND userID = @userID";
 				DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@isDeleted", true), new MySqlParameter("@messageID", react.MessageId),
-				new MySqlParameter("@emojiID", react.Emoji.Id), new MySqlParameter("@userID", react.UserId));
+				new MySqlParameter("@emojiID", emote == null ? 0 : emote.Id), new MySqlParameter("@userID", react.UserId));
 			}
 
 			public static async Task ClientReactionsCleared(Cacheable<IUserMessage, ulong> mes, ISocketMessageChannel channel)

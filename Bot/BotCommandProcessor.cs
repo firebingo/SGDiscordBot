@@ -195,8 +195,8 @@ namespace SGMessageBot.Bot
 			var result = "";
 			var earliest = await getEarliestMessage(context);
 			var emojiModels = new Dictionary<string, List<EmojiMessageModel>>();
-			if (count > context.Guild.Emojis.Count)
-				count = context.Guild.Emojis.Count;
+			if (count > context.Guild.Emotes.Count)
+				count = context.Guild.Emotes.Count;
 			var totalCount = 0;
 			var nextSplitLength = 2000;
 			getEmojiModels(context, ref emojiModels);
@@ -291,8 +291,8 @@ namespace SGMessageBot.Bot
 			}
 			var earliest = await getEarliestMessage(context);
 			var emojiModels = new Dictionary<string, List<EmojiMessageModel>>();
-			if (count > context.Guild.Emojis.Count)
-				count = context.Guild.Emojis.Count;
+			if (count > context.Guild.Emotes.Count)
+				count = context.Guild.Emotes.Count;
 			var totalCount = 0;
 			var totalUserCount = 0;
 			var nextSplitLength = 2000;
@@ -525,7 +525,7 @@ namespace SGMessageBot.Bot
 		#region Helper Functions
 		private void getEmojiModels(ICommandContext context, ref Dictionary<string, List<EmojiMessageModel>> emojiModels)
 		{
-			var emojis = context.Guild.Emojis;
+			var emojis = context.Guild.Emotes;
 			foreach (var emoji in emojis)
 			{
 				var emojiCounter = new List<EmojiMessageModel>();
