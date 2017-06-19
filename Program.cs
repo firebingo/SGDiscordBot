@@ -28,7 +28,7 @@ namespace SGMessageBot
 		public static bool ready { get; set; }
 		private static BotCommandHandler cHandler;
 		private static BotCommandProcessor cProcessor;
-		private static IServiceProvider serviceProvider;
+		private static BotCommandsRunning cRunning;
 		private static long connectedTimes = 0;
 
 		public async Task runBot()
@@ -88,6 +88,8 @@ namespace SGMessageBot
 				await cHandler.removeCommandService();
 				cHandler = null;
 				cProcessor = null;
+				cRunning.resetCommandsTimer();
+				cRunning = null;
 				Client.MessageReceived -= BotEventHandler.ClientMessageReceived;
 				Client.MessageUpdated -= BotEventHandler.ClientMessageUpdated;
 				Client.MessageDeleted -= BotEventHandler.ClientMessageDeleted;
@@ -164,12 +166,14 @@ namespace SGMessageBot
 			//setup and add command service.
 			cHandler = new BotCommandHandler();
 			cProcessor = new BotCommandProcessor();
+			cRunning = new BotCommandsRunning();
 
 			var services = new ServiceCollection()
 				.AddSingleton(Client)
 				.AddSingleton(botConfig)
 				.AddSingleton(cHandler)
-				.AddSingleton(cProcessor);
+				.AddSingleton(cProcessor)
+				.AddSingleton(cRunning);
 			var provider = new DefaultServiceProviderFactory().CreateServiceProvider(services);
 			return provider;
 		}

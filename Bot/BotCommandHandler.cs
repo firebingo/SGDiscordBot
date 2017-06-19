@@ -10,6 +10,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SGMessageBot.Bot
@@ -50,7 +51,7 @@ namespace SGMessageBot.Bot
 			if (uMessage.HasMentionPrefix(Client.CurrentUser, ref argPos))
 			{
 				var context = new CommandContext(Client, uMessage);
-				var result = await commands.ExecuteAsync(context, argPos, map);
+				var result = await commands.ExecuteAsync(context, argPos, map).ConfigureAwait(false);
 				if (!result.IsSuccess)
 					await uMessage.Channel.SendMessageAsync(result.ErrorReason);
 			}
@@ -62,10 +63,12 @@ namespace SGMessageBot.Bot
 	public class AdminModule : ModuleBase
 	{
 		private BotCommandProcessor processor;
+		private BotCommandsRunning running;
 
 		public AdminModule(IServiceProvider m)
 		{
 			processor = m.GetService(typeof(BotCommandProcessor)) as BotCommandProcessor;
+			running = m.GetService(typeof(BotCommandsRunning)) as BotCommandsRunning;
 		}
 
 		[Command("shutdown"), Summary("Tells the bot to shutdown.")]
@@ -87,47 +90,68 @@ namespace SGMessageBot.Bot
 			Environment.Exit(0);
 		}
 
-		#if DEBUG
+#if DEBUG
 		[Command("disconnect"), Summary("For debug purpose, disconnects bot")]
 		public async Task removeCommands()
 		{
 			Context.Client.StopAsync();
 			return;
 		}
-		#endif
+
+		[Command("wait"), Summary("For debug purpose, waits x seconds")]
+		public async Task waitSeconds(int seconds)
+		{
+			var guid = new Guid();
+			running.commands.Add(guid, Context.Channel as SocketTextChannel);
+			Context.Channel.TriggerTypingAsync();
+			Thread.Sleep(seconds * 1000);
+			running.commands.Remove(guid);
+			return;
+		}
+#endif
 
 		[Command("reloadmessages"), Summary("Regets all the messages for a given channel.")]
 		public async Task reloadMessages([Summary("The channel to reload")] IMessageChannel channel = null)
 		{
-			if(channel != null)
+			var guid = new Guid();
+			running.commands.Add(guid, Context.Channel as SocketTextChannel);
+			if (channel != null)
 			{
 				var result = await BotExamineServers.updateMessageHistoryChannel(Context, channel);
 				await Context.Channel.SendMessageAsync(result);
+				running.commands.Remove(guid);
 			}
 			else
 			{
 				var result = await BotExamineServers.updateMessageHistoryServer(Context);
 				await Context.Channel.SendMessageAsync(result);
+				running.commands.Remove(guid);
 			}
 		}
 
 		[Command("rolecounts"), Summary("Gets user role counts for server.")]
 		public async Task roleCounts([Summary("Whether to mention the roles in the list")]bool useMentions = true)
 		{
+			var guid = new Guid();
+			running.commands.Add(guid, Context.Channel as SocketTextChannel);
 			var result = "";
 			var textChannel = Context.Channel as SocketTextChannel;
 			if (textChannel == null)
 			{
 				await Context.Channel.SendMessageAsync("Channel is not a text channel");
+				running.commands.Remove(guid);
 				return;
 			}
 			result = await processor.calculateRoleCounts(textChannel, useMentions, Context);
 			await textChannel.SendMessageAsync(result);
+			running.commands.Remove(guid);
 		}
 
 		[Command("rolecounts"), Summary("Gets user role counts for server.")]
 		public async Task roleCounts([Summary("The channel to output the list to.")] SocketChannel outputChannel = null, [Summary("Whether to mention the roles in the list")]bool useMentions = true)
 		{
+			var guid = new Guid();
+			running.commands.Add(guid, Context.Channel as SocketTextChannel);
 			var result = "";
 			if (outputChannel == null)
 			{
@@ -137,10 +161,12 @@ namespace SGMessageBot.Bot
 			if(textChannel == null)
 			{
 				await Context.Channel.SendMessageAsync("Channel is not a text channel");
+				running.commands.Remove(guid);
 				return;
 			}
 			result = await processor.calculateRoleCounts(textChannel, useMentions, Context);
 			await textChannel.SendMessageAsync(result);
+			running.commands.Remove(guid);
 		}
 	}
 
@@ -149,15 +175,19 @@ namespace SGMessageBot.Bot
 	public class StatsModule : ModuleBase
 	{
 		private BotCommandProcessor processor;
+		private BotCommandsRunning running;
 
 		public StatsModule(IServiceProvider m)
 		{
 			processor = m.GetService(typeof(BotCommandProcessor)) as BotCommandProcessor;
+			running = m.GetService(typeof(BotCommandsRunning)) as BotCommandsRunning;
 		}
 
 		[Command("messagecount"), Summary("Gets message counts for the server.")]
 		public async Task messageCounts([Summary("the user to get message counts for")] string input = null)
 		{
+			var guid = new Guid();
+			running.commands.Add(guid, Context.Channel as SocketTextChannel);
 			var result = "";
 			var inputParsed = -1;
 			bool pRes = int.TryParse(input, out inputParsed);
@@ -175,11 +205,13 @@ namespace SGMessageBot.Bot
 					{
 						await Context.Channel.SendMessageAsync(res);
 					}
+					running.commands.Remove(guid);
 					return;
 				}
 				else
 				{
 					await Context.Channel.SendMessageAsync(result);
+					running.commands.Remove(guid);
 					return;
 				}
 			}
@@ -188,12 +220,14 @@ namespace SGMessageBot.Bot
 			{
 				result = await processor.calculateRoleMessageCounts(input, Context);
 				await Context.Channel.SendMessageAsync(result);
+				running.commands.Remove(guid);
 				return;
 			}
 
 			input = input != null ? input.Replace("!", String.Empty) : input;
 			result = await processor.calculateUserMessageCounts(input, Context);
 			await Context.Channel.SendMessageAsync(result);
+			running.commands.Remove(guid);
 			return;
 		}
 
@@ -201,6 +235,8 @@ namespace SGMessageBot.Bot
 		public async Task emojiCounts([Summary("The emoji or user to get counts for")] string input = null, 
 			[Summary("The emoji to get for a specific user, or the user to get top counts for")] string input2 = null)
 		{
+			var guid = new Guid();
+			running.commands.Add(guid, Context.Channel as SocketTextChannel);
 			var result = "";
 			var inputParsed = -1;
 			bool pRes = int.TryParse(input, out inputParsed);
@@ -224,11 +260,13 @@ namespace SGMessageBot.Bot
 							{
 								await Context.Channel.SendMessageAsync(res);
 							}
+							running.commands.Remove(guid);
 							return;
 						}
 						else
 						{
 							await Context.Channel.SendMessageAsync(result);
+							running.commands.Remove(guid);
 							return;
 						}
 					}
@@ -241,11 +279,13 @@ namespace SGMessageBot.Bot
 					{
 						await Context.Channel.SendMessageAsync(res);
 					}
+					running.commands.Remove(guid);
 					return;
 				}
 				else
 				{
 					await Context.Channel.SendMessageAsync(result);
+					running.commands.Remove(guid);
 					return;
 				}
 			}
@@ -254,6 +294,7 @@ namespace SGMessageBot.Bot
 			{
 				result = await processor.calculateEmojiCounts(input, Context);
 				await Context.Channel.SendMessageAsync(result);
+				running.commands.Remove(guid);
 				return;
 			}
 
@@ -262,6 +303,7 @@ namespace SGMessageBot.Bot
 			{
 				result = await processor.calculateUserEmojiCounts(input, Context);
 				await Context.Channel.SendMessageAsync(result);
+				running.commands.Remove(guid);
 				return;
 			}
 
@@ -282,5 +324,39 @@ namespace SGMessageBot.Bot
 		//	await Context.Channel.SendMessageAsync(result);
 		//	return;
 		//}
+	}
+
+	public class BotCommandsRunning
+	{
+		public Dictionary<Guid, SocketTextChannel> commands;
+		private TimerCallback timerCallback;
+		private Timer timer;
+
+		public BotCommandsRunning()
+		{
+			commands = new Dictionary<Guid, SocketTextChannel>();
+			timerCallback = CycleCommandCheck;
+			timer = new Timer(timerCallback, null, 0, 5000);
+		}
+
+		private void CycleCommandCheck(object objectInfo)
+		{
+			if(commands != null && commands.Count > 0)
+			{
+				lock (commands)
+				{
+					foreach (var c in commands)
+					{
+						c.Value.TriggerTypingAsync();
+					}
+				}
+			}
+		}
+
+		public void resetCommandsTimer()
+		{
+			commands = new Dictionary<Guid, SocketTextChannel>();
+			timer.Dispose();
+		}
 	}
 }
