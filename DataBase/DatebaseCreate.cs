@@ -14,7 +14,6 @@ namespace SGMessageBot.DataBase
 		private List<string> createQueries;
 		private Dictionary<int, List<string>> buildQueries;
 		private const int mkey = 345; //this is just so metadata can be updated.
-		private const int currentVersion = 2;
 
 		public DatebaseCreate()
 		{
@@ -38,6 +37,10 @@ namespace SGMessageBot.DataBase
 			buildQueries.Add(2, new List<string>());
 			buildQueries[2].Add(@"CREATE TABLE reactions (serverID BIGINT UNSIGNED, userID BIGINT UNSIGNED, channelID BIGINT UNSIGNED, messageID BIGINT UNSIGNED, emojiID BIGINT UNSIGNED, emojiName CHAR(32), isDeleted BOOL DEFAULT FALSE, CONSTRAINT kf_reaServerID FOREIGN KEY (serverID) REFERENCES servers(serverID), 
 			CONSTRAINT kf_reaUserID FOREIGN KEY (userID) REFERENCES users(userID), CONSTRAINT kf_reaChanID FOREIGN KEY (channelID) REFERENCES channels(channelID), CONSTRAINT kf_reaMesID FOREIGN KEY (messageID) REFERENCES messages(messageID))");
+			//buildQueries.Add(3, new List<string>());
+			//buildQueries[3].Add(@"CREATE TABLE emojiUses (serverID BIGINT UNSIGNED, userID BIGINT UNSIGNED, channelID BIGINT UNSIGNED, messageID BIGINT UNSIGNED, emojiID BIGINT UNSIGNED, emojiName CHAR(32), isDeleted BOOL DEFAULT FALSE,
+			//CONSTRAINT kf_emoServerID FOREIGN KEY (serverID) REFERENCES servers(serverID), CONSTRAINT kf_emoUserID FOREIGN KEY (userID) REFERENCES users(userID), CONSTRAINT kf_emoChanID FOREIGN KEY (channelID) REFERENCES channels(channelID), 
+			//CONSTRAINT kf_emoMesID FOREIGN KEY (messageID) REFERENCES messages(messageID))");
 		}
 
 		public BaseResult createDatabase()
@@ -45,7 +48,6 @@ namespace SGMessageBot.DataBase
 			var result = new BaseResult();
 			try
 			{
-				DataLayerShortcut.closeConnection();
 				foreach (var query in createQueries)
 				{
 					DataLayerShortcut.ExecuteSpecialNonQuery(query, $"server={DataLayerShortcut.DBConfig.config.address};uid={DataLayerShortcut.DBConfig.config.userName};pwd={DataLayerShortcut.DBConfig.config.password};charset=utf8mb4");
@@ -53,7 +55,6 @@ namespace SGMessageBot.DataBase
 				var metaData = "INSERT INTO metaData (mkey, version, createdDate, updatedDate) VALUES (@mkey, @version, @createdDate, @updatedDate)";
 				DataLayerShortcut.ExecuteSpecialNonQuery(metaData, $"server={DataLayerShortcut.DBConfig.config.address};uid={DataLayerShortcut.DBConfig.config.userName};pwd={DataLayerShortcut.DBConfig.config.password};charset=utf8mb4",
 					new MySqlParameter("@mkey", mkey), new MySqlParameter("@version", 0), new MySqlParameter("@createdDate", DateTime.UtcNow), new MySqlParameter("@updatedDate", DateTime.UtcNow));
-				DataLayerShortcut.closeConnection();
 			}
 			catch (MySqlException e)
 			{
@@ -93,29 +94,34 @@ namespace SGMessageBot.DataBase
 			}
 			try
 			{
-				if(metaDataGet.metaData.version < 0)
+				if (metaDataGet.metaData.version < 0)
 				{
 					result.message = "Failure to build database. Metadata reported a version below 0.";
 					result.success = false;
 					return result;
 				}
-				if (metaDataGet.metaData.version < 1)
+				else
 				{
-					foreach (var query in buildQueries[1])
+					var cVersion = metaDataGet.metaData.version;
+					var versionsToDo = new List<int>();
+					while (cVersion < buildQueries.Count)
 					{
-						DataLayerShortcut.ExecuteNonQuery(query);
-					}
-					var metaDataUpdate = "UPDATE metaData SET version=@version, updatedDate=@updatedDate WHERE mkey=@mkey";
-					DataLayerShortcut.ExecuteNonQuery(metaDataUpdate, new MySqlParameter("@version", 1), new MySqlParameter("@updatedDate", DateTime.UtcNow), new MySqlParameter("@mkey", mkey));
-				}
-				if(metaDataGet.metaData.version < 2)
-				{
-					foreach (var query in buildQueries[2])
+						cVersion++;
+						versionsToDo.Add(cVersion);
+					};
+
+					foreach (var v in versionsToDo)
 					{
-						DataLayerShortcut.ExecuteNonQuery(query);
+						if(buildQueries.ContainsKey(v))
+						{
+							foreach(var query in buildQueries[v])
+							{
+								DataLayerShortcut.ExecuteNonQuery(query);
+							}
+						}
+						var metaDataUpdate = "UPDATE metaData SET version=@version, updatedDate=@updatedDate WHERE mkey=@mkey";
+						DataLayerShortcut.ExecuteNonQuery(metaDataUpdate, new MySqlParameter("@version", v), new MySqlParameter("@updatedDate", DateTime.UtcNow), new MySqlParameter("@mkey", mkey));
 					}
-					var metaDataUpdate = "UPDATE metaData SET version=@version, updatedDate=@updatedDate WHERE mkey=@mkey";
-					DataLayerShortcut.ExecuteNonQuery(metaDataUpdate, new MySqlParameter("@version", 2), new MySqlParameter("@updatedDate", DateTime.UtcNow), new MySqlParameter("@mkey", mkey));
 				}
 			}
 			catch (MySqlException e)

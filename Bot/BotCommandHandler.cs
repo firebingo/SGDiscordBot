@@ -51,9 +51,21 @@ namespace SGMessageBot.Bot
 			if (uMessage.HasMentionPrefix(Client.CurrentUser, ref argPos))
 			{
 				var context = new CommandContext(Client, uMessage);
-				var result = await commands.ExecuteAsync(context, argPos, map).ConfigureAwait(false);
-				if (!result.IsSuccess)
-					await uMessage.Channel.SendMessageAsync(result.ErrorReason);
+				//This is bad and I should feel bad.
+				//For future the commands themselves shouldnt be dependant on awating the command processor and the
+				// processor itself should handle any operations that need to happen after the processing such
+				// as SendMessageAsync.
+				IResult result = null;
+				Thread runThread = new Thread(async () => {
+					result = await commands.ExecuteAsync(context, argPos, map);
+					if (!result.IsSuccess)
+						await uMessage.Channel.SendMessageAsync(result.ErrorReason);
+					});
+				runThread.Start();
+
+				//var result = await commands.ExecuteAsync(context, argPos, map).ConfigureAwait(false);
+				//if (!result.IsSuccess)
+				//	await uMessage.Channel.SendMessageAsync(result.ErrorReason);
 			}
 		}
 	}
@@ -101,7 +113,7 @@ namespace SGMessageBot.Bot
 		[Command("wait"), Summary("For debug purpose, waits x seconds")]
 		public async Task waitSeconds(int seconds)
 		{
-			var guid = new Guid();
+			var guid = Guid.NewGuid();
 			running.Add(guid, Context.Channel as SocketTextChannel);
 			Context.Channel.TriggerTypingAsync();
 			Thread.Sleep(seconds * 1000);
@@ -113,7 +125,7 @@ namespace SGMessageBot.Bot
 		[Command("reloadmessages"), Summary("Regets all the messages for a given channel.")]
 		public async Task reloadMessages([Summary("The channel to reload")] IMessageChannel channel = null)
 		{
-			var guid = new Guid();
+			var guid = Guid.NewGuid();
 			running.Add(guid, Context.Channel as SocketTextChannel);
 			if (channel != null)
 			{
@@ -132,7 +144,7 @@ namespace SGMessageBot.Bot
 		[Command("rolecounts"), Summary("Gets user role counts for server.")]
 		public async Task roleCounts([Summary("Whether to mention the roles in the list")]bool useMentions = true)
 		{
-			var guid = new Guid();
+			var guid = Guid.NewGuid();
 			running.Add(guid, Context.Channel as SocketTextChannel);
 			var result = "";
 			var textChannel = Context.Channel as SocketTextChannel;
@@ -150,7 +162,7 @@ namespace SGMessageBot.Bot
 		[Command("rolecounts"), Summary("Gets user role counts for server.")]
 		public async Task roleCounts([Summary("The channel to output the list to.")] SocketChannel outputChannel = null, [Summary("Whether to mention the roles in the list")]bool useMentions = true)
 		{
-			var guid = new Guid();
+			var guid = Guid.NewGuid();
 			running.Add(guid, Context.Channel as SocketTextChannel);
 			var result = "";
 			if (outputChannel == null)
@@ -186,7 +198,7 @@ namespace SGMessageBot.Bot
 		[Command("messagecount"), Summary("Gets message counts for the server.")]
 		public async Task messageCounts([Summary("the user to get message counts for")] string input = null)
 		{
-			var guid = new Guid();
+			var guid = Guid.NewGuid();
 			running.Add(guid, Context.Channel as SocketTextChannel);
 			var result = "";
 			var inputParsed = -1;
@@ -235,7 +247,7 @@ namespace SGMessageBot.Bot
 		public async Task emojiCounts([Summary("The emoji or user to get counts for")] string input = null,
 			[Summary("The emoji to get for a specific user, or the user to get top counts for")] string input2 = null)
 		{
-			var guid = new Guid();
+			var guid = Guid.NewGuid();
 			running.Add(guid, Context.Channel as SocketTextChannel);
 			var result = "";
 			var inputParsed = -1;

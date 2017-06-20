@@ -242,7 +242,8 @@ namespace SGMessageBot.Bot
 							new MySqlParameter("@fileName", attach.Filename), new MySqlParameter("@height", attach.Height), new MySqlParameter("@width", attach.Width),
 							new MySqlParameter("@proxyURL", attach.ProxyUrl), new MySqlParameter("@attachURL", attach.Url), new MySqlParameter("@attachSize", attach.Size));
 						}
-					}
+						//checkMessageForEmoji(e, gChannel);
+					}	
 				}
 				catch { }
 			}
@@ -464,6 +465,14 @@ namespace SGMessageBot.Bot
 					messageId = mes.Value.Id;
 				var queryString = "UPDATE reactions SET isDeleted=@isDeleted WHERE messageID=@messageID";
 				DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@isDeleted", true), new MySqlParameter("@messageID", messageId));
+			}
+			#endregion
+			#region Other Functions
+			public static void checkMessageForEmoji(SocketMessage e, SocketGuildChannel g)
+			{
+				var Regex = new Regex(@"<:.*?:\d*?>");
+				var Matches = Regex.Matches(e.Content);
+
 			}
 			#endregion
 		}

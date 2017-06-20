@@ -15,7 +15,6 @@ namespace SGMessageBot.DataBase
 	public static class DataLayerShortcut
 	{
 		public static DBConfig DBConfig { get; private set; }
-		private static MySqlConnection DBConn;
 		public static bool schemaExists { get; private set; } = true;
 		private static SQLiteConnection liteDBConn;
 		public static bool hasNadeko { get; private set; } = false;
@@ -32,8 +31,10 @@ namespace SGMessageBot.DataBase
 			var result = new BaseResult();
 			try
 			{
-				DBConn = new MySql.Data.MySqlClient.MySqlConnection(DBConfig.connectionString);
-				DBConn.Open();
+				var connection = new MySql.Data.MySqlClient.MySqlConnection(DBConfig.connectionString);
+				connection.Open();
+				connection.Close();
+				connection.Dispose();
 			}
 			catch (MySqlException e)
 			{
@@ -71,45 +72,51 @@ namespace SGMessageBot.DataBase
 
 		public static void ExecuteReader<T>(Action<IDataReader, T> workFunction, T otherdata, string query, params MySqlParameter[] parameters)
 		{
-			if (DBConn == null || (DBConn != null && DBConn.State != ConnectionState.Open))
+			var connection = new MySqlConnection(DBConfig.connectionString);
+			connection.Open();
+			if (connection.State == ConnectionState.Open)
 			{
-				DBConn = new MySqlConnection(DBConfig.connectionString);
-				DBConn.Open();
+				MySqlCommand cmd = new MySqlCommand(query, connection);
+				MySqlDataReader reader = null;
+				if (parameters != null)
+					DataHelper.addParams(ref cmd, parameters);
+
+				reader = cmd.ExecuteReader();
+
+				while (reader.Read())
+					workFunction(reader, otherdata);
+
+				reader.Close();
+				cmd.Dispose();
 			}
-			MySqlCommand cmd = new MySqlCommand(query, DBConn);		
-			MySqlDataReader reader = null;
-			if (parameters != null)
-				DataHelper.addParams(ref cmd, parameters);
-
-			reader = cmd.ExecuteReader();
-
-			while (reader.Read())
-				workFunction(reader, otherdata);
-
-			reader.Close();
-			cmd.Dispose();
+			connection.Close();
+			connection.Dispose();
 		}
 
 		public static string ExecuteNonQuery(string query, params MySqlParameter[] parameters)
 		{
+			var connection = new MySqlConnection(DBConfig.connectionString);
 			try
 			{
-				if (DBConn == null || (DBConn != null && DBConn.State != ConnectionState.Open))
+				connection.Open();
+				if (connection.State == ConnectionState.Open)
 				{
-					DBConn = new MySqlConnection(DBConfig.connectionString);
-					DBConn.Open();
-				}
-				MySqlCommand cmd = new MySqlCommand(query, DBConn);
-				cmd.CommandType = CommandType.Text;
-				if (parameters != null)
-					DataHelper.addParams(ref cmd, parameters);
+					MySqlCommand cmd = new MySqlCommand(query, connection);
+					cmd.CommandType = CommandType.Text;
+					if (parameters != null)
+						DataHelper.addParams(ref cmd, parameters);
 
-				cmd.ExecuteNonQuery();
-				cmd.Dispose();
+					cmd.ExecuteNonQuery();
+					cmd.Dispose();
+				}
+				connection.Close();
+				connection.Dispose();
 				return "";
 			}
 			catch (Exception e)
 			{
+				connection.Close();
+				connection.Dispose();
 				return $"Exception: {e.Message}, Query: {query}";
 			}
 		}
@@ -125,41 +132,39 @@ namespace SGMessageBot.DataBase
 
 			cmd.ExecuteNonQuery();
 			cmd.Dispose();
+			conn.Close();
+			conn.Dispose();
 		}
 
 		public static int? ExecuteScalar(string query, params MySqlParameter[] parameters)
 		{
 			int? result = null;
-			if (DBConn == null || (DBConn != null && DBConn.State != ConnectionState.Open))
+			var connection = new MySqlConnection(DBConfig.connectionString);
+			connection.Open();
+			if (connection.State == ConnectionState.Open)
 			{
-				DBConn = new MySqlConnection(DBConfig.connectionString);
-				DBConn.Open();
-			}
-			MySqlCommand cmd = new MySqlCommand(query, DBConn);
-			cmd.CommandType = CommandType.Text;
-			if (parameters != null)
-				DataHelper.addParams(ref cmd, parameters);
+				MySqlCommand cmd = new MySqlCommand(query, connection);
+				cmd.CommandType = CommandType.Text;
+				if (parameters != null)
+					DataHelper.addParams(ref cmd, parameters);
 
-			object scalar = cmd.ExecuteScalar();
-			try
-			{
-				result = Convert.ToInt32(scalar);
-			}
-			catch
-			{
+				object scalar = cmd.ExecuteScalar();
+				try
+				{
+					result = Convert.ToInt32(scalar);
+				}
+				catch
+				{
+					cmd.Dispose();
+					connection.Close();
+					connection.Dispose();
+					return result;
+				}
 				cmd.Dispose();
-				return result;
 			}
-			cmd.Dispose();
+			connection.Close();
+			connection.Dispose();
 			return result;
-		}
-
-		public static void closeConnection()
-		{
-			if (DBConn != null && DBConn.State != ConnectionState.Closed)
-			{
-				DBConn.Close();
-			}
 		}
 
 		public static BaseResult openLiteConnection(ulong serverId)
