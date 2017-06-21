@@ -1,16 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 using MySql.Data.MySqlClient;
 using SGMessageBot.DataBase;
-using System.Data;
 using Discord.WebSocket;
 using Discord.Commands;
 using Discord.Rest;
 using Discord;
-using Discord.Net;
 
 namespace SGMessageBot.Bot
 {
@@ -120,8 +118,13 @@ namespace SGMessageBot.Bot
 					channel = context.Channel;
 				Console.WriteLine($"Reloading messages for channel{channel.Name}/{channel.Id}");
 				//Old reactions must be removed since they have no identification of their own.
-				var reactRemove = $"DELETE FROM testsg.reactions WHERE channelID = @channelID";
+				var reactRemove = $"DELETE FROM reactions WHERE channelID = @channelID";
 				var delRes = DataLayerShortcut.ExecuteNonQuery(reactRemove, new MySqlParameter("@channelID", channel.Id));
+				if (delRes != String.Empty)
+					return delRes;
+				//Old emoji uses must be removed since they have no identification of their own.
+				var emojiRemove = $"DELETE FROM emojiUses WHERE serverID = @serverID AND NOT isDeleted";
+				delRes = DataLayerShortcut.ExecuteNonQuery(emojiRemove, new MySqlParameter("@serverID", context.Guild.Id));
 				if (delRes != String.Empty)
 					return delRes;
 				var messages = channel.GetMessagesAsync(Int32.MaxValue).ToList().Result;
@@ -132,6 +135,7 @@ namespace SGMessageBot.Bot
 					List<string> mesRows = new List<string>();
 					List<string> attachRows = new List<string>();
 					List<string> reactionsRows = new List<string>();
+					List<string> emojiRows = new List<string>();
 					Console.WriteLine($"{Math.Round(((float)cCount / (float)totalMessages) * 100, 2)}% complete on current Channel");
 					foreach (var message in messageList)
 					{
@@ -151,6 +155,7 @@ namespace SGMessageBot.Bot
 								reactionsRows.Add($"({context.Guild.Id}, {userMes.Author.Id}, {userMes.Channel.Id}, {userMes.Id}, {(emoteId.HasValue ? emoteId : 0)}, '{reaction.Key.Name}')");
 							}
 						}
+						checkMessageForEmoji(context, message, channel, ref emojiRows);
 					}
 					if (mesRows.Count > 0)
 					{
@@ -170,6 +175,13 @@ namespace SGMessageBot.Bot
 					{
 						var reactQueryString = $"INSERT reactions (serverID, userID, channelID, messageID, emojiID, emojiName) VALUES {string.Join(",", reactionsRows)}";
 						var mesRes = DataLayerShortcut.ExecuteNonQuery(reactQueryString);
+						if (mesRes != String.Empty)
+							return mesRes;
+					}
+					if(emojiRows.Count > 0)
+					{
+						var emojiQueryString = $"INSERT emojiUses (serverID, userID, channelID, messageID, emojiID, emojiName) VALUES {string.Join(",", emojiRows)}";
+						var mesRes = DataLayerShortcut.ExecuteNonQuery(emojiQueryString);
 						if (mesRes != String.Empty)
 							return mesRes;
 					}
@@ -206,8 +218,13 @@ namespace SGMessageBot.Bot
 			var exceptionsResult = new List<string>();
 			Console.WriteLine("Reloading all server messages");
 			//Old reactions must be removed since they have no identification of their own.
-			var reactRemove = $"DELETE FROM testsg.reactions WHERE serverID = @serverID";
+			var reactRemove = $"DELETE FROM reactions WHERE serverID = @serverID AND NOT isDeleted";
 			var delRes = DataLayerShortcut.ExecuteNonQuery(reactRemove, new MySqlParameter("@serverID", context.Guild.Id));
+			if (delRes != String.Empty)
+				return delRes;
+			//Old emoji uses must be removed since they have no identification of their own.
+			var emojiRemove = $"DELETE FROM emojiUses WHERE serverID = @serverID AND NOT isDeleted";
+			delRes = DataLayerShortcut.ExecuteNonQuery(emojiRemove, new MySqlParameter("@serverID", context.Guild.Id));
 			if (delRes != String.Empty)
 				return delRes;
 			try
@@ -231,10 +248,11 @@ namespace SGMessageBot.Bot
 								List<string> mesRows = new List<string>();
 								List<string> attachRows = new List<string>();
 								List<string> reactionsRows = new List<string>();
+								List<string> emojiRows = new List<string>();
 								foreach (var message in messageList)
 								{
 									++cCount;
-									mesRows.Add($"({context.Guild.Id}, {message.Author.Id}, {context.Channel.Id}, {message.Id}, '{MySqlHelper.EscapeString(message.Content)}', '{MySqlHelper.EscapeString(message.Content)}', 0, {message.Timestamp.UtcDateTime.ToString("yyyyMMddHHmmss")})");
+									mesRows.Add($"({context.Guild.Id}, {message.Author.Id}, {messageChannel.Id}, {message.Id}, '{MySqlHelper.EscapeString(message.Content)}', '{MySqlHelper.EscapeString(message.Content)}', 0, {message.Timestamp.UtcDateTime.ToString("yyyyMMddHHmmss")})");
 									foreach (var attach in message.Attachments)
 									{
 										attachRows.Add($"({message.Id}, {attach.Id}, '{MySqlHelper.EscapeString(attach.Filename)}', {(attach.Height.HasValue ? attach.Height.Value : -1)}, {(attach.Width.HasValue ? attach.Width.Value : -1)}, '{MySqlHelper.EscapeString(attach.ProxyUrl)}', '{MySqlHelper.EscapeString(attach.Url)}', {attach.Size})");
@@ -249,6 +267,7 @@ namespace SGMessageBot.Bot
 											reactionsRows.Add($"({context.Guild.Id}, {userMes.Author.Id}, {userMes.Channel.Id}, {userMes.Id}, {(emoteId.HasValue ? emoteId : 0)}, '{reaction.Key.Name}')");
 										}
 									}
+									checkMessageForEmoji(context, message, messageChannel, ref emojiRows);
 								}
 								if (mesRows.Count > 0)
 								{
@@ -268,6 +287,13 @@ namespace SGMessageBot.Bot
 								{
 									var reactQueryString = $"INSERT reactions (serverID, userID, channelID, messageID, emojiID, emojiName) VALUES {string.Join(",", reactionsRows)}";
 									var mesRes = DataLayerShortcut.ExecuteNonQuery(reactQueryString);
+									if (mesRes != String.Empty)
+										return mesRes;
+								}
+								if (emojiRows.Count > 0)
+								{
+									var emojiQueryString = $"INSERT emojiUses (serverID, userID, channelID, messageID, emojiID, emojiName) VALUES {string.Join(",", emojiRows)}";
+									var mesRes = DataLayerShortcut.ExecuteNonQuery(emojiQueryString);
 									if (mesRes != String.Empty)
 										return mesRes;
 								}
@@ -318,6 +344,28 @@ namespace SGMessageBot.Bot
 			else
 			{
 				return "Operation Complete";
+			}
+		}
+
+		private static void checkMessageForEmoji(ICommandContext context, IMessage message, IMessageChannel channel, ref List<string> rows)
+		{
+			var Regex = new Regex(@"<:.*?:\d*?>");
+			var Matches = Regex.Matches(message.Content);
+			var nameRegex = new Regex(@"<:(.*?):");
+			var idRegex = new Regex(@":(\d*?)>");
+			foreach(Match m in Matches)
+			{
+				try
+				{
+					//making a lot of assumptions here.
+					var name = nameRegex.Match(m.Value).Groups[1].Value;
+					ulong? emoteId = ulong.Parse(idRegex.Match(m.Value).Groups[1].Value);
+					rows.Add($"({context.Guild.Id}, {message.Author.Id}, {channel.Id}, {message.Id}, {(emoteId.HasValue ? emoteId : 0)}, '{name}')");
+				}
+				catch
+				{
+					continue;
+				}
 			}
 		}
 	}

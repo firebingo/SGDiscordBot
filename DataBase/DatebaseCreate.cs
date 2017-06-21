@@ -37,10 +37,10 @@ namespace SGMessageBot.DataBase
 			buildQueries.Add(2, new List<string>());
 			buildQueries[2].Add(@"CREATE TABLE reactions (serverID BIGINT UNSIGNED, userID BIGINT UNSIGNED, channelID BIGINT UNSIGNED, messageID BIGINT UNSIGNED, emojiID BIGINT UNSIGNED, emojiName CHAR(32), isDeleted BOOL DEFAULT FALSE, CONSTRAINT kf_reaServerID FOREIGN KEY (serverID) REFERENCES servers(serverID), 
 			CONSTRAINT kf_reaUserID FOREIGN KEY (userID) REFERENCES users(userID), CONSTRAINT kf_reaChanID FOREIGN KEY (channelID) REFERENCES channels(channelID), CONSTRAINT kf_reaMesID FOREIGN KEY (messageID) REFERENCES messages(messageID))");
-			//buildQueries.Add(3, new List<string>());
-			//buildQueries[3].Add(@"CREATE TABLE emojiUses (serverID BIGINT UNSIGNED, userID BIGINT UNSIGNED, channelID BIGINT UNSIGNED, messageID BIGINT UNSIGNED, emojiID BIGINT UNSIGNED, emojiName CHAR(32), isDeleted BOOL DEFAULT FALSE,
-			//CONSTRAINT kf_emoServerID FOREIGN KEY (serverID) REFERENCES servers(serverID), CONSTRAINT kf_emoUserID FOREIGN KEY (userID) REFERENCES users(userID), CONSTRAINT kf_emoChanID FOREIGN KEY (channelID) REFERENCES channels(channelID), 
-			//CONSTRAINT kf_emoMesID FOREIGN KEY (messageID) REFERENCES messages(messageID))");
+			buildQueries.Add(3, new List<string>());
+			buildQueries[3].Add(@"CREATE TABLE emojiUses (serverID BIGINT UNSIGNED, userID BIGINT UNSIGNED, channelID BIGINT UNSIGNED, messageID BIGINT UNSIGNED, emojiID BIGINT UNSIGNED, emojiName CHAR(32), isDeleted BOOL DEFAULT FALSE,
+			CONSTRAINT kf_emoServerID FOREIGN KEY (serverID) REFERENCES servers(serverID), CONSTRAINT kf_emoUserID FOREIGN KEY (userID) REFERENCES users(userID), CONSTRAINT kf_emoChanID FOREIGN KEY (channelID) REFERENCES channels(channelID), 
+			CONSTRAINT kf_emoMesID FOREIGN KEY (messageID) REFERENCES messages(messageID))");
 		}
 
 		public BaseResult createDatabase()

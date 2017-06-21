@@ -4,8 +4,6 @@ using MySql.Data.MySqlClient;
 using SGMessageBot.DataBase;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -242,7 +240,7 @@ namespace SGMessageBot.Bot
 							new MySqlParameter("@fileName", attach.Filename), new MySqlParameter("@height", attach.Height), new MySqlParameter("@width", attach.Width),
 							new MySqlParameter("@proxyURL", attach.ProxyUrl), new MySqlParameter("@attachURL", attach.Url), new MySqlParameter("@attachSize", attach.Size));
 						}
-						//checkMessageForEmoji(e, gChannel);
+						checkMessageForEmoji(e, gChannel);
 					}	
 				}
 				catch { }
@@ -290,6 +288,8 @@ namespace SGMessageBot.Bot
 					queryString = "UPDATE attachments SET isDeleted=@isDeleted WHERE messageID=@messageID";
 					DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@isDeleted", true), new MySqlParameter("@messageID", mes.Id));
 					queryString = "UPDATE reactions SET isDeleted=@isDeleted WHERE messageID=@messageID";
+					DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@isDeleted", true), new MySqlParameter("@messageID", mes.Id));
+					queryString = "UPDATE emojiUses SET isDeleted=@isDeleted WHERE messageID=@messageID";
 					DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@isDeleted", true), new MySqlParameter("@messageID", mes.Id));
 				}
 				catch { }
@@ -472,7 +472,28 @@ namespace SGMessageBot.Bot
 			{
 				var Regex = new Regex(@"<:.*?:\d*?>");
 				var Matches = Regex.Matches(e.Content);
-
+				List<string> emojiRows = new List<string>();
+				var nameRegex = new Regex(@"<:(.*?):");
+				var idRegex = new Regex(@":(\d*?)>");
+				foreach (Match m in Matches)
+				{
+					try
+					{
+						//making a lot of assumptions here.
+						var name = nameRegex.Match(m.Value).Groups[1].Value;
+						ulong? emoteId = ulong.Parse(idRegex.Match(m.Value).Groups[1].Value);
+						emojiRows.Add($"({g.Guild.Id}, {e.Author.Id}, {g.Id}, {e.Id}, {(emoteId.HasValue ? emoteId : 0)}, '{name}')");
+					}
+					catch
+					{
+						continue;
+					}
+				}
+				if(emojiRows.Count > 0)
+				{
+					var emojiQueryString = $"INSERT emojiUses (serverID, userID, channelID, messageID, emojiID, emojiName) VALUES {string.Join(",", emojiRows)}";
+					DataLayerShortcut.ExecuteNonQuery(emojiQueryString);
+				}
 			}
 			#endregion
 		}
