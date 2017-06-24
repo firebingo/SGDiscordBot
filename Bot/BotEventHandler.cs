@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.WebSocket;
 using MySql.Data.MySqlClient;
+using Newtonsoft.Json;
 using SGMessageBot.DataBase;
 using System;
 using System.Collections.Generic;
@@ -320,22 +321,26 @@ namespace SGMessageBot.Bot
 				DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@userID", e.Id), new MySqlParameter("@userName", e.Username),
 				new MySqlParameter("@mention", e.Mention.Replace("!", String.Empty)), new MySqlParameter("@isBot", e.IsBot));
 
+				var roleIds = new List<ulong>();
+				foreach (var role in e.Roles)
+					roleIds.Add(role.Id);
+
 				DateTime? joinedAtDateTime = e.JoinedAt.HasValue ? ((e.JoinedAt.Value.UtcDateTime) as DateTime?) : null;
 				queryString = @"INSERT INTO usersInServers (serverID, userID, discriminator, nickName, nickNameMention, joinedDate, avatarID, avatarUrl, lastOnline, isDeleted)
 				VALUES(@serverID, @userID, @discriminator, @nickName, @nickNameMention, @joinedDate, @avatarID, @avatarUrl, @lastOnline, @isDeleted)
 				ON DUPLICATE KEY UPDATE serverID=@serverID, userID=@userID, discriminator=@discriminator, nickName=@nickName, nickNameMention=@nickNameMention, 
-				joinedDate=@joinedDate, avatarID=@avatarID, avatarUrl=@avatarUrl, lastOnline=@lastOnline, isDeleted=@isDeleted";
+				joinedDate=@joinedDate, avatarID=@avatarID, avatarUrl=@avatarUrl, lastOnline=@lastOnline, isDeleted=@isDeleted, roleIDs=@roleIds";
 				DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", e.Guild.Id), new MySqlParameter("@userID", e.Id),
 				new MySqlParameter("@discriminator", e.Discriminator), new MySqlParameter("@nickName", e.Nickname), new MySqlParameter("@nickNameMention", e.Mention.Replace("!", String.Empty)),
 				new MySqlParameter("@joinedDate", joinedAtDateTime), new MySqlParameter("@avatarID", e.AvatarId), new MySqlParameter("@avatarUrl", e.GetAvatarUrl()),
-				new MySqlParameter("@lastOnline", joinedAtDateTime), new MySqlParameter("@isDeleted", false));
+				new MySqlParameter("@lastOnline", joinedAtDateTime), new MySqlParameter("@isDeleted", false), new MySqlParameter("@roleIds", JsonConvert.SerializeObject(roleIds)));
 			}
 
 			public static async Task ProcessUserBannedStatus(SocketUser u, SocketGuild s, bool banned)
 			{
 				var queryString = "UPDATE usersInServers SET isBanned=@isBanned WHERE userID=@userID AND serverID=@serverID";
 				DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@isBanned", banned), new MySqlParameter("@userID", u.Id),
-				new MySqlParameter("@userID", s.Id));
+				new MySqlParameter("@serverID", s.Id));
 			}
 
 			public static async Task ProcessUserLeft(SocketGuildUser e)
@@ -356,15 +361,19 @@ namespace SGMessageBot.Bot
 
 			public static async Task ProcessUserServerUpdated(SocketGuildUser before, SocketGuildUser after)
 			{
+				var roleIds = new List<ulong>();
+				foreach (var role in after.Roles)
+					roleIds.Add(role.Id);
+
 				DateTime? joinedAtDateTime = after.JoinedAt.HasValue ? ((after.JoinedAt.Value.UtcDateTime) as DateTime?) : null;
 				var queryString = @"INSERT INTO usersInServers (serverID, userID, discriminator, nickName, nickNameMention, joinedDate, avatarID, avatarUrl, lastOnline)
 				VALUES(@serverID, @userID, @discriminator, @nickName, @nickNameMention, @joinedDate, @avatarID, @avatarUrl, @lastOnline)
 				ON DUPLICATE KEY UPDATE serverID=@serverID, userID=@userID, discriminator=@discriminator, nickName=@nickName, nickNameMention=@nickNameMention,
-				joinedDate=@joinedDate, avatarID=@avatarID, avatarUrl=@avatarUrl, lastOnline=@lastOnline";
+				joinedDate=@joinedDate, avatarID=@avatarID, avatarUrl=@avatarUrl, lastOnline=@lastOnline, roleIDs=@roleIds";
 				DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", after.Guild.Id), new MySqlParameter("@userID", after.Id),
 				new MySqlParameter("@discriminator", after.Discriminator), new MySqlParameter("@nickName", after.Nickname), new MySqlParameter("@nickNameMention", after.Mention.Replace("!", String.Empty)),
 				new MySqlParameter("@joinedDate", joinedAtDateTime), new MySqlParameter("@avatarID", after.AvatarId), new MySqlParameter("@avatarUrl", after.GetAvatarUrl()),
-				new MySqlParameter("@lastOnline", joinedAtDateTime));
+				new MySqlParameter("@lastOnline", joinedAtDateTime), new MySqlParameter("@roleIds", JsonConvert.SerializeObject(roleIds)));
 			}
 			#endregion
 			#region Role
