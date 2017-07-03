@@ -130,7 +130,7 @@ namespace SGMessageBot.Bot
 				if (delRes != String.Empty)
 					return delRes;
 				//Old emoji uses must be removed since they have no identification of their own.
-				var emojiRemove = $"DELETE FROM emojiUses WHERE serverID = @serverID AND NOT isDeleted";
+				var emojiRemove = $"DELETE FROM emojiUses WHERE channelID = @channelID AND NOT isDeleted";
 				delRes = DataLayerShortcut.ExecuteNonQuery(emojiRemove, new MySqlParameter("@serverID", context.Guild.Id));
 				if (delRes != String.Empty)
 					return delRes;
