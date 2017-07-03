@@ -131,7 +131,7 @@ namespace SGMessageBot.Bot
 					return delRes;
 				//Old emoji uses must be removed since they have no identification of their own.
 				var emojiRemove = $"DELETE FROM emojiUses WHERE channelID = @channelID AND NOT isDeleted";
-				delRes = DataLayerShortcut.ExecuteNonQuery(emojiRemove, new MySqlParameter("@serverID", context.Guild.Id));
+				delRes = DataLayerShortcut.ExecuteNonQuery(emojiRemove, new MySqlParameter("@channelID", channel.Id));
 				if (delRes != String.Empty)
 					return delRes;
 				var messages = channel.GetMessagesAsync(Int32.MaxValue).ToList().Result;
