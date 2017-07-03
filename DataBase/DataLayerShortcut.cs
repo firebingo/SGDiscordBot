@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Data.SQLite;
 using System.IO;
+using SGMessageBot.Helpers;
 
 namespace SGMessageBot.DataBase
 {
@@ -38,6 +39,7 @@ namespace SGMessageBot.DataBase
 			}
 			catch (MySqlException e)
 			{
+				ErrorLog.writeLog(e.Message);
 				if (e.InnerException.Message.ToUpperInvariant().Contains("UNKNOWN DATABASE"))
 					schemaExists = false;
 
@@ -115,6 +117,7 @@ namespace SGMessageBot.DataBase
 			}
 			catch (Exception e)
 			{
+				ErrorLog.writeLog(e.Message);
 				connection.Close();
 				connection.Dispose();
 				return $"Exception: {e.Message}, Query: {query}";
@@ -153,8 +156,9 @@ namespace SGMessageBot.DataBase
 				{
 					result = Convert.ToInt32(scalar);
 				}
-				catch
+				catch (Exception e)
 				{
+					ErrorLog.writeLog(e.Message);
 					cmd.Dispose();
 					connection.Close();
 					connection.Dispose();
@@ -193,6 +197,7 @@ namespace SGMessageBot.DataBase
 			}
 			catch (SQLiteException e)
 			{
+				ErrorLog.writeLog(e.Message);
 				result.success = false;
 				result.message = e.Message;
 			}
@@ -214,6 +219,7 @@ namespace SGMessageBot.DataBase
 			}
 			catch (SQLiteException e)
 			{
+				ErrorLog.writeLog(e.Message);
 				result.success = false;
 				result.message = e.Message;
 			}
@@ -240,8 +246,9 @@ namespace SGMessageBot.DataBase
 				{
 					result = Convert.ToInt32(scalar);
 				}
-				catch
+				catch (Exception e)
 				{
+					ErrorLog.writeLog(e.Message);
 					command.Dispose();
 					closeLiteConnection();
 					return result;
@@ -250,6 +257,7 @@ namespace SGMessageBot.DataBase
 			}
 			catch(SQLiteException e)
 			{
+				ErrorLog.writeLog(e.Message);
 				closeLiteConnection();
 				return result = null;
 			}

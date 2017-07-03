@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using Newtonsoft.Json;
+using SGMessageBot.Helpers;
 
 namespace SGMessageBot.Config
 {
@@ -31,6 +32,7 @@ namespace SGMessageBot.Config
 				}
 				catch(Exception e)
 				{
+					ErrorLog.writeLog(e.Message);
 					result.success = false;
 					result.message = e.Message;
 					return result;

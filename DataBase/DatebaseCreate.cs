@@ -1,5 +1,6 @@
 ﻿using MySql.Data.MySqlClient;
 using SGMessageBot.Config;
+using SGMessageBot.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -60,6 +61,7 @@ namespace SGMessageBot.DataBase
 			}
 			catch (MySqlException e)
 			{
+				ErrorLog.writeLog(e.Message);
 				result.message = e.Message;
 				result.success = false;
 				return result;
@@ -128,6 +130,7 @@ namespace SGMessageBot.DataBase
 			}
 			catch (MySqlException e)
 			{
+				ErrorLog.writeLog(e.Message);
 				result.message = e.Message;
 				result.success = false;
 				return result;
@@ -150,6 +153,7 @@ namespace SGMessageBot.DataBase
 			}
 			catch(MySqlException e)
 			{
+				ErrorLog.writeLog(e.Message);
 				result.success = false;
 				result.message = e.Message;
 				return result;

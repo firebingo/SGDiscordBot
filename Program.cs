@@ -12,6 +12,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Runtime.Serialization;
 using Microsoft.Extensions.DependencyInjection;
+using SGMessageBot.Helpers;
 
 namespace SGMessageBot
 {
@@ -76,6 +77,7 @@ namespace SGMessageBot
 			}
 			catch (Exception e)
 			{
+				ErrorLog.writeLog(e.Message);
 				return;
 			}
 			#endregion
@@ -113,6 +115,7 @@ namespace SGMessageBot
 			}
 			catch (Exception e)
 			{
+				ErrorLog.writeLog(e.Message);
 				Console.WriteLine(e.Message);
 			}
 

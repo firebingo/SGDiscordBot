@@ -225,6 +225,7 @@
     <Compile Include="DataBase\DataHelper.cs" />
     <Compile Include="DataBase\DataLayerShortcut.cs" />
     <Compile Include="DataBase\DatebaseCreate.cs" />
+    <Compile Include="Helpers\ErrorLog.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

@@ -3,6 +3,7 @@ using Discord.WebSocket;
 using MySql.Data.MySqlClient;
 using Newtonsoft.Json;
 using SGMessageBot.DataBase;
+using SGMessageBot.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
@@ -19,7 +20,10 @@ namespace SGMessageBot.Bot
 			{
 				await BotEventProcessor.ProcessMessageReceived(e).ConfigureAwait(false);
 			}
-			catch { }
+			catch (Exception ex)
+			{
+				ErrorLog.writeLog(ex.Message);
+			}
 		}
 
 		public static async Task ClientMessageUpdated(Cacheable<IMessage, ulong> before, SocketMessage after, ISocketMessageChannel arg3)
@@ -28,7 +32,10 @@ namespace SGMessageBot.Bot
 			{
 				await BotEventProcessor.ProcessMessageUpdated(before, after).ConfigureAwait(false);
 			}
-			catch { }
+			catch (Exception e)
+			{
+				ErrorLog.writeLog(e.Message);
+			}
 		}
 
 		public static async Task ClientMessageDeleted(Cacheable<IMessage, ulong> mes, ISocketMessageChannel arg2)
@@ -37,7 +44,10 @@ namespace SGMessageBot.Bot
 			{
 				await BotEventProcessor.ProcessMessageDeleted(mes).ConfigureAwait(false);
 			}
-			catch { }
+			catch (Exception e)
+			{
+				ErrorLog.writeLog(e.Message);
+			}
 		}
 		#endregion
 		#region Server
@@ -47,7 +57,10 @@ namespace SGMessageBot.Bot
 			{
 				await BotEventProcessor.ProcessJoinedServer(e).ConfigureAwait(false);
 			}
-			catch { }
+			catch (Exception ex)
+			{
+				ErrorLog.writeLog(ex.Message);
+			}
 		}
 		public static async Task ClientServerUpdated(SocketGuild before, SocketGuild after)
 		{
@@ -55,7 +68,10 @@ namespace SGMessageBot.Bot
 			{
 				await BotEventProcessor.ProcessServerUpdated(before, after).ConfigureAwait(false);
 			}
-			catch { }
+			catch (Exception e)
+			{
+				ErrorLog.writeLog(e.Message);
+			}
 		}
 		#endregion
 		#region User
@@ -65,7 +81,10 @@ namespace SGMessageBot.Bot
 			{
 				await BotEventProcessor.ProcessUserJoined(e).ConfigureAwait(false);
 			}
-			catch { }
+			catch (Exception ex)
+			{
+				ErrorLog.writeLog(ex.Message);
+			}
 		}
 
 		public static async Task ClientUserUnbanned(SocketUser u, SocketGuild s)
@@ -74,7 +93,10 @@ namespace SGMessageBot.Bot
 			{
 				await BotEventProcessor.ProcessUserBannedStatus(u, s, false).ConfigureAwait(false);
 			}
-			catch { }
+			catch (Exception e)
+			{
+				ErrorLog.writeLog(e.Message);
+			}
 		}
 
 		public static async Task ClientUserBanned(SocketUser u, SocketGuild s)
@@ -83,7 +105,10 @@ namespace SGMessageBot.Bot
 			{
 				await BotEventProcessor.ProcessUserBannedStatus(u, s, true).ConfigureAwait(false);
 			}
-			catch { }
+			catch (Exception e)
+			{
+				ErrorLog.writeLog(e.Message);
+			}
 		}
 
 		public static async Task ClientUserLeft(SocketGuildUser e)
@@ -92,7 +117,10 @@ namespace SGMessageBot.Bot
 			{
 				await BotEventProcessor.ProcessUserLeft(e).ConfigureAwait(false);
 			}
-			catch { }
+			catch (Exception ex)
+			{
+				ErrorLog.writeLog(ex.Message);
+			}
 		}
 
 		public static async Task ClientUserUpdated(SocketUser before, SocketUser after)
@@ -101,7 +129,10 @@ namespace SGMessageBot.Bot
 			{
 				await BotEventProcessor.ProcessUserUpdated(before, after).ConfigureAwait(false);
 			}
-			catch { }
+			catch (Exception e)
+			{
+				ErrorLog.writeLog(e.Message);
+			}
 		}
 
 		public static async Task ClientServerUserUpdated(SocketGuildUser before, SocketGuildUser after)
@@ -110,7 +141,10 @@ namespace SGMessageBot.Bot
 			{
 				await BotEventProcessor.ProcessUserServerUpdated(before, after).ConfigureAwait(false);
 			}
-			catch { }
+			catch (Exception e)
+			{
+				ErrorLog.writeLog(e.Message);
+			}
 		}
 		#endregion
 		#region Role
@@ -120,7 +154,10 @@ namespace SGMessageBot.Bot
 			{
 				await BotEventProcessor.ProcessRoleCreated(e).ConfigureAwait(false);
 			}
-			catch { }
+			catch (Exception ex)
+			{
+				ErrorLog.writeLog(ex.Message);
+			}
 		}
 
 		public static async Task ClientRoleUpdated(SocketRole before, SocketRole after)
@@ -129,7 +166,10 @@ namespace SGMessageBot.Bot
 			{
 				await BotEventProcessor.ProcessRoleUpdated(before, after).ConfigureAwait(false);
 			}
-			catch { }
+			catch (Exception e)
+			{
+				ErrorLog.writeLog(e.Message);
+			}
 		}
 		
 		public static async Task ClientRoleDeleted(SocketRole e)
@@ -138,7 +178,10 @@ namespace SGMessageBot.Bot
 			{
 				await BotEventProcessor.ProcessRoleDeleted(e).ConfigureAwait(false);
 			}
-			catch { }
+			catch (Exception ex)
+			{
+				ErrorLog.writeLog(ex.Message);
+			}
 		}
 		#endregion
 		#region Channel
@@ -148,7 +191,10 @@ namespace SGMessageBot.Bot
 			{
 				await BotEventProcessor.ProcessChannelCreated(e).ConfigureAwait(false);
 			}
-			catch { }
+			catch (Exception ex)
+			{
+				ErrorLog.writeLog(ex.Message);
+			}
 		}
 
 		public static async Task ClientChannelUpdated(SocketChannel before, SocketChannel after)
@@ -157,7 +203,10 @@ namespace SGMessageBot.Bot
 			{
 				await BotEventProcessor.ProcessChannelUpdated(before, after).ConfigureAwait(false);
 			}
-			catch { }
+			catch (Exception e)
+			{
+				ErrorLog.writeLog(e.Message);
+			}
 		}
 
 		public static async Task ClientChannelDestroyed(SocketChannel e)
@@ -166,7 +215,10 @@ namespace SGMessageBot.Bot
 			{
 				await BotEventProcessor.ProcessChannelDestroyed(e).ConfigureAwait(false);
 			}
-			catch { }
+			catch (Exception ex)
+			{
+				ErrorLog.writeLog(ex.Message);
+			}
 		}
 		#endregion
 		#region Reactions
@@ -176,7 +228,10 @@ namespace SGMessageBot.Bot
 			{
 				await BotEventProcessor.ProcessReactionAdded(mes, channel, react).ConfigureAwait(false);
 			}
-			catch { }
+			catch (Exception e)
+			{
+				ErrorLog.writeLog(e.Message);
+			}
 		}
 
 		public static async Task ClientReactionRemoved(Cacheable<IUserMessage, ulong> mes, ISocketMessageChannel channel, SocketReaction react)
@@ -185,7 +240,10 @@ namespace SGMessageBot.Bot
 			{
 				await BotEventProcessor.ClientReactionRemoved(mes, channel, react).ConfigureAwait(false);
 			}
-			catch { }
+			catch (Exception e)
+			{
+				ErrorLog.writeLog(e.Message);
+			}
 		}
 
 		public static async Task ClientReactionsCleared(Cacheable<IUserMessage, ulong> mes, ISocketMessageChannel channel)
@@ -194,7 +252,10 @@ namespace SGMessageBot.Bot
 			{
 				await BotEventProcessor.ClientReactionsCleared(mes, channel).ConfigureAwait(false);
 			}
-			catch { }
+			catch (Exception e)
+			{
+				ErrorLog.writeLog(e.Message);
+			}
 		}
 		#endregion
 
@@ -212,10 +273,10 @@ namespace SGMessageBot.Bot
 				//}
 
 				//For the pre Symphogear AXZ rewatch
-				//if (e.Content.ToLower().Contains("!rewatch"))
-				//{
-				//	e.Channel.SendMessageAsync(OtherFunctions.SGRewatchNext());
-				//}
+				if (e.Content.ToLower().Contains("!rewatch"))
+				{
+					e.Channel.SendMessageAsync(OtherFunctions.SGRewatchNext());
+				}
 
 				try
 				{
@@ -244,7 +305,10 @@ namespace SGMessageBot.Bot
 						checkMessageForEmoji(e, gChannel);
 					}	
 				}
-				catch { }
+				catch (Exception ex)
+				{
+					ErrorLog.writeLog(ex.Message);
+				}
 			}
 
 			public static async Task ProcessMessageUpdated(Cacheable<IMessage, ulong> before, SocketMessage after)
@@ -277,7 +341,10 @@ namespace SGMessageBot.Bot
 						}
 					}
 				}
-				catch { }
+				catch (Exception e)
+				{
+					ErrorLog.writeLog(e.Message);
+				}
 			}
 
 			public static async Task ProcessMessageDeleted(Cacheable<IMessage, ulong> mes)
@@ -293,7 +360,10 @@ namespace SGMessageBot.Bot
 					queryString = "UPDATE emojiUses SET isDeleted=@isDeleted WHERE messageID=@messageID";
 					DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@isDeleted", true), new MySqlParameter("@messageID", mes.Id));
 				}
-				catch { }
+				catch (Exception e)
+				{
+					ErrorLog.writeLog(e.Message);
+				}
 			}
 			#endregion
 			#region Server
@@ -493,8 +563,9 @@ namespace SGMessageBot.Bot
 						ulong? emoteId = ulong.Parse(idRegex.Match(m.Value).Groups[1].Value);
 						emojiRows.Add($"({g.Guild.Id}, {e.Author.Id}, {g.Id}, {e.Id}, {(emoteId.HasValue ? emoteId : 0)}, '{name}')");
 					}
-					catch
+					catch (Exception ex)
 					{
+						ErrorLog.writeLog(ex.Message);
 						continue;
 					}
 				}

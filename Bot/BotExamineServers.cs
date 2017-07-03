@@ -10,6 +10,7 @@ using Discord.Commands;
 using Discord.Rest;
 using Discord;
 using Newtonsoft.Json;
+using SGMessageBot.Helpers;
 
 namespace SGMessageBot.Bot
 {
@@ -105,6 +106,7 @@ namespace SGMessageBot.Bot
 			}
 			catch (Exception e)
 			{
+				ErrorLog.writeLog(e.Message);
 				return;
 			}
 		}
@@ -167,28 +169,40 @@ namespace SGMessageBot.Bot
 						var mesQueryString = $"INSERT IGNORE messages (serverID, userID, channelID, messageID, rawText, mesText, mesStatus, mesTime) VALUES {string.Join(",", mesRows)}";
 						var mesRes = DataLayerShortcut.ExecuteNonQuery(mesQueryString);
 						if (mesRes != String.Empty)
+						{
+							ErrorLog.writeLog(mesRes);
 							return mesRes;
+						}
 					}
 					if (attachRows.Count > 0)
 					{
 						var attachQueryString = $"INSERT IGNORE attachments (messageID, attachID, fileName, height, width, proxyURL, attachURL, attachSize) VALUES {string.Join(",", attachRows)}";
 						var mesRes = DataLayerShortcut.ExecuteNonQuery(attachQueryString);
 						if (mesRes != String.Empty)
+						{
+							ErrorLog.writeLog(mesRes);
 							return mesRes;
+						}
 					}
 					if(reactionsRows.Count > 0)
 					{
 						var reactQueryString = $"INSERT reactions (serverID, userID, channelID, messageID, emojiID, emojiName) VALUES {string.Join(",", reactionsRows)}";
 						var mesRes = DataLayerShortcut.ExecuteNonQuery(reactQueryString);
 						if (mesRes != String.Empty)
+						{
+							ErrorLog.writeLog(mesRes);
 							return mesRes;
+						}
 					}
 					if(emojiRows.Count > 0)
 					{
 						var emojiQueryString = $"INSERT emojiUses (serverID, userID, channelID, messageID, emojiID, emojiName) VALUES {string.Join(",", emojiRows)}";
 						var mesRes = DataLayerShortcut.ExecuteNonQuery(emojiQueryString);
 						if (mesRes != String.Empty)
+						{
+							ErrorLog.writeLog(mesRes);
 							return mesRes;
+						}
 					}
 				}
 			}
@@ -202,10 +216,12 @@ namespace SGMessageBot.Bot
 					{
 						exceptions.Add(ex.Message);
 					}
+					ErrorLog.writeLog(string.Join(", ", exceptions));
 					return $"Exceptions: {string.Join(", ", exceptions)}";
 				}
 				else
 				{
+					ErrorLog.writeLog(e.Message);
 					return $"Exception: {e.Message}";
 				}
 			}
@@ -279,28 +295,40 @@ namespace SGMessageBot.Bot
 									var mesQueryString = $"INSERT IGNORE messages (serverID, userID, channelID, messageID, rawText, mesText, mesStatus, mesTime) VALUES {string.Join(",", mesRows)}";
 									var mesRes = DataLayerShortcut.ExecuteNonQuery(mesQueryString);
 									if (mesRes != String.Empty)
+									{
+										ErrorLog.writeLog(mesRes);
 										return mesRes;
+									}
 								}
 								if (attachRows.Count > 0)
 								{
 									var attachQueryString = $"INSERT IGNORE attachments (messageID, attachID, fileName, height, width, proxyURL, attachURL, attachSize) VALUES {string.Join(",", attachRows)}";
 									var mesRes = DataLayerShortcut.ExecuteNonQuery(attachQueryString);
 									if (mesRes != String.Empty)
+									{
+										ErrorLog.writeLog(mesRes);
 										return mesRes;
+									}
 								}
 								if (reactionsRows.Count > 0)
 								{
 									var reactQueryString = $"INSERT reactions (serverID, userID, channelID, messageID, emojiID, emojiName) VALUES {string.Join(",", reactionsRows)}";
 									var mesRes = DataLayerShortcut.ExecuteNonQuery(reactQueryString);
 									if (mesRes != String.Empty)
+									{
+										ErrorLog.writeLog(mesRes);
 										return mesRes;
+									}
 								}
 								if (emojiRows.Count > 0)
 								{
 									var emojiQueryString = $"INSERT emojiUses (serverID, userID, channelID, messageID, emojiID, emojiName) VALUES {string.Join(",", emojiRows)}";
 									var mesRes = DataLayerShortcut.ExecuteNonQuery(emojiQueryString);
 									if (mesRes != String.Empty)
+									{
+										ErrorLog.writeLog(mesRes);
 										return mesRes;
+									}
 								}
 							}
 						}
@@ -315,10 +343,12 @@ namespace SGMessageBot.Bot
 							{
 								exceptions.Add(ex.Message);
 							}
+							ErrorLog.writeLog(string.Join(", ", exceptions));
 							exceptionsResult.Add($"Exceptions: {string.Join(", ", exceptions)}");
 						}
 						else
 						{
+							ErrorLog.writeLog(e.Message);
 							exceptionsResult.Add($"Exception: {e.Message}");
 						}
 						continue;
@@ -335,10 +365,12 @@ namespace SGMessageBot.Bot
 					{
 						exceptions.Add(ex.Message);
 					}
+					ErrorLog.writeLog(string.Join(", ", exceptions));
 					return $"Exceptions: {string.Join(", ", exceptions)}";
 				}
 				else
 				{
+					ErrorLog.writeLog(e.Message);
 					return $"Exception: {e.Message}";
 				}
 			}
@@ -367,8 +399,9 @@ namespace SGMessageBot.Bot
 					ulong? emoteId = ulong.Parse(idRegex.Match(m.Value).Groups[1].Value);
 					rows.Add($"({context.Guild.Id}, {message.Author.Id}, {channel.Id}, {message.Id}, {(emoteId.HasValue ? emoteId : 0)}, '{name}')");
 				}
-				catch
+				catch (Exception e)
 				{
+					ErrorLog.writeLog(e.Message);
 					continue;
 				}
 			}

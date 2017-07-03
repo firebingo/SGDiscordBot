@@ -3,6 +3,7 @@ using Discord.Commands;
 using Discord.WebSocket;
 using MySql.Data.MySqlClient;
 using SGMessageBot.DataBase;
+using SGMessageBot.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -130,14 +131,14 @@ namespace SGMessageBot.Bot
 			if (channel != null)
 			{
 				var result = await BotExamineServers.updateMessageHistoryChannel(Context, channel);
-				await Context.Channel.SendMessageAsync(result);
 				running.Remove(guid);
+				await Context.Channel.SendMessageAsync(result);
 			}
 			else
 			{
 				var result = await BotExamineServers.updateMessageHistoryServer(Context);
-				await Context.Channel.SendMessageAsync(result);
 				running.Remove(guid);
+				await Context.Channel.SendMessageAsync(result);
 			}
 		}
 
@@ -366,8 +367,9 @@ namespace SGMessageBot.Bot
 							if(c.Value != null)
 								c.Value.TriggerTypingAsync();
 						}
-						catch
+						catch (Exception e)
 						{
+							ErrorLog.writeLog(e.Message);
 							continue;
 						}
 					}

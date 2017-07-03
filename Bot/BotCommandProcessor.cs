@@ -2,6 +2,7 @@
 using Discord.WebSocket;
 using MySql.Data.MySqlClient;
 using SGMessageBot.DataBase;
+using SGMessageBot.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -70,6 +71,7 @@ namespace SGMessageBot.Bot
 			}
 			catch (Exception e)
 			{
+				ErrorLog.writeLog(e.Message);
 				result = e.Message;
 			}
 			return Task.FromResult<string>(result).Result;
