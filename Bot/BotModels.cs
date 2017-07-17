@@ -21,15 +21,20 @@ namespace SGMessageBot.Bot
 	}
 
 	[Serializable]
-	public class EmojiMessageModel
+	public class EmojiCountModel
 	{
-		public ulong userID;
-		public ulong messageID;
-		public string mention;
-		public string mesText;
-		public int useCount;
-		public int userUseCount;
 		public ulong emojiID;
+		public string emojiName;
+		public int useCount;
+	}
+
+	[Serializable]
+	public class EmojiUseModel
+	{
+		public ulong emojiID;
+		public string emojiName;
+		public ulong userID;
+		public string userMention;
 	}
 
 	[Serializable]

@@ -257,69 +257,80 @@ namespace SGMessageBot.Bot
 			if (input == null || input == String.Empty)
 				inputParsed = 0;
 
-			if (inputParsed > -1)
+			try
 			{
-				//if we are getting a top n count for a user
-				if (input2 != null)
+				if (inputParsed > -1)
 				{
-					input2 = input2.Replace("!", string.Empty);
-					if (Regex.IsMatch(input2, @"<@\d+>"))
+					//if we are getting a top n count for a user
+					if (input2 != null)
 					{
-						result = await processor.calculateTopEmojiCountsUser(inputParsed, input2, Context);
-						if (result.Contains("||"))
+						input2 = input2.Replace("!", string.Empty);
+						if (Regex.IsMatch(input2, @"<@\d+>"))
 						{
-							var results = result.Split(new string[] { "||" }, StringSplitOptions.None);
-							foreach (var res in results)
+							result = await processor.calculateTopEmojiCountsUser(inputParsed, input2, Context);
+							if (result.Contains("||"))
 							{
-								await Context.Channel.SendMessageAsync(res);
+								var results = result.Split(new string[] { "||" }, StringSplitOptions.None);
+								foreach (var res in results)
+								{
+									await Context.Channel.SendMessageAsync(res);
+								}
+								running.Remove(guid);
+								return;
 							}
-							running.Remove(guid);
-							return;
+							else
+							{
+								await Context.Channel.SendMessageAsync(result);
+								running.Remove(guid);
+								return;
+							}
 						}
-						else
+					}
+					result = await processor.calculateTopEmojiCounts(inputParsed, Context);
+					if (result.Contains("||"))
+					{
+						var results = result.Split(new string[] { "||" }, StringSplitOptions.None);
+						foreach (var res in results)
 						{
-							await Context.Channel.SendMessageAsync(result);
-							running.Remove(guid);
-							return;
+							await Context.Channel.SendMessageAsync(res);
 						}
+						running.Remove(guid);
+						return;
+					}
+					else
+					{
+						await Context.Channel.SendMessageAsync(result);
+						running.Remove(guid);
+						return;
 					}
 				}
-				result = await processor.calculateTopEmojiCounts(inputParsed, Context);
-				if (result.Contains("||"))
+
+
+				if (Regex.IsMatch(input, @"<:.+:\d+>"))
 				{
-					var results = result.Split(new string[] { "||" }, StringSplitOptions.None);
-					foreach (var res in results)
-					{
-						await Context.Channel.SendMessageAsync(res);
-					}
+					result = await processor.calculateEmojiCounts(input, Context);
+					await Context.Channel.SendMessageAsync(result);
 					running.Remove(guid);
 					return;
 				}
-				else
+
+				input = input.Replace("!", string.Empty);
+				if (Regex.IsMatch(input, @"<@\d+>"))
 				{
+					result = await processor.calculateUserEmojiCounts(input, Context);
 					await Context.Channel.SendMessageAsync(result);
 					running.Remove(guid);
 					return;
 				}
 			}
-
-			if (Regex.IsMatch(input, @"<:.+:\d+>"))
+			catch (Exception e)
 			{
-				result = await processor.calculateEmojiCounts(input, Context);
-				await Context.Channel.SendMessageAsync(result);
 				running.Remove(guid);
+				await Context.Channel.SendMessageAsync(e.Message);
 				return;
 			}
 
-			input = input.Replace("!", string.Empty);
-			if (Regex.IsMatch(input, @"<@\d+>"))
-			{
-				result = await processor.calculateUserEmojiCounts(input, Context);
-				await Context.Channel.SendMessageAsync(result);
-				running.Remove(guid);
-				return;
-			}
-
+			running.Remove(guid);
 			await Context.Channel.SendMessageAsync("Invalid Input");
 		}
 
