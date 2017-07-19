@@ -273,10 +273,10 @@ namespace SGMessageBot.Bot
 				//}
 
 				//For the pre Symphogear AXZ rewatch
-				if (e.Content.ToLower().Contains("!rewatch"))
-				{
-					e.Channel.SendMessageAsync(OtherFunctions.SGRewatchNext());
-				}
+				//if (e.Content.ToLower().Contains("!rewatch"))
+				//{
+				//	e.Channel.SendMessageAsync(OtherFunctions.SGRewatchNext());
+				//}
 
 				try
 				{
