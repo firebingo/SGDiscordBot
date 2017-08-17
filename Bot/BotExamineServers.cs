@@ -61,7 +61,7 @@ namespace SGMessageBot.Bot
 						ON DUPLICATE KEY UPDATE serverID=@serverID, channelMention=@channelMention, channelName=@channelName, channelPosition=@channelPosition, channelType=@channelType";
 						DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", channel.Guild.Id), new MySqlParameter("@channelID", channel.Id),
 							new MySqlParameter("@channelMention", tChannel.Mention), new MySqlParameter("@channelName", channel.Name), new MySqlParameter("@channelPosition", channel.Position),
-							new MySqlParameter("@channelType", "text"));
+							new MySqlParameter("@channelType", 0));
 					}
 					else if (vChannel != null)
 					{
@@ -70,7 +70,7 @@ namespace SGMessageBot.Bot
 						ON DUPLICATE KEY UPDATE serverID=@serverID, channelMention=@channelMention, channelName=@channelName, channelPosition=@channelPosition, channelType=@channelType";
 						DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", channel.Guild.Id), new MySqlParameter("@channelID", channel.Id),
 							new MySqlParameter("@channelMention", null), new MySqlParameter("@channelName", channel.Name), new MySqlParameter("@channelPosition", channel.Position),
-							new MySqlParameter("@channelType", "voice"));
+							new MySqlParameter("@channelType", 2));
 					}
 				}
 				foreach (var emoji in server.Emotes)

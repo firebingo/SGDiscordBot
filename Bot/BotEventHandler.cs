@@ -489,7 +489,7 @@ namespace SGMessageBot.Bot
 					channelType=@channelType, isDeleted=@isDeleted";
 					DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", gChannel.Guild.Id), new MySqlParameter("@channelID", e.Id),
 					new MySqlParameter("@channelMention", gTChannel != null ? gTChannel.Mention : null), new MySqlParameter("@channelName", gChannel.Name), new MySqlParameter("@channelPosition", gChannel.Position),
-					new MySqlParameter("@channelType", "unknown"), new MySqlParameter("@isDeleted", false));
+					new MySqlParameter("@channelType", gTChannel != null ? 0 : 2), new MySqlParameter("@isDeleted", false));
 				}
 			}
 
@@ -507,7 +507,7 @@ namespace SGMessageBot.Bot
 					channelType=@channelType";
 					DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", gChannel.Guild.Id), new MySqlParameter("@channelID", after.Id),
 					new MySqlParameter("@channelMention", gTChannel != null ? gTChannel.Mention : null), new MySqlParameter("@channelName", gChannel.Name), new MySqlParameter("@channelPosition", gChannel.Position),
-					new MySqlParameter("@channelType", "unknown"), new MySqlParameter("@isDeleted", false));
+					new MySqlParameter("@channelType", gTChannel != null ? 0 : 2), new MySqlParameter("@isDeleted", false));
 				}
 			}
 
