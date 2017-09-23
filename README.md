@@ -57,3 +57,10 @@ Can only be used by a user with a role in commandRoleIds in CredConfig.json.<br 
 | -------------------------- 				| -------------  								|
 | @bot rolecounts [useMentions]	 			| Outputs list to channel command was used in.	|
 | @bot rolecounts [channel] [useMentions]	| Outputs list to given channel.				|
+
+<b>AI:</b>
+
+| Command					 				| Description	 													|
+| -------------------------- 				| -------------  													|
+| @bot buildcorpus	 						| Rebuilds the corpus used for generating messages. (commandRoleIds)|
+| @bot chat 								| Generates a message in the channel it was used in.				|

@@ -2,6 +2,7 @@
 using Discord.Commands;
 using Discord.WebSocket;
 using MySql.Data.MySqlClient;
+using SGMessageBot.AI;
 using SGMessageBot.DataBase;
 using SGMessageBot.Helpers;
 using System;
@@ -181,6 +182,25 @@ namespace SGMessageBot.Bot
 			await textChannel.SendMessageAsync(result);
 			running.Remove(guid);
 		}
+
+		[Command("buildcorpus"), Summary("Rebuilds the corpus for AI chat commands")]
+		public async Task buildCorpus()
+		{
+			var guid = Guid.NewGuid();
+			running.Add(guid, Context.Channel as SocketTextChannel);
+			try
+			{
+				var chain = new Markov();
+				await chain.rebuildCorpus();
+			}
+			catch(Exception e)
+			{
+				await Context.Channel.SendMessageAsync($"Exception: {e.Message}");
+				running.Remove(guid);
+			}
+			await Context.Channel.SendMessageAsync("Operation Complete");
+			running.Remove(guid);
+		}
 	}
 
 	//[Group("||")]
@@ -305,7 +325,6 @@ namespace SGMessageBot.Bot
 					}
 				}
 
-
 				if (Regex.IsMatch(input, @"<:.+:\d+>"))
 				{
 					result = await processor.calculateEmojiCounts(input, Context);
@@ -332,6 +351,26 @@ namespace SGMessageBot.Bot
 
 			running.Remove(guid);
 			await Context.Channel.SendMessageAsync("Invalid Input");
+		}
+
+		[Command("chat"), Summary("Makes the bot return a generated message")]
+		public async Task generateChatMessage()
+		{
+			var guid = Guid.NewGuid();
+			running.Add(guid, Context.Channel as SocketTextChannel);
+			try
+			{
+				var chain = new Markov();
+				var result = await chain.generateMessage();
+				await Context.Channel.SendMessageAsync(result);
+			}
+			catch(Exception e)
+			{
+				running.Remove(guid);
+				await Context.Channel.SendMessageAsync(e.Message);
+				return;
+			}
+			running.Remove(guid);
 		}
 
 		//This no longer works with newer versions of nadeko so its commented until i figure out an alternative.
