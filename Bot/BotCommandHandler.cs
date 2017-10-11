@@ -1,16 +1,12 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
-using MySql.Data.MySqlClient;
 using SGMessageBot.AI;
-using SGMessageBot.DataBase;
 using SGMessageBot.Helpers;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,12 +18,14 @@ namespace SGMessageBot.Bot
 		private CommandService commands;
 		private DiscordSocketClient Client;
 		private BotCommandProcessor processor;
+		private Markov markovAi;
 		private IServiceProvider map;
 
 		public async Task installCommandService(IServiceProvider _map)
 		{
 			Client = _map.GetService(typeof(DiscordSocketClient)) as DiscordSocketClient;
 			processor = _map.GetService(typeof(BotCommandProcessor)) as BotCommandProcessor;
+			markovAi = _map.GetService(typeof(Markov)) as Markov;
 			commands = new CommandService();
 			map = _map;
 			await commands.AddModulesAsync(Assembly.GetEntryAssembly());
@@ -78,11 +76,13 @@ namespace SGMessageBot.Bot
 	{
 		private BotCommandProcessor processor;
 		private BotCommandsRunning running;
+		private Markov markovAi;
 
 		public AdminModule(IServiceProvider m)
 		{
 			processor = m.GetService(typeof(BotCommandProcessor)) as BotCommandProcessor;
 			running = m.GetService(typeof(BotCommandsRunning)) as BotCommandsRunning;
+			markovAi = m.GetService(typeof(Markov)) as Markov;
 		}
 
 		[Command("shutdown"), Summary("Tells the bot to shutdown.")]
@@ -190,8 +190,7 @@ namespace SGMessageBot.Bot
 			running.Add(guid, Context.Channel as SocketTextChannel);
 			try
 			{
-				var chain = new Markov();
-				await chain.rebuildCorpus();
+				await markovAi.rebuildCorpus();
 			}
 			catch(Exception e)
 			{
@@ -209,11 +208,13 @@ namespace SGMessageBot.Bot
 	{
 		private BotCommandProcessor processor;
 		private BotCommandsRunning running;
+		private Markov markovAi;
 
 		public StatsModule(IServiceProvider m)
 		{
 			processor = m.GetService(typeof(BotCommandProcessor)) as BotCommandProcessor;
 			running = m.GetService(typeof(BotCommandsRunning)) as BotCommandsRunning;
+			markovAi = m.GetService(typeof(Markov)) as Markov;
 		}
 
 		[Command("messagecount"), Summary("Gets message counts for the server.")]
@@ -360,8 +361,7 @@ namespace SGMessageBot.Bot
 			running.Add(guid, Context.Channel as SocketTextChannel);
 			try
 			{
-				var chain = new Markov();
-				var result = await chain.generateMessage();
+				var result = await markovAi.generateMessage();
 				await Context.Channel.SendMessageAsync(result);
 			}
 			catch(Exception e)

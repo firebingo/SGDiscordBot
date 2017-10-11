@@ -4,19 +4,20 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
-using System.IO.IsolatedStorage;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using System.Collections.Concurrent;
+using System.Threading;
 
 namespace SGMessageBot.AI
 {
 	public class Markov
 	{
 		private const string dataDirectory = @"Data\AICorpus.json";
-		private static Dictionary<string, string[]> AICorpus;
+		private Dictionary<string, string[]> AICorpus;
+		private static SemaphoreSlim sem = new SemaphoreSlim(1, 1);
+		private static object corpusLock = new object();
 
 		private async Task buildCorpus()
 		{
@@ -60,14 +61,17 @@ namespace SGMessageBot.AI
 						}
 					}
 				});
-				AICorpus = wordDict.ToDictionary(x => x.Key, x => x.Value.ToArray());
-				using (var file = new StreamWriter(File.Open(dataDirectory, FileMode.Create)))
+				lock (corpusLock)
 				{
-					foreach (var word in AICorpus)
+					AICorpus = wordDict.ToDictionary(x => x.Key, x => x.Value.ToArray());
+					using (var file = new StreamWriter(File.Open(dataDirectory, FileMode.Create)))
 					{
-						file.WriteLine(JsonConvert.SerializeObject(word));
+						foreach (var word in AICorpus)
+						{
+							file.WriteLine(JsonConvert.SerializeObject(word));
+						}
+						file.Close();
 					}
-					file.Close();
 				}
 			}
 			catch
@@ -78,17 +82,26 @@ namespace SGMessageBot.AI
 
 		public async Task rebuildCorpus()
 		{
-			if(File.Exists(dataDirectory))
-			{
-				File.Delete(dataDirectory);
-			}
-			await loadCorpus();
-		}
-
-		public async Task loadCorpus()
-		{
+			await sem.WaitAsync();
 			try
 			{
+				if (File.Exists(dataDirectory))
+					File.Delete(dataDirectory);
+			}
+			catch (Exception e)
+			{
+				sem.Release();
+				throw;
+			}
+			
+			await loadCorpus();
+			sem.Release();
+		}
+
+		private async Task loadCorpus()
+		{
+			try
+			{				
 				var wordDict = new Dictionary<string, string[]>();
 				if (!File.Exists(dataDirectory))
 				{
@@ -114,7 +127,10 @@ namespace SGMessageBot.AI
 						}
 						file.Close();
 					}
-					AICorpus = wordDict;
+					lock (corpusLock)
+					{
+						AICorpus = wordDict;
+					}
 				}
 			}
 			catch
@@ -127,41 +143,55 @@ namespace SGMessageBot.AI
 		{
 			try
 			{
-				var result = string.Empty;
+				await sem.WaitAsync();
 				if (AICorpus == null)
-					await loadCorpus();
-
-				Random rand = new Random();
-				List<string> keys = Enumerable.ToList(AICorpus.Keys);
-				var startValue = keys[rand.Next(keys.Count)];
-				result += startValue;
-				string nextValue = startValue;
-				var operate = true;
-				do
 				{
-					if (AICorpus.ContainsKey(nextValue))
+					await loadCorpus();
+				}
+			}
+			catch
+			{
+				throw;
+			}
+			finally
+			{
+				sem.Release();
+			}
+			try
+			{
+				var result = string.Empty;
+				lock (corpusLock)
+				{
+					Random rand = new Random();
+					List<string> keys = Enumerable.ToList(AICorpus.Keys);
+					var startValue = keys[rand.Next(keys.Count)];
+					result += startValue;
+					string nextValue = startValue;
+					var operate = true;
+					do
 					{
-						if (AICorpus[nextValue].Length > 0)
+						if (AICorpus.ContainsKey(nextValue))
 						{
-							var toAdd = AICorpus[nextValue][(rand.Next(AICorpus[nextValue].Length))];
-							result += $" {toAdd}";
-							var split = result.Split(' ');
-							nextValue = $"{split[split.Length - 2]} {split[split.Length - 1]}";
+							if (AICorpus[nextValue].Length > 0)
+							{
+								var toAdd = AICorpus[nextValue][(rand.Next(AICorpus[nextValue].Length))];
+								result += $" {toAdd}";
+								var split = result.Split(' ');
+								nextValue = $"{split[split.Length - 2]} {split[split.Length - 1]}";
+							}
+							else
+							{
+								operate = false;
+								break;
+							}
 						}
 						else
 						{
 							operate = false;
 							break;
 						}
-					}
-					else
-					{
-						operate = false;
-						break;
-					}
-					
-
-				} while (operate);
+					} while (operate);
+				}
 				return result;
 			}
 			catch
@@ -174,8 +204,8 @@ namespace SGMessageBot.AI
 		{
 			var result = new List<MessageModel>();
 
-			var query = "SELECT txt FROM (SELECT COALESCE(mesText, editedMesText) AS txt FROM messages WHERE NOT isDeleted) x WHERE txt != ''";
-			DataLayerShortcut.ExecuteReader<List<MessageModel>>(readMessages, result, query);
+			var query = "SELECT txt FROM (SELECT COALESCE(mesText, editedMesText) AS txt FROM messages WHERE NOT isDeleted AND userId != @botId) x WHERE txt != '' AND txt NOT LIKE '%@botId%'";
+			DataLayerShortcut.ExecuteReader<List<MessageModel>>(readMessages, result, query, new MySqlParameter("@botId", SGMessageBot.botConfig.credInfo.botId));
 
 			return result;
 		}
@@ -189,17 +219,17 @@ namespace SGMessageBot.AI
 				data.Add(message);
 			}
 		}
-	}
 
-	[Serializable]
-	public struct MessageModel
-	{
-		private readonly string _mesText;
-		public string mesText { get { return _mesText; } }
-
-		public MessageModel(string t)
+		[Serializable]
+		private struct MessageModel
 		{
-			_mesText = t;
+			private readonly string _mesText;
+			public string mesText { get { return _mesText; } }
+
+			public MessageModel(string t)
+			{
+				_mesText = t;
+			}
 		}
 	}
 }

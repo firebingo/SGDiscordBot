@@ -10,9 +10,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Runtime.Serialization;
 using Microsoft.Extensions.DependencyInjection;
 using SGMessageBot.Helpers;
+using SGMessageBot.AI;
 
 namespace SGMessageBot
 {
@@ -24,12 +24,13 @@ namespace SGMessageBot
 		}
 
 		public static DiscordSocketClient Client { get; private set; }
-		public static BotConfig botConfig { get; private set; }
+		public static BotConfig botConfig { get; private set; }		
 		public static string BotMention = "";
 		public static bool ready { get; set; }
 		private static BotCommandHandler cHandler;
 		private static BotCommandProcessor cProcessor;
 		private static BotCommandsRunning cRunning;
+		private static Markov cMarkov;
 		private static long connectedTimes = 0;
 
 		public async Task runBot()
@@ -170,13 +171,15 @@ namespace SGMessageBot
 			cHandler = new BotCommandHandler();
 			cProcessor = new BotCommandProcessor();
 			cRunning = new BotCommandsRunning();
+			cMarkov = new Markov();
 
 			var services = new ServiceCollection()
 				.AddSingleton(Client)
 				.AddSingleton(botConfig)
 				.AddSingleton(cHandler)
 				.AddSingleton(cProcessor)
-				.AddSingleton(cRunning);
+				.AddSingleton(cRunning)
+				.AddSingleton(cMarkov);
 			var provider = new DefaultServiceProviderFactory().CreateServiceProvider(services);
 			return provider;
 		}

@@ -1,12 +1,8 @@
 ﻿using MySql.Data.MySqlClient;
-using SGMessageBot.Config;
 using SGMessageBot.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SGMessageBot.DataBase
 {
