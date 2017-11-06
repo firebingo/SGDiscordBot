@@ -47,7 +47,7 @@ namespace SGMessageBot.DataBase
 			buildQueries[5].Add(@"ALTER TABLE usersInServers MODIFY serverID BIGINT UNSIGNED NOT NULL");
 			buildQueries[5].Add(@"ALTER TABLE usersInServers ADD PRIMARY KEY(userID, serverID)");
 			buildQueries.Add(6, new List<string>());
-			buildQueries[6].Add(@"ALTER TABLE usersInServers ADD COLUMN mesCount INT UNSIGNED NOT NULL");
+			buildQueries[6].Add(@"ALTER TABLE usersInServers ADD COLUMN mesCount INT UNSIGNED NOT NULL DEFAULT 0");
 		}
 
 		public BaseResult createDatabase()

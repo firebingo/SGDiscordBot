@@ -5,17 +5,17 @@ Config .json files go in a folder called Data in the same path as the .exe
 <h2>Commands:</h2>
 
 <b>shutdown:</b>
-Shuts the bot down. Can only be used by a user with a role in commandRoleIds in CredConfig.json.
+Shuts the bot down. Can only be used by a user with a role in commandRoleIds in CredConfig.json.<br />
 ex. @bot shutdown
 
 <b>restart:</b>
-restarts the bot. Can only be used by a user with a role in commandRoleIds in CredConfig.json.
+restarts the bot. Can only be used by a user with a role in commandRoleIds in CredConfig.json.<br />
 ex. @bot shutdown
 
 <b>messagetrack:</b>
 Will send a message when the server's message count is one below or above the given count.
 params: enabled, count, channel, message
-Can only be used by a user with a role in commandRoleIds in CredConfig.json.
+Can only be used by a user with a role in commandRoleIds in CredConfig.json.<br />
 ex: @bot messagetrack true 50000 #announcement "This is a message"
 
 <b>reloadmescount:</b>
