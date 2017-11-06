@@ -30,7 +30,7 @@ namespace SGMessageBot.Bot
 		{
 			int? result = 0;
 			var queryString = "SELECT COUNT(*) FROM messages WHERE isDeleted = false AND serverID = @serverID";
-			result = DataLayerShortcut.ExecuteScalar(queryString, new MySqlParameter("@serverID", context.Guild.Id));
+			result = DataLayerShortcut.ExecuteScalarInt(queryString, new MySqlParameter("@serverID", context.Guild.Id));
 			return Task.FromResult<int>(result.HasValue ? result.Value : 0).Result;
 		}
 
@@ -87,11 +87,11 @@ namespace SGMessageBot.Bot
 			List<UserCountModel> results = new List<UserCountModel>();
 			var queryString = "";
 			if (count == 0)
-				queryString = $@"SELECT messages.userID, usersinservers.nickNameMention, count(messages.userID) AS mesCount FROM messages 
-				LEFT JOIN usersinservers ON messages.userID=usersinservers.userID WHERE messages.serverID=@serverID AND usersinservers.serverID=@serverID AND messages.isDeleted = false GROUP BY userID ORDER BY mesCount DESC LIMIT 1";
+				queryString = $@"SELECT usersinservers.userID, usersinservers.nickNameMention, usersinservers.mesCount FROM usersinservers 
+				WHERE usersinservers.serverID=@serverID ORDER BY mesCount DESC LIMIT 1";
 			else
-				queryString = $@"SELECT messages.userID, usersinservers.nickNameMention, count(messages.userID) AS mesCount FROM messages 
-				LEFT JOIN usersinservers ON messages.userID=usersinservers.userID WHERE messages.serverID=@serverID AND usersinservers.serverID=@serverID AND messages.isDeleted = false GROUP BY userID ORDER BY mesCount DESC LIMIT {count}";
+				queryString = $@"SELECT usersinservers.userID, usersinservers.nickNameMention, usersinservers.mesCount FROM usersinservers 
+				WHERE usersinservers.serverID=@serverID ORDER BY mesCount DESC LIMIT {count}";
 			DataLayerShortcut.ExecuteReader<List<UserCountModel>>(readMessageCounts, results, queryString, new MySqlParameter("@serverID", context.Guild.Id));
 			if (count == 0)
 			{
@@ -126,8 +126,8 @@ namespace SGMessageBot.Bot
 			var earliest = await getEarliestMessage(context);
 			var totalCount = await getTotalMessageCount(context);
 			List<UserCountModel> results = new List<UserCountModel>();
-			var queryString = @"SELECT messages.userID, usersinservers.nickNameMention, count(messages.userID) FROM messages LEFT JOIN usersinservers ON messages.userID=usersinservers.userID 
-			WHERE messages.serverID=@serverID AND usersinservers.serverID=@serverID AND usersinservers.nickNameMention=@mention AND messages.isDeleted = false GROUP BY userID";
+			var queryString = @"SELECT usersinservers.userID, usersinservers.nickNameMention, usersinservers.mesCount FROM usersinservers 
+			WHERE usersinservers.serverID=@serverID AND usersinservers.nickNameMention=@mention";
 			DataLayerShortcut.ExecuteReader<List<UserCountModel>>(readMessageCounts, results, queryString, new MySqlParameter("@mention", user), new MySqlParameter("@serverID", context.Guild.Id));
 			var userCount = results.FirstOrDefault();
 			var percent = Math.Round(((float)userCount.messageCount / (float)totalCount) * 100, 2);
@@ -162,9 +162,9 @@ namespace SGMessageBot.Bot
 			foreach (var user in UsersInRole)
 			{
 				List<UserCountModel> userResults = new List<UserCountModel>();
-				var queryString = @"SELECT messages.userID, usersinservers.nickNameMention, count(messages.userID) from messages LEFT JOIN usersinservers ON messages.userID=usersinservers.userID 
-				WHERE usersinservers.serverID=messages.serverID AND usersinservers.nickNameMention=@mention AND messages.isDeleted = false GROUP BY userID LIMIT 1";
-				DataLayerShortcut.ExecuteReader<List<UserCountModel>>(readMessageCounts, userResults, queryString, new MySqlParameter("@mention", user.Mention.Replace("!", string.Empty)));
+				var queryString = @"SELECT usersinservers.userID, usersinservers.nickNameMention, usersinservers.mesCount FROM usersinservers 
+				WHERE usersinservers.serverID=@serverID AND usersinservers.nickNameMention=@mention LIMIT 1";
+				DataLayerShortcut.ExecuteReader<List<UserCountModel>>(readMessageCounts, userResults, queryString, new MySqlParameter("@mention", user.Mention.Replace("!", string.Empty)), new MySqlParameter("@serverID", context.Guild.Id));
 				var userFound = userResults.FirstOrDefault();
 				if (userFound == null)
 					continue;
@@ -181,6 +181,42 @@ namespace SGMessageBot.Bot
 			result = $"Role {role} has {results.Count} users with {totalRoleCount} messages, which is {percent}% of the server's messages.\nThe user with the most messages in the role is {topUser.userMention} with {topUser.messageCount} which is {topUserRolePercent}% of the role's messages, and {topuserPercent}% of the server's messages.\nStarting at {earliest.date.ToString(dateFormat)}";
 
 			return Task.FromResult<string>(result).Result;
+		}
+
+		public async Task<string> reloadMessageCounts(ICommandContext context)
+		{
+			var result = string.Empty;
+			List<UsersInServersModel> users = new List<UsersInServersModel>();
+			try
+			{
+				var queryString = @"SELECT usersinservers.userID FROM usersinservers WHERE usersinservers.serverID=@serverID";
+				DataLayerShortcut.ExecuteReader<List<UsersInServersModel>>(readUsersInServers, users, queryString, new MySqlParameter("@serverID", context.Guild.Id));
+				Parallel.ForEach(users, (user) =>
+				{
+					try
+					{
+						var sparams = new MySqlParameter[3] { new MySqlParameter("@serverID", context.Guild.Id), new MySqlParameter("@userID", user.userID), null };
+						var t = DataLayerShortcut.ExecuteScalarUInt(@"SELECT COUNT(*) FROM messages WHERE messages.userID=@userID AND messages.serverID=@serverID AND NOT messages.isDeleted", sparams);
+						if (t.HasValue)
+							user.mesCount = t.Value;
+						sparams[2] = new MySqlParameter("@mesCount", user.mesCount);
+						DataLayerShortcut.ExecuteNonQuery(@"UPDATE usersinservers SET mesCount = @mesCount WHERE usersinservers.userID=@userID AND usersinservers.serverID=@serverID", sparams);
+					}
+					catch(Exception e)
+					{
+						result += e.Message;
+						return;
+					}
+				});
+			}
+			catch (Exception e)
+			{
+				result += e.Message;
+			}
+
+			if (result != string.Empty)
+				ErrorLog.writeLog(result);
+			return result;
 		}
 		#endregion
 
@@ -547,6 +583,21 @@ namespace SGMessageBot.Bot
 			}
 		}
 
+		private void readUsersInServers(IDataReader reader, List<UsersInServersModel> data)
+		{
+			reader = reader as MySqlDataReader;
+			if (reader != null)
+			{
+				if(reader.FieldCount >= 1)
+				{
+					var userObject = new UsersInServersModel();
+					ulong? temp = reader.GetValue(0) as ulong?;
+					userObject.userID = temp.HasValue ? temp.Value : 0;
+					data.Add(userObject);
+				}
+			}
+		}
+
 		private void readEmojiCounts(IDataReader reader, List<EmojiUseModel> data)
 		{
 			reader = reader as MySqlDataReader;
@@ -572,7 +623,7 @@ namespace SGMessageBot.Bot
 		{
 			var queryParams = new MySqlParameter[] {
 				new MySqlParameter("@serverID", context.Guild.Id),
-				new MySqlParameter("@botID", SGMessageBot.botConfig.credInfo.botId)
+				new MySqlParameter("@botID", SGMessageBot.botConfig.botInfo.botId)
 			};
 			//var queryString = $"SELECT mS.userID, mS.messageID, uS.nickNameMention, mS.rawText FROM messages AS mS LEFT JOIN usersinservers AS uS ON mS.userID = uS.userID WHERE uS.serverID = @serverID AND mS.mesText LIKE @emojiID AND mS.serverID = @serverID AND mS.isDeleted = 0 AND mS.userID != @botID AND mS.mesText NOT LIKE '%emojicount%'";
 			var queryString = $"SELECT eU.emojiID, eU.emojiName, eU.userID, uS.nickNameMention " +

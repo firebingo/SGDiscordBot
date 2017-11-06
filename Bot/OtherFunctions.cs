@@ -1,4 +1,7 @@
-﻿using Newtonsoft.Json;
+﻿using Discord.WebSocket;
+using MySql.Data.MySqlClient;
+using Newtonsoft.Json;
+using SGMessageBot.DataBase;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -36,6 +39,27 @@ namespace SGMessageBot.Bot
 				return $"Next showing is Symphogear {data[1]}{(data[1] != "" ? " " : "") }- Episode {data[0]} in: {nextTime.ToString("h\\hm\\m")}.";
 			}
 			return "Rewatch has ended.";
+		}
+
+		public static void sendMessageTrack(SocketGuild guild)
+		{
+			var config = SGMessageBot.botConfig.botInfo.messageCount;
+			if(config != null && config.ContainsKey(guild.Id) && config[guild.Id].enabled)
+			{
+				var count = DataLayerShortcut.ExecuteScalarInt("SELECT COUNT(*) FROM messages WHERE isDeleted = false AND serverID = @serverId", new MySqlParameter("@serverId", guild.Id));
+				if (count.HasValue && count.Value >= config[guild.Id].messageCount - 1)
+				{
+					var channel = guild.GetChannel(config[guild.Id].channelId);
+					if (channel != null)
+					{
+						var gChannel = channel as SocketTextChannel;
+						var message = config[guild.Id].message.Replace("%c%", config[guild.Id].messageCount.ToString());
+						gChannel?.SendMessageAsync(message);
+						config[guild.Id].enabled = false;
+						SGMessageBot.botConfig.saveCredConfig();
+					}
+				}
+			}
 		}
 	}
 }

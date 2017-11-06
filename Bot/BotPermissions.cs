@@ -16,7 +16,7 @@ namespace SGMessageBot.Bot
 				return Task.FromResult(PreconditionResult.FromError("Could not find user for command."));
 			}
 			var hasPerm = false;
-			foreach (var permRole in SGMessageBot.botConfig.credInfo.commandRoleIds)
+			foreach (var permRole in SGMessageBot.botConfig.botInfo.commandRoleIds)
 			{
 				var checkMatch = gUser.Roles.Where(r => r.Id == permRole).FirstOrDefault()?.Id;
 				if (checkMatch.HasValue && checkMatch.Value != 0)

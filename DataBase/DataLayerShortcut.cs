@@ -133,7 +133,7 @@ namespace SGMessageBot.DataBase
 			conn.Dispose();
 		}
 
-		public static int? ExecuteScalar(string query, params MySqlParameter[] parameters)
+		public static int? ExecuteScalarInt(string query, params MySqlParameter[] parameters)
 		{
 			int? result = null;
 			var connection = new MySqlConnection(DBConfig.connectionString);
@@ -149,6 +149,38 @@ namespace SGMessageBot.DataBase
 				try
 				{
 					result = Convert.ToInt32(scalar);
+				}
+				catch (Exception e)
+				{
+					ErrorLog.writeLog(e.Message);
+					cmd.Dispose();
+					connection.Close();
+					connection.Dispose();
+					return result;
+				}
+				cmd.Dispose();
+			}
+			connection.Close();
+			connection.Dispose();
+			return result;
+		}
+
+		public static uint? ExecuteScalarUInt(string query, params MySqlParameter[] parameters)
+		{
+			uint? result = null;
+			var connection = new MySqlConnection(DBConfig.connectionString);
+			connection.Open();
+			if (connection.State == ConnectionState.Open)
+			{
+				MySqlCommand cmd = new MySqlCommand(query, connection);
+				cmd.CommandType = CommandType.Text;
+				if (parameters != null)
+					DataHelper.addParams(ref cmd, parameters);
+
+				object scalar = cmd.ExecuteScalar();
+				try
+				{
+					result = Convert.ToUInt32(scalar);
 				}
 				catch (Exception e)
 				{

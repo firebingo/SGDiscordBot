@@ -2,6 +2,7 @@
 using Discord.Commands;
 using Discord.WebSocket;
 using SGMessageBot.AI;
+using SGMessageBot.Config;
 using SGMessageBot.Helpers;
 using System;
 using System.Collections.Generic;
@@ -20,12 +21,14 @@ namespace SGMessageBot.Bot
 		private BotCommandProcessor processor;
 		private Markov markovAi;
 		private IServiceProvider map;
+		private BotCommandsRunning running;
 
 		public async Task installCommandService(IServiceProvider _map)
 		{
 			Client = _map.GetService(typeof(DiscordSocketClient)) as DiscordSocketClient;
 			processor = _map.GetService(typeof(BotCommandProcessor)) as BotCommandProcessor;
 			markovAi = _map.GetService(typeof(Markov)) as Markov;
+			running = new BotCommandsRunning();
 			commands = new CommandService();
 			map = _map;
 			await commands.AddModulesAsync(Assembly.GetEntryAssembly());
@@ -39,6 +42,7 @@ namespace SGMessageBot.Bot
 			{
 				await commands.RemoveModuleAsync(modules[i]);
 			}
+			running.Clear();
 			Client.MessageReceived -= HandleCommand;
 			return Task.FromResult<bool>(true).Result;
 		}
@@ -57,10 +61,13 @@ namespace SGMessageBot.Bot
 				// as SendMessageAsync.
 				IResult result = null;
 				Thread runThread = new Thread(async () => {
+					var guid = Guid.NewGuid();
+					running.Add(guid, context.Channel as SocketTextChannel);
 					result = await commands.ExecuteAsync(context, argPos, map);
+					running.Remove(guid);
 					if (!result.IsSuccess)
 						await uMessage.Channel.SendMessageAsync(result.ErrorReason);
-					});
+				});
 				runThread.Start();
 
 				//var result = await commands.ExecuteAsync(context, argPos, map).ConfigureAwait(false);
@@ -75,13 +82,11 @@ namespace SGMessageBot.Bot
 	public class AdminModule : ModuleBase
 	{
 		private BotCommandProcessor processor;
-		private BotCommandsRunning running;
 		private Markov markovAi;
 
 		public AdminModule(IServiceProvider m)
 		{
 			processor = m.GetService(typeof(BotCommandProcessor)) as BotCommandProcessor;
-			running = m.GetService(typeof(BotCommandsRunning)) as BotCommandsRunning;
 			markovAi = m.GetService(typeof(Markov)) as Markov;
 		}
 
@@ -115,11 +120,8 @@ namespace SGMessageBot.Bot
 		[Command("wait"), Summary("For debug purpose, waits x seconds")]
 		public async Task waitSeconds(int seconds)
 		{
-			var guid = Guid.NewGuid();
-			running.Add(guid, Context.Channel as SocketTextChannel);
-			Context.Channel.TriggerTypingAsync();
 			Thread.Sleep(seconds * 1000);
-			running.Remove(guid);
+			Context.Channel.SendMessageAsync($"Waited {seconds} seconds");
 			return;
 		}
 #endif
@@ -127,18 +129,14 @@ namespace SGMessageBot.Bot
 		[Command("reloadmessages"), Summary("Regets all the messages for a given channel.")]
 		public async Task reloadMessages([Summary("The channel to reload")] IMessageChannel channel = null)
 		{
-			var guid = Guid.NewGuid();
-			running.Add(guid, Context.Channel as SocketTextChannel);
 			if (channel != null)
 			{
 				var result = await BotExamineServers.updateMessageHistoryChannel(Context, channel);
-				running.Remove(guid);
 				await Context.Channel.SendMessageAsync(result);
 			}
 			else
 			{
 				var result = await BotExamineServers.updateMessageHistoryServer(Context);
-				running.Remove(guid);
 				await Context.Channel.SendMessageAsync(result);
 			}
 		}
@@ -146,26 +144,20 @@ namespace SGMessageBot.Bot
 		[Command("rolecounts"), Summary("Gets user role counts for server.")]
 		public async Task roleCounts([Summary("Whether to mention the roles in the list")]bool useMentions = true)
 		{
-			var guid = Guid.NewGuid();
-			running.Add(guid, Context.Channel as SocketTextChannel);
 			var result = "";
 			var textChannel = Context.Channel as SocketTextChannel;
 			if (textChannel == null)
 			{
 				await Context.Channel.SendMessageAsync("Channel is not a text channel");
-				running.Remove(guid);
 				return;
 			}
 			result = await processor.calculateRoleCounts(textChannel, useMentions, Context);
 			await textChannel.SendMessageAsync(result);
-			running.Remove(guid);
 		}
 
 		[Command("rolecounts"), Summary("Gets user role counts for server.")]
 		public async Task roleCounts([Summary("The channel to output the list to.")] SocketChannel outputChannel = null, [Summary("Whether to mention the roles in the list")]bool useMentions = true)
 		{
-			var guid = Guid.NewGuid();
-			running.Add(guid, Context.Channel as SocketTextChannel);
 			var result = "";
 			if (outputChannel == null)
 			{
@@ -175,19 +167,15 @@ namespace SGMessageBot.Bot
 			if (textChannel == null)
 			{
 				await Context.Channel.SendMessageAsync("Channel is not a text channel");
-				running.Remove(guid);
 				return;
 			}
 			result = await processor.calculateRoleCounts(textChannel, useMentions, Context);
 			await textChannel.SendMessageAsync(result);
-			running.Remove(guid);
 		}
 
 		[Command("buildcorpus"), Summary("Rebuilds the corpus for AI chat commands")]
 		public async Task buildCorpus()
 		{
-			var guid = Guid.NewGuid();
-			running.Add(guid, Context.Channel as SocketTextChannel);
 			try
 			{
 				await markovAi.rebuildCorpus();
@@ -195,33 +183,55 @@ namespace SGMessageBot.Bot
 			catch(Exception e)
 			{
 				await Context.Channel.SendMessageAsync($"Exception: {e.Message}");
-				running.Remove(guid);
 			}
 			await Context.Channel.SendMessageAsync("Operation Complete");
-			running.Remove(guid);
 		}
-	}
+
+		[Command("messagetrack"), Summary("Enables sending a message when a specific message count is reached")]
+		public async Task messageTrackSetup(bool enabled, int count, SocketTextChannel channel, string message)
+		{
+			var newConfig = new MessageCountTracker()
+			{
+				enabled = enabled,
+				messageCount = count,
+				channelId = channel.Id,
+				message = message
+			};
+			if (SGMessageBot.botConfig.botInfo.messageCount == null)
+				SGMessageBot.botConfig.botInfo.messageCount = new Dictionary<ulong, MessageCountTracker>();
+
+			if (SGMessageBot.botConfig.botInfo.messageCount.ContainsKey(Context.Guild.Id))
+				SGMessageBot.botConfig.botInfo.messageCount[Context.Guild.Id] = newConfig;
+			else
+				SGMessageBot.botConfig.botInfo.messageCount.Add(Context.Guild.Id, newConfig);
+			SGMessageBot.botConfig.saveCredConfig();
+			Context.Channel.SendMessageAsync("Operation Complete");
+		}
+
+		[Command("reloadmescount"), Summary("Reloads the message count column for usersinservers")]
+		public async Task reloadMessageCounts()
+		{
+			await processor.reloadMessageCounts(Context);
+			Context.Channel.SendMessageAsync("Operation Complete");
+		}
+}
 
 	//[Group("||")]
 	[RequireGuildMessage]
 	public class StatsModule : ModuleBase
 	{
 		private BotCommandProcessor processor;
-		private BotCommandsRunning running;
 		private Markov markovAi;
 
 		public StatsModule(IServiceProvider m)
 		{
 			processor = m.GetService(typeof(BotCommandProcessor)) as BotCommandProcessor;
-			running = m.GetService(typeof(BotCommandsRunning)) as BotCommandsRunning;
 			markovAi = m.GetService(typeof(Markov)) as Markov;
 		}
 
 		[Command("messagecount"), Summary("Gets message counts for the server.")]
 		public async Task messageCounts([Summary("the user to get message counts for")] string input = null)
 		{
-			var guid = Guid.NewGuid();
-			running.Add(guid, Context.Channel as SocketTextChannel);
 			var result = "";
 			var inputParsed = -1;
 			bool pRes = int.TryParse(input, out inputParsed);
@@ -239,13 +249,11 @@ namespace SGMessageBot.Bot
 					{
 						await Context.Channel.SendMessageAsync(res);
 					}
-					running.Remove(guid);
 					return;
 				}
 				else
 				{
 					await Context.Channel.SendMessageAsync(result);
-					running.Remove(guid);
 					return;
 				}
 			}
@@ -254,14 +262,12 @@ namespace SGMessageBot.Bot
 			{
 				result = await processor.calculateRoleMessageCounts(input, Context);
 				await Context.Channel.SendMessageAsync(result);
-				running.Remove(guid);
 				return;
 			}
 
 			input = input != null ? input.Replace("!", String.Empty) : input;
 			result = await processor.calculateUserMessageCounts(input, Context);
 			await Context.Channel.SendMessageAsync(result);
-			running.Remove(guid);
 			return;
 		}
 
@@ -269,8 +275,6 @@ namespace SGMessageBot.Bot
 		public async Task emojiCounts([Summary("The emoji or user to get counts for")] string input = null,
 			[Summary("The emoji to get for a specific user, or the user to get top counts for")] string input2 = null)
 		{
-			var guid = Guid.NewGuid();
-			running.Add(guid, Context.Channel as SocketTextChannel);
 			var result = "";
 			var inputParsed = -1;
 			bool pRes = int.TryParse(input, out inputParsed);
@@ -296,13 +300,11 @@ namespace SGMessageBot.Bot
 								{
 									await Context.Channel.SendMessageAsync(res);
 								}
-								running.Remove(guid);
 								return;
 							}
 							else
 							{
 								await Context.Channel.SendMessageAsync(result);
-								running.Remove(guid);
 								return;
 							}
 						}
@@ -315,13 +317,11 @@ namespace SGMessageBot.Bot
 						{
 							await Context.Channel.SendMessageAsync(res);
 						}
-						running.Remove(guid);
 						return;
 					}
 					else
 					{
-						await Context.Channel.SendMessageAsync(result);
-						running.Remove(guid);
+						await Context.Channel.SendMessageAsync(result);						
 						return;
 					}
 				}
@@ -330,7 +330,6 @@ namespace SGMessageBot.Bot
 				{
 					result = await processor.calculateEmojiCounts(input, Context);
 					await Context.Channel.SendMessageAsync(result);
-					running.Remove(guid);
 					return;
 				}
 
@@ -339,26 +338,21 @@ namespace SGMessageBot.Bot
 				{
 					result = await processor.calculateUserEmojiCounts(input, Context);
 					await Context.Channel.SendMessageAsync(result);
-					running.Remove(guid);
 					return;
 				}
 			}
 			catch (Exception e)
 			{
-				running.Remove(guid);
 				await Context.Channel.SendMessageAsync(e.Message);
 				return;
 			}
 
-			running.Remove(guid);
 			await Context.Channel.SendMessageAsync("Invalid Input");
 		}
 
 		[Command("chat"), Summary("Makes the bot return a generated message")]
 		public async Task generateChatMessage()
 		{
-			var guid = Guid.NewGuid();
-			running.Add(guid, Context.Channel as SocketTextChannel);
 			try
 			{
 				var result = await markovAi.generateMessage();
@@ -366,11 +360,9 @@ namespace SGMessageBot.Bot
 			}
 			catch(Exception e)
 			{
-				running.Remove(guid);
 				await Context.Channel.SendMessageAsync(e.Message);
 				return;
 			}
-			running.Remove(guid);
 		}
 
 		//This no longer works with newer versions of nadeko so its commented until i figure out an alternative.
@@ -440,6 +432,14 @@ namespace SGMessageBot.Bot
 			lock (_commandsLock)
 			{
 				_commands.Remove(key);
+			}
+		}
+
+		public void Clear()
+		{
+			lock(_commandsLock)
+			{
+				_commands.Clear();
 			}
 		}
 

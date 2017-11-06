@@ -281,7 +281,6 @@ namespace SGMessageBot.Bot
 				try
 				{
 					var gChannel = e.Channel as SocketGuildChannel;
-					//var channelServer = e.Discord.Guilds.FirstOrDefault(s => s.GetChannel(e.Channel.Id) != null);
 					if (gChannel != null)
 					{
 						var queryString = @"INSERT INTO messages (serverID, userID, channelID, messageID, rawText, mesText, mesStatus, mesTime)
@@ -291,6 +290,8 @@ namespace SGMessageBot.Bot
 						DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", gChannel.Guild.Id), new MySqlParameter("@userID", e.Author.Id),
 						new MySqlParameter("@channelID", e.Channel.Id), new MySqlParameter("@messageID", e.Id), new MySqlParameter("@rawText", e.Content),
 						new MySqlParameter("@mesText", e.Content), new MySqlParameter("@mesStatus", 0), new MySqlParameter("@mesTime", e.Timestamp.UtcDateTime));
+						queryString = @"UPDATE usersinservers SET mesCount = mesCount+1 WHERE userID=@userID AND serverID=@serverID";
+						DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", gChannel.Guild.Id), new MySqlParameter("@userID", e.Author.Id));
 
 						foreach (var attach in e.Attachments)
 						{
@@ -303,6 +304,7 @@ namespace SGMessageBot.Bot
 							new MySqlParameter("@proxyURL", attach.ProxyUrl), new MySqlParameter("@attachURL", attach.Url), new MySqlParameter("@attachSize", attach.Size));
 						}
 						checkMessageForEmoji(e, gChannel);
+						OtherFunctions.sendMessageTrack(gChannel.Guild);
 					}	
 				}
 				catch (Exception ex)
@@ -359,6 +361,15 @@ namespace SGMessageBot.Bot
 					DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@isDeleted", true), new MySqlParameter("@messageID", mes.Id));
 					queryString = "UPDATE emojiUses SET isDeleted=@isDeleted WHERE messageID=@messageID";
 					DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@isDeleted", true), new MySqlParameter("@messageID", mes.Id));
+					if (mes.HasValue)
+					{
+						var gChannel = mes.Value.Channel as SocketGuildChannel;
+						if (gChannel != null)
+						{
+							queryString = @"UPDATE usersinservers SET mesCount = mesCount-1 WHERE userID=@userID AND serverID=@serverID";
+							DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", gChannel.Guild.Id), new MySqlParameter("@userID", mes.Value.Author.Id));
+						}
+					}
 				}
 				catch (Exception e)
 				{

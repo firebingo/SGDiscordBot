@@ -205,7 +205,7 @@ namespace SGMessageBot.AI
 			var result = new List<MessageModel>();
 
 			var query = "SELECT txt FROM (SELECT COALESCE(mesText, editedMesText) AS txt FROM messages WHERE NOT isDeleted AND userId != @botId) x WHERE txt != '' AND txt NOT LIKE '%@botId%'";
-			DataLayerShortcut.ExecuteReader<List<MessageModel>>(readMessages, result, query, new MySqlParameter("@botId", SGMessageBot.botConfig.credInfo.botId));
+			DataLayerShortcut.ExecuteReader<List<MessageModel>>(readMessages, result, query, new MySqlParameter("@botId", SGMessageBot.botConfig.botInfo.botId));
 
 			return result;
 		}

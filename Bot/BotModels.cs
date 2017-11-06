@@ -11,6 +11,13 @@ namespace SGMessageBot.Bot
 	}
 
 	[Serializable]
+	public class UsersInServersModel
+	{
+		public ulong userID;
+		public uint mesCount;
+	}
+
+	[Serializable]
 	public class DateModel
 	{
 		public DateTime date;

@@ -29,7 +29,6 @@ namespace SGMessageBot
 		public static bool ready { get; set; }
 		private static BotCommandHandler cHandler;
 		private static BotCommandProcessor cProcessor;
-		private static BotCommandsRunning cRunning;
 		private static Markov cMarkov;
 		private static long connectedTimes = 0;
 
@@ -39,7 +38,7 @@ namespace SGMessageBot
 			{
 				botConfig = new BotConfig();
 				var botCResult = botConfig.loadCredConfig();
-				BotMention = $"<@{botConfig.credInfo.botId}>";
+				BotMention = $"<@{botConfig.botInfo.botId}>";
 
 				#region DB Init
 				var dbResult = DataLayerShortcut.loadConfig();
@@ -68,7 +67,7 @@ namespace SGMessageBot
 				Client.Connected += onConnected;
 				Client.Disconnected += onDisconnected;
 				Client.Log += async (message) => Console.WriteLine($"Discord Error:{message.ToString()}");
-				await Client.LoginAsync(TokenType.Bot, botConfig.credInfo.token);
+				await Client.LoginAsync(TokenType.Bot, botConfig.botInfo.token);
 				await Client.StartAsync();
 
 				//Delay until application quit
@@ -91,8 +90,6 @@ namespace SGMessageBot
 				await cHandler.removeCommandService();
 				cHandler = null;
 				cProcessor = null;
-				cRunning.resetCommandsTimer();
-				cRunning = null;
 				Client.MessageReceived -= BotEventHandler.ClientMessageReceived;
 				Client.MessageUpdated -= BotEventHandler.ClientMessageUpdated;
 				Client.MessageDeleted -= BotEventHandler.ClientMessageDeleted;
@@ -170,7 +167,6 @@ namespace SGMessageBot
 			//setup and add command service.
 			cHandler = new BotCommandHandler();
 			cProcessor = new BotCommandProcessor();
-			cRunning = new BotCommandsRunning();
 			cMarkov = new Markov();
 
 			var services = new ServiceCollection()
@@ -178,7 +174,6 @@ namespace SGMessageBot
 				.AddSingleton(botConfig)
 				.AddSingleton(cHandler)
 				.AddSingleton(cProcessor)
-				.AddSingleton(cRunning)
 				.AddSingleton(cMarkov);
 			var provider = new DefaultServiceProviderFactory().CreateServiceProvider(services);
 			return provider;

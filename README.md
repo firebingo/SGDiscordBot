@@ -12,6 +12,16 @@ ex. @bot shutdown
 restarts the bot. Can only be used by a user with a role in commandRoleIds in CredConfig.json.
 ex. @bot shutdown
 
+<b>messagetrack:</b>
+Will send a message when the server's message count is one below or above the given count.
+params: enabled, count, channel, message
+Can only be used by a user with a role in commandRoleIds in CredConfig.json.
+ex: @bot messagetrack true 50000 #announcement "This is a message"
+
+<b>reloadmescount:</b>
+reprocesses the mesCount column in usersinservers.
+Can only be used by a user with a role in commandRoleIds in CredConfig.json.
+
 <b>messagecount:</b>
 Can get several message count statistics for the server.<br />
 

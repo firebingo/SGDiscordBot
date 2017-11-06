@@ -40,6 +40,14 @@ namespace SGMessageBot.DataBase
 			CONSTRAINT kf_emoMesID FOREIGN KEY (messageID) REFERENCES messages(messageID))");
 			buildQueries.Add(4, new List<string>());
 			buildQueries[4].Add(@"ALTER TABLE usersInServers ADD roleIDs json");
+			buildQueries.Add(5, new List<string>());
+			buildQueries[5].Add(@"ALTER TABLE messages MODIFY userID BIGINT UNSIGNED NOT NULL");
+			buildQueries[5].Add(@"ALTER TABLE messages MODIFY serverID BIGINT UNSIGNED NOT NULL");
+			buildQueries[5].Add(@"ALTER TABLE usersInServers MODIFY userID BIGINT UNSIGNED NOT NULL");
+			buildQueries[5].Add(@"ALTER TABLE usersInServers MODIFY serverID BIGINT UNSIGNED NOT NULL");
+			buildQueries[5].Add(@"ALTER TABLE usersInServers ADD PRIMARY KEY(userID, serverID)");
+			buildQueries.Add(6, new List<string>());
+			buildQueries[6].Add(@"ALTER TABLE usersInServers ADD COLUMN mesCount INT UNSIGNED NOT NULL");
 		}
 
 		public BaseResult createDatabase()

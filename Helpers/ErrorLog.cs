@@ -17,14 +17,21 @@ namespace SGMessageBot.Helpers
 
 		public static void writeLog(string log)
 		{
-			var dateString = DateTime.Now.ToString("yyyyMMdd");
-			var path = $"Data/Logs/{dateString}_Errors.log";
-			if (!File.Exists(path))
-				using (File.Create(path)) { }
-			using (var writer = File.AppendText(path))
+			try
 			{
-				var fullDateString = DateTime.Now.ToString("[yyyy-MM-dd hh:MM:ss]");
-				writer.WriteLine($"{fullDateString} - {log}");
+				var dateString = DateTime.Now.ToString("yyyyMMdd");
+				var path = $"Data/Logs/{dateString}_Errors.log";
+				if (!File.Exists(path))
+					using (File.Create(path)) { }
+				using (var writer = File.AppendText(path))
+				{
+					var fullDateString = DateTime.Now.ToString("[yyyy-MM-dd hh:MM:ss]");
+					writer.WriteLine($"{fullDateString} - {log}");
+				}
+			}
+			catch(Exception e)
+			{
+				Console.WriteLine($"Shits fucked yo\n(Failed to write to error log: {e.Message})");
 			}
 		}
 	}
