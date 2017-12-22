@@ -33,7 +33,7 @@ namespace SGMessageBot.DataBase
 			}
 			catch (MySqlException e)
 			{
-				ErrorLog.writeLog(e.Message);
+				ErrorLog.writeError(e);
 				if (e.InnerException.Message.ToUpperInvariant().Contains("UNKNOWN DATABASE"))
 					schemaExists = false;
 
@@ -111,7 +111,7 @@ namespace SGMessageBot.DataBase
 			}
 			catch (Exception e)
 			{
-				ErrorLog.writeLog(e.Message);
+				ErrorLog.writeError(e);
 				connection.Close();
 				connection.Dispose();
 				return $"Exception: {e.Message}, Query: {query}";
@@ -152,7 +152,7 @@ namespace SGMessageBot.DataBase
 				}
 				catch (Exception e)
 				{
-					ErrorLog.writeLog(e.Message);
+					ErrorLog.writeError(e);
 					cmd.Dispose();
 					connection.Close();
 					connection.Dispose();
@@ -184,7 +184,7 @@ namespace SGMessageBot.DataBase
 				}
 				catch (Exception e)
 				{
-					ErrorLog.writeLog(e.Message);
+					ErrorLog.writeError(e);
 					cmd.Dispose();
 					connection.Close();
 					connection.Dispose();
@@ -223,7 +223,7 @@ namespace SGMessageBot.DataBase
 			}
 			catch (SQLiteException e)
 			{
-				ErrorLog.writeLog(e.Message);
+				ErrorLog.writeError(e);
 				result.success = false;
 				result.message = e.Message;
 			}
@@ -245,7 +245,7 @@ namespace SGMessageBot.DataBase
 			}
 			catch (SQLiteException e)
 			{
-				ErrorLog.writeLog(e.Message);
+				ErrorLog.writeError(e);
 				result.success = false;
 				result.message = e.Message;
 			}
@@ -274,7 +274,7 @@ namespace SGMessageBot.DataBase
 				}
 				catch (Exception e)
 				{
-					ErrorLog.writeLog(e.Message);
+					ErrorLog.writeError(e);
 					command.Dispose();
 					closeLiteConnection();
 					return result;
@@ -283,7 +283,7 @@ namespace SGMessageBot.DataBase
 			}
 			catch(SQLiteException e)
 			{
-				ErrorLog.writeLog(e.Message);
+				ErrorLog.writeError(e);
 				closeLiteConnection();
 				return result = null;
 			}

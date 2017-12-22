@@ -70,7 +70,7 @@ namespace SGMessageBot.Bot
 			}
 			catch (Exception e)
 			{
-				ErrorLog.writeLog(e.Message);
+				ErrorLog.writeError(e);
 				result = e.Message;
 			}
 			return Task.FromResult<string>(result).Result;
@@ -534,6 +534,9 @@ namespace SGMessageBot.Bot
 		}
 		#endregion
 
+		#region Other Functions
+		#endregion
+
 		#region Nadeko Counts
 		public async Task<string> calculateNadekoUserCounts(SocketUser user, CommandContext context)
 		{
@@ -616,6 +619,16 @@ namespace SGMessageBot.Bot
 				}
 			}
 		}
+
+		private static void readMessagesText(IDataReader reader, List<MessageTextModel> data)
+		{
+			reader = reader as MySqlDataReader;
+			if (reader != null)
+			{
+				var message = new MessageTextModel(reader.GetString(0));
+				data.Add(message);
+			}
+		}
 		#endregion
 
 		#region Helper Functions
@@ -641,6 +654,16 @@ namespace SGMessageBot.Bot
 			var success = UInt64.TryParse(match.Value, out result);
 			if (!success)
 				return 0;
+			return result;
+		}
+
+		public static async Task<List<MessageTextModel>> loadMessages()
+		{
+			var result = new List<MessageTextModel>();
+
+			var query = "SELECT txt FROM (SELECT COALESCE(mesText, editedMesText) AS txt FROM messages WHERE NOT isDeleted AND userId != @botId) x WHERE txt != '' AND txt NOT LIKE '%@botId%'";
+			DataLayerShortcut.ExecuteReader<List<MessageTextModel>>(readMessagesText, result, query, new MySqlParameter("@botId", SGMessageBot.botConfig.botInfo.botId));
+
 			return result;
 		}
 		#endregion

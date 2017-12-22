@@ -351,11 +351,15 @@ namespace SGMessageBot.Bot
 		}
 
 		[Command("chat"), Summary("Makes the bot return a generated message")]
-		public async Task generateChatMessage()
+		public async Task generateChatMessage([Summary("The bot will attempt to start the message with this word")] string input = null)
 		{
 			try
 			{
-				var result = await markovAi.generateMessage();
+				if (String.IsNullOrWhiteSpace(input))
+					input = string.Empty;
+				var split = input.Split(' ');
+				input = split[0].Trim();
+				var result = await markovAi.generateMessage(input);
 				await Context.Channel.SendMessageAsync(result);
 			}
 			catch(Exception e)
@@ -411,7 +415,7 @@ namespace SGMessageBot.Bot
 						}
 						catch (Exception e)
 						{
-							ErrorLog.writeLog(e.Message);
+							ErrorLog.writeError(e);
 							continue;
 						}
 					}

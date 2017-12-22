@@ -47,4 +47,16 @@ namespace SGMessageBot.Bot
 		public string roleMention;
 		public int roleCount;
 	}
+
+	[Serializable]
+	public struct MessageTextModel
+	{
+		private readonly string _mesText;
+		public string mesText { get { return _mesText; } }
+
+		public MessageTextModel(string t)
+		{
+			_mesText = t;
+		}
+	}
 }

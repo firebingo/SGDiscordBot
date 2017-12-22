@@ -75,11 +75,12 @@ namespace SGMessageBot.Bot
 				}
 				foreach (var emoji in server.Emotes)
 				{
-					queryString = @"INSERT INTO emojis (serverID, emojiID, emojiName, isManaged, colonsRequired)
-					VALUES(@serverID, @emojiID, @emojiName, @isManaged, @colonsRequired)
+					queryString = @"INSERT INTO emojis (serverID, emojiID, emojiName, isManaged, colonsRequired, isAnimated)
+					VALUES(@serverID, @emojiID, @emojiName, @isManaged, @colonsRequired, @isAnimated)
 					ON DUPLICATE KEY UPDATE serverID=@serverID, emojiName=@emojiName, isManaged=@isManaged, colonsRequired=@colonsRequired";
 					DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", server.Id), new MySqlParameter("@emojiID", emoji.Id),
-						new MySqlParameter("@emojiName", emoji.Name), new MySqlParameter("@isManaged", emoji.IsManaged), new MySqlParameter("@colonsRequired", emoji.RequireColons));
+						new MySqlParameter("@emojiName", emoji.Name), new MySqlParameter("@isManaged", emoji.IsManaged), new MySqlParameter("@colonsRequired", emoji.RequireColons), 
+						new MySqlParameter("@isAnimated", false));
 				}
 				foreach (var user in server.Users)
 				{
@@ -94,19 +95,19 @@ namespace SGMessageBot.Bot
 						roleIds.Add(role.Id);
 
 					DateTime? joinedAtDateTime = user.JoinedAt.HasValue ? ((user.JoinedAt.Value.UtcDateTime) as DateTime?) : null;
-					queryString = @"INSERT INTO usersInServers (serverID, userID, discriminator, nickName, nickNameMention, joinedDate, avatarID, avatarUrl, lastOnline, mesCount)
-					VALUES(@serverID, @userID, @discriminator, @nickName, @nickNameMention, @joinedDate, @avatarID, @avatarUrl, @lastOnline, @mesCount)
+					queryString = @"INSERT INTO usersInServers (serverID, userID, discriminator, nickName, nickNameMention, joinedDate, avatarID, avatarUrl, lastOnline, roleIDs, mesCount)
+					VALUES(@serverID, @userID, @discriminator, @nickName, @nickNameMention, @joinedDate, @avatarID, @avatarUrl, @lastOnline, @roleIds, @mesCount)
 					ON DUPLICATE KEY UPDATE serverID=@serverID, userID=@userID, discriminator=@discriminator, nickName=@nickName, nickNameMention=@nickNameMention, 
 					joinedDate=@joinedDate, avatarID=@avatarID, avatarUrl=@avatarUrl, lastOnline=@lastOnline, roleIDs=@roleIds";
 					DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", user.Guild.Id), new MySqlParameter("@userID", user.Id),
 						new MySqlParameter("@discriminator", user.Discriminator), new MySqlParameter("@nickName", user.Nickname), new MySqlParameter("@nickNameMention", user.Mention.Replace("!", String.Empty)),
 						new MySqlParameter("@joinedDate", joinedAtDateTime), new MySqlParameter("@avatarID", user.AvatarId), new MySqlParameter("@avatarUrl", user.GetAvatarUrl()),
-						new MySqlParameter("@lastOnline", joinedAtDateTime), new MySqlParameter("@roleIds", JsonConvert.SerializeObject(roleIds)), new MySqlParameter("@mesCount", 0));
+						new MySqlParameter("@lastOnline", joinedAtDateTime), new MySqlParameter("@roleIds", JsonConvert.SerializeObject(roleIds)), new MySqlParameter("@mesCount", value:0));
 				}
 			}
 			catch (Exception e)
 			{
-				ErrorLog.writeLog(e.Message);
+				ErrorLog.writeError(e);
 				return;
 			}
 		}
@@ -221,7 +222,7 @@ namespace SGMessageBot.Bot
 				}
 				else
 				{
-					ErrorLog.writeLog(e.Message);
+					ErrorLog.writeError(e);
 					return $"Exception: {e.Message}";
 				}
 			}
@@ -348,7 +349,7 @@ namespace SGMessageBot.Bot
 						}
 						else
 						{
-							ErrorLog.writeLog(e.Message);
+							ErrorLog.writeError(e);
 							exceptionsResult.Add($"Exception: {e.Message}");
 						}
 						continue;
@@ -370,7 +371,7 @@ namespace SGMessageBot.Bot
 				}
 				else
 				{
-					ErrorLog.writeLog(e.Message);
+					ErrorLog.writeError(e);
 					return $"Exception: {e.Message}";
 				}
 			}
@@ -386,9 +387,9 @@ namespace SGMessageBot.Bot
 
 		private static void checkMessageForEmoji(ICommandContext context, IMessage message, IMessageChannel channel, ref List<string> rows)
 		{
-			var Regex = new Regex(@"<:.*?:\d*?>");
-			var Matches = Regex.Matches(message.Content);
-			var nameRegex = new Regex(@"<:(.*?):");
+			var emojiRegex = new Regex(@"<a?:.*?:\d*?>");
+			var Matches = emojiRegex.Matches(message.Content);
+			var nameRegex = new Regex(@":(.*?):");
 			var idRegex = new Regex(@":(\d*?)>");
 			foreach(Match m in Matches)
 			{
@@ -401,7 +402,7 @@ namespace SGMessageBot.Bot
 				}
 				catch (Exception e)
 				{
-					ErrorLog.writeLog(e.Message);
+					ErrorLog.writeError(e);
 					continue;
 				}
 			}

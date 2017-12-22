@@ -48,6 +48,8 @@ namespace SGMessageBot.DataBase
 			buildQueries[5].Add(@"ALTER TABLE usersInServers ADD PRIMARY KEY(userID, serverID)");
 			buildQueries.Add(6, new List<string>());
 			buildQueries[6].Add(@"ALTER TABLE usersInServers ADD COLUMN mesCount INT UNSIGNED NOT NULL DEFAULT 0");
+			buildQueries.Add(7, new List<string>());
+			buildQueries[7].Add(@"ALTER TABLE emojis ADD COLUMN isAnimated BOOL DEFAULT FALSE");
 		}
 
 		public BaseResult createDatabase()
@@ -65,7 +67,7 @@ namespace SGMessageBot.DataBase
 			}
 			catch (MySqlException e)
 			{
-				ErrorLog.writeLog(e.Message);
+				ErrorLog.writeError(e);
 				result.message = e.Message;
 				result.success = false;
 				return result;
@@ -134,7 +136,7 @@ namespace SGMessageBot.DataBase
 			}
 			catch (MySqlException e)
 			{
-				ErrorLog.writeLog(e.Message);
+				ErrorLog.writeError(e);
 				result.message = e.Message;
 				result.success = false;
 				return result;
@@ -157,7 +159,7 @@ namespace SGMessageBot.DataBase
 			}
 			catch(MySqlException e)
 			{
-				ErrorLog.writeLog(e.Message);
+				ErrorLog.writeError(e);
 				result.success = false;
 				result.message = e.Message;
 				return result;

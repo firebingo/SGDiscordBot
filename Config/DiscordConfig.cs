@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using SGMessageBot.Helpers;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -29,6 +30,7 @@ namespace SGMessageBot.Config
 				{
 					result.success = false;
 					result.message = e.Message;
+					ErrorLog.writeError(e);
 					return result;
 				}
 			}
@@ -36,6 +38,7 @@ namespace SGMessageBot.Config
 			{
 				result.success = false;
 				result.message = "FAIL_FIND_CRED";
+				ErrorLog.writeLog("Failed to find DB Config");
 			}
 			result.success = true;
 			return result;
@@ -64,6 +67,7 @@ namespace SGMessageBot.Config
 		public string token;
 		public string clientId;
 		public string botId;
+		public string aiCorpusExtraPath = string.Empty;
 		public List<ulong> ownerIds;
 		public List<ulong> commandRoleIds;
 		public Dictionary<ulong, MessageCountTracker> messageCount;

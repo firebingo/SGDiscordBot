@@ -77,7 +77,7 @@ namespace SGMessageBot
 			}
 			catch (Exception e)
 			{
-				ErrorLog.writeLog(e.Message);
+				ErrorLog.writeError(e);
 				return;
 			}
 			#endregion
@@ -113,7 +113,7 @@ namespace SGMessageBot
 			}
 			catch (Exception e)
 			{
-				ErrorLog.writeLog(e.Message);
+				ErrorLog.writeError(e);
 				Console.WriteLine(e.Message);
 			}
 

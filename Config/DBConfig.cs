@@ -28,7 +28,7 @@ namespace SGMessageBot.Config
 				}
 				catch(Exception e)
 				{
-					ErrorLog.writeLog(e.Message);
+					ErrorLog.writeError(e);
 					result.success = false;
 					result.message = e.Message;
 					return result;

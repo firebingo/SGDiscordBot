@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using System.Collections.Concurrent;
 using System.Threading;
+using SGMessageBot.Bot;
 
 namespace SGMessageBot.AI
 {
@@ -23,8 +24,26 @@ namespace SGMessageBot.AI
 		{
 			try
 			{
-				var messages = await loadMessages();
 				var wordDict = new ConcurrentDictionary<string, ConcurrentBag<string>>();
+				List<MessageTextModel> messages = new List<MessageTextModel>();
+				if (!string.IsNullOrWhiteSpace(SGMessageBot.botConfig.botInfo.aiCorpusExtraPath))
+				{
+					try
+					{
+						var lines = File.ReadAllLines(SGMessageBot.botConfig.botInfo.aiCorpusExtraPath);
+						lines = lines.Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
+						for (var i = 0; i < lines.Length; ++i)
+						{
+							messages.Add(new MessageTextModel(lines[i]));
+						}
+					}
+					catch
+					{
+						throw;
+					}
+				}
+				var tempMes = await BotCommandProcessor.loadMessages();
+				messages.AddRange(tempMes);
 				Parallel.ForEach(messages, (message) =>
 				{
 					var split = message.mesText.Trim().Split(' ');
@@ -93,7 +112,7 @@ namespace SGMessageBot.AI
 				sem.Release();
 				throw;
 			}
-			
+
 			await loadCorpus();
 			sem.Release();
 		}
@@ -101,7 +120,7 @@ namespace SGMessageBot.AI
 		private async Task loadCorpus()
 		{
 			try
-			{				
+			{
 				var wordDict = new Dictionary<string, string[]>();
 				if (!File.Exists(dataDirectory))
 				{
@@ -139,7 +158,7 @@ namespace SGMessageBot.AI
 			}
 		}
 
-		public async Task<string> generateMessage()
+		public async Task<string> generateMessage(string startWord)
 		{
 			try
 			{
@@ -164,7 +183,18 @@ namespace SGMessageBot.AI
 				{
 					Random rand = new Random();
 					List<string> keys = Enumerable.ToList(AICorpus.Keys);
-					var startValue = keys[rand.Next(keys.Count)];
+
+					var startWordKeys = new List<string>();
+					if (startWord != string.Empty)
+						startWordKeys = keys.Where(x => x.StartsWith(startWord)).ToList();
+					if (startWord != string.Empty && startWordKeys.Count == 0)
+						return $"Could not find a key starting with {startWord}";
+
+					string startValue = string.Empty;
+					if (startWordKeys.Count > 0)
+						startValue = startWordKeys[rand.Next(startWordKeys.Count)];
+					else
+						startValue = keys[rand.Next(keys.Count)];
 					result += startValue;
 					string nextValue = startValue;
 					var operate = true;
@@ -197,38 +227,6 @@ namespace SGMessageBot.AI
 			catch
 			{
 				throw;
-			}
-		}
-
-		private async Task<List<MessageModel>> loadMessages()
-		{
-			var result = new List<MessageModel>();
-
-			var query = "SELECT txt FROM (SELECT COALESCE(mesText, editedMesText) AS txt FROM messages WHERE NOT isDeleted AND userId != @botId) x WHERE txt != '' AND txt NOT LIKE '%@botId%'";
-			DataLayerShortcut.ExecuteReader<List<MessageModel>>(readMessages, result, query, new MySqlParameter("@botId", SGMessageBot.botConfig.botInfo.botId));
-
-			return result;
-		}
-
-		private void readMessages(IDataReader reader, List<MessageModel> data)
-		{
-			reader = reader as MySqlDataReader;
-			if (reader != null)
-			{
-				var message = new MessageModel(reader.GetString(0));
-				data.Add(message);
-			}
-		}
-
-		[Serializable]
-		private struct MessageModel
-		{
-			private readonly string _mesText;
-			public string mesText { get { return _mesText; } }
-
-			public MessageModel(string t)
-			{
-				_mesText = t;
 			}
 		}
 	}

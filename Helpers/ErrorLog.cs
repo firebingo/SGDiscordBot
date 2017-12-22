@@ -34,5 +34,25 @@ namespace SGMessageBot.Helpers
 				Console.WriteLine($"Shits fucked yo\n(Failed to write to error log: {e.Message})");
 			}
 		}
+
+		public static void writeError(Exception e)
+		{
+			try
+			{
+				var dateString = DateTime.Now.ToString("yyyyMMdd");
+				var path = $"Data/Logs/{dateString}_Errors.log";
+				if (!File.Exists(path))
+					using (File.Create(path)) { }
+				using (var writer = File.AppendText(path))
+				{
+					var fullDateString = DateTime.Now.ToString("[yyyy-MM-dd hh:MM:ss]");
+					writer.WriteLine($"{fullDateString} - Message: {e.Message}, Stack Trace: {e.StackTrace}");
+				}
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine($"Shits fucked yo\n(Failed to write to error log: {ex.Message})");
+			}
+		}
 	}
 }
