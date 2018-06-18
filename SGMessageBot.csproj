@@ -37,22 +37,22 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Discord.Net.Commands, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>packages\Discord.Net.Commands.2.0.0-beta-00854\lib\netstandard1.1\Discord.Net.Commands.dll</HintPath>
+      <HintPath>packages\Discord.Net.Commands.2.0.0-beta2-00965\lib\net46\Discord.Net.Commands.dll</HintPath>
     </Reference>
     <Reference Include="Discord.Net.Core, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>packages\Discord.Net.Core.2.0.0-beta-00854\lib\net45\Discord.Net.Core.dll</HintPath>
+      <HintPath>packages\Discord.Net.Core.2.0.0-beta2-00965\lib\net46\Discord.Net.Core.dll</HintPath>
     </Reference>
     <Reference Include="Discord.Net.Rest, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>packages\Discord.Net.Rest.2.0.0-beta-00854\lib\net45\Discord.Net.Rest.dll</HintPath>
+      <HintPath>packages\Discord.Net.Rest.2.0.0-beta2-00965\lib\net46\Discord.Net.Rest.dll</HintPath>
     </Reference>
     <Reference Include="Discord.Net.Rpc, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>packages\Discord.Net.Rpc.2.0.0-beta-00854\lib\net45\Discord.Net.Rpc.dll</HintPath>
+      <HintPath>packages\Discord.Net.Rpc.2.0.0-beta-00860\lib\net45\Discord.Net.Rpc.dll</HintPath>
     </Reference>
     <Reference Include="Discord.Net.Webhook, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>packages\Discord.Net.Webhook.2.0.0-beta-00854\lib\netstandard1.1\Discord.Net.Webhook.dll</HintPath>
+      <HintPath>packages\Discord.Net.Webhook.2.0.0-beta2-00965\lib\netstandard1.3\Discord.Net.Webhook.dll</HintPath>
     </Reference>
     <Reference Include="Discord.Net.WebSocket, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>packages\Discord.Net.WebSocket.2.0.0-beta-00854\lib\net45\Discord.Net.WebSocket.dll</HintPath>
+      <HintPath>packages\Discord.Net.WebSocket.2.0.0-beta2-00965\lib\net46\Discord.Net.WebSocket.dll</HintPath>
     </Reference>
     <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <HintPath>packages\EntityFramework.6.0.0\lib\net45\EntityFramework.dll</HintPath>
@@ -76,8 +76,8 @@
       <HintPath>packages\MySql.Data.6.9.9\lib\net45\MySql.Data.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>packages\Newtonsoft.Json.10.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
+    <Reference Include="Newtonsoft.Json, Version=11.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>packages\Newtonsoft.Json.11.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="Nito.AsyncEx, Version=3.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>packages\Nito.AsyncEx.3.0.1\lib\net45\Nito.AsyncEx.dll</HintPath>
@@ -100,9 +100,8 @@
       <HintPath>packages\System.AppContext.4.3.0\lib\net46\System.AppContext.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="System.Collections.Immutable, Version=1.2.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>packages\System.Collections.Immutable.1.3.1\lib\portable-net45+win8+wp8+wpa81\System.Collections.Immutable.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="System.Collections.Immutable, Version=1.2.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>packages\System.Collections.Immutable.1.4.0\lib\netstandard2.0\System.Collections.Immutable.dll</HintPath>
     </Reference>
     <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
@@ -214,6 +213,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AI\Markov.cs" />
+    <Compile Include="Bot\AprilFools.cs" />
     <Compile Include="Bot\BotCommandHandler.cs" />
     <Compile Include="Bot\BotCommandProcessor.cs" />
     <Compile Include="Bot\BotEventHandler.cs" />
@@ -221,6 +221,7 @@
     <Compile Include="Bot\BotModels.cs" />
     <Compile Include="Bot\BotPermissions.cs" />
     <Compile Include="Bot\OtherFunctions.cs" />
+    <Compile Include="Bot\StatTracker.cs" />
     <Compile Include="Config\DBConfig.cs" />
     <Compile Include="Config\DiscordConfig.cs" />
     <Compile Include="DataBase\DataHelper.cs" />

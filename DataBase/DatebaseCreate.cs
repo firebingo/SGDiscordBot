@@ -39,17 +39,20 @@ namespace SGMessageBot.DataBase
 			CONSTRAINT kf_emoServerID FOREIGN KEY (serverID) REFERENCES servers(serverID), CONSTRAINT kf_emoUserID FOREIGN KEY (userID) REFERENCES users(userID), CONSTRAINT kf_emoChanID FOREIGN KEY (channelID) REFERENCES channels(channelID), 
 			CONSTRAINT kf_emoMesID FOREIGN KEY (messageID) REFERENCES messages(messageID))");
 			buildQueries.Add(4, new List<string>());
-			buildQueries[4].Add(@"ALTER TABLE usersInServers ADD roleIDs json");
+			buildQueries[4].Add("ALTER TABLE usersInServers ADD roleIDs json");
 			buildQueries.Add(5, new List<string>());
-			buildQueries[5].Add(@"ALTER TABLE messages MODIFY userID BIGINT UNSIGNED NOT NULL");
-			buildQueries[5].Add(@"ALTER TABLE messages MODIFY serverID BIGINT UNSIGNED NOT NULL");
-			buildQueries[5].Add(@"ALTER TABLE usersInServers MODIFY userID BIGINT UNSIGNED NOT NULL");
-			buildQueries[5].Add(@"ALTER TABLE usersInServers MODIFY serverID BIGINT UNSIGNED NOT NULL");
-			buildQueries[5].Add(@"ALTER TABLE usersInServers ADD PRIMARY KEY(userID, serverID)");
+			buildQueries[5].Add("ALTER TABLE messages MODIFY userID BIGINT UNSIGNED NOT NULL");
+			buildQueries[5].Add("ALTER TABLE messages MODIFY serverID BIGINT UNSIGNED NOT NULL");
+			buildQueries[5].Add("ALTER TABLE usersInServers MODIFY userID BIGINT UNSIGNED NOT NULL");
+			buildQueries[5].Add("ALTER TABLE usersInServers MODIFY serverID BIGINT UNSIGNED NOT NULL");
+			buildQueries[5].Add("ALTER TABLE usersInServers ADD PRIMARY KEY(userID, serverID)");
 			buildQueries.Add(6, new List<string>());
-			buildQueries[6].Add(@"ALTER TABLE usersInServers ADD COLUMN mesCount INT UNSIGNED NOT NULL DEFAULT 0");
+			buildQueries[6].Add("ALTER TABLE usersInServers ADD COLUMN mesCount INT UNSIGNED NOT NULL DEFAULT 0");
 			buildQueries.Add(7, new List<string>());
-			buildQueries[7].Add(@"ALTER TABLE emojis ADD COLUMN isAnimated BOOL DEFAULT FALSE");
+			buildQueries[7].Add("ALTER TABLE emojis ADD COLUMN isAnimated BOOL DEFAULT FALSE");
+			buildQueries.Add(8, new List<string>());
+			buildQueries[8].Add("CREATE TABLE stats (serverID BIGINT UNSIGNED, statType INT UNSIGNED, statTime DATETIME, statValue BIGINT, statText TEXT, CONSTRAINT kf_statServerID FOREIGN KEY (serverID) REFERENCES servers(serverID))");
+			buildQueries[8].Add("CREATE INDEX idx_statType ON stats (statType)");
 		}
 
 		public BaseResult createDatabase()

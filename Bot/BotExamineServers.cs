@@ -21,6 +21,7 @@ namespace SGMessageBot.Bot
 	{
 		public static async Task startupCheck(IEnumerable<SocketGuild> servers)
 		{
+			await Task.Delay(250);
 			foreach (var server in servers)
 			{
 				await updateDatabaseServer(server);

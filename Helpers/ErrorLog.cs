@@ -5,6 +5,7 @@ namespace SGMessageBot.Helpers
 {
 	public static class ErrorLog
 	{
+		private static object lockobj = new object();
 		private static string folderLocation = String.Empty;
 		static ErrorLog()
 		{
@@ -19,14 +20,17 @@ namespace SGMessageBot.Helpers
 		{
 			try
 			{
-				var dateString = DateTime.Now.ToString("yyyyMMdd");
-				var path = $"Data/Logs/{dateString}_Errors.log";
-				if (!File.Exists(path))
-					using (File.Create(path)) { }
-				using (var writer = File.AppendText(path))
+				lock (lockobj)
 				{
-					var fullDateString = DateTime.Now.ToString("[yyyy-MM-dd hh:MM:ss]");
-					writer.WriteLine($"{fullDateString} - {log}");
+					var dateString = DateTime.Now.ToString("yyyyMMdd");
+					var path = $"Data/Logs/{dateString}_Errors.log";
+					if (!File.Exists(path))
+						using (File.Create(path)) { }
+					using (var writer = File.AppendText(path))
+					{
+						var fullDateString = DateTime.Now.ToString("[yyyy-MM-dd hh:MM:ss]");
+						writer.WriteLine($"{fullDateString} - {log}");
+					}
 				}
 			}
 			catch(Exception e)
@@ -39,14 +43,17 @@ namespace SGMessageBot.Helpers
 		{
 			try
 			{
-				var dateString = DateTime.Now.ToString("yyyyMMdd");
-				var path = $"Data/Logs/{dateString}_Errors.log";
-				if (!File.Exists(path))
-					using (File.Create(path)) { }
-				using (var writer = File.AppendText(path))
+				lock (lockobj)
 				{
-					var fullDateString = DateTime.Now.ToString("[yyyy-MM-dd hh:MM:ss]");
-					writer.WriteLine($"{fullDateString} - Message: {e.Message}, Stack Trace: {e.StackTrace}");
+					var dateString = DateTime.Now.ToString("yyyyMMdd");
+					var path = $"Data/Logs/{dateString}_Errors.log";
+					if (!File.Exists(path))
+						using (File.Create(path)) { }
+					using (var writer = File.AppendText(path))
+					{
+						var fullDateString = DateTime.Now.ToString("[yyyy-MM-dd hh:MM:ss]");
+						writer.WriteLine($"{fullDateString} - Message: {e.Message}, Stack Trace: {e.StackTrace}");
+					}
 				}
 			}
 			catch (Exception ex)

@@ -70,7 +70,9 @@ namespace SGMessageBot.Config
 		public string aiCorpusExtraPath = string.Empty;
 		public List<ulong> ownerIds;
 		public List<ulong> commandRoleIds;
-		public Dictionary<ulong, MessageCountTracker> messageCount;
+		public Dictionary<ulong, MessageCountTracker> messageCount = new Dictionary<ulong, MessageCountTracker>();
+		public Dictionary<string, RandomMessageInfo> randomMessageSend = new Dictionary<string, RandomMessageInfo>();
+		public List<ulong> statServerIds = new List<ulong>();
 	}
 
 	[Serializable]
@@ -80,5 +82,15 @@ namespace SGMessageBot.Config
 		public ulong channelId;
 		public int messageCount;
 		public string message;
+	}
+
+	[Serializable]
+	public class RandomMessageInfo
+	{
+		public string key = "test";
+		public ulong serverId = 0;
+		public ulong channelId = 0;
+		public double maxSeconds = 7200.0; //2hours
+		public List<string> messagesToPick = new List<string>();
 	}
 }

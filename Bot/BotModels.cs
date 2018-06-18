@@ -52,11 +52,27 @@ namespace SGMessageBot.Bot
 	public struct MessageTextModel
 	{
 		private readonly string _mesText;
-		public string mesText { get { return _mesText; } }
+		public string mesText => _mesText;
 
 		public MessageTextModel(string t)
 		{
 			_mesText = t;
 		}
+	}
+
+	public enum StatType
+	{
+		userCount = 0,
+		uniqueUsers = 1
+	}
+
+	[Serializable]
+	public class StatModel
+	{
+		public ulong serverID;
+		public StatType statType;
+		public DateTime statTime;
+		public long statValue;
+		public string statText;
 	}
 }

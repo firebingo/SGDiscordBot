@@ -11,7 +11,6 @@ namespace SGMessageBot.Bot
 {
 	public static class OtherFunctions
 	{
-		//This should probably be in a data file somehow instead of being compiled, but oh well, its temporary.
 		private static Dictionary<string, DateTime> times = new Dictionary<string, DateTime>();
 
 		public static void loadTimes()
@@ -59,6 +58,24 @@ namespace SGMessageBot.Bot
 						SGMessageBot.botConfig.saveCredConfig();
 					}
 				}
+			}
+		}
+
+		public static void ShuffleList<T>(this IList<T> list, int? seed = null)
+		{
+			Random rand = null;
+			if (seed.HasValue)
+				rand = new Random(seed.Value);
+			else
+				rand = new Random();
+			int n = list.Count;
+			while (n > 1)
+			{
+				n--;
+				int k = rand.Next(n + 1);
+				T value = list[k];
+				list[k] = list[n];
+				list[n] = value;
 			}
 		}
 	}

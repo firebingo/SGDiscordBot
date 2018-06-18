@@ -264,13 +264,7 @@ namespace SGMessageBot.Bot
 			#region Messages
 			public static async Task ProcessMessageReceived(SocketMessage e)
 			{
-				//From April Fools Day 2017
-				//Regex reg = new Regex("madoka.*\\?");
-				//Regex reg1 = new Regex("why.*madoka");
-				//if (reg.IsMatch(e.Content.ToLower()) || reg1.IsMatch(e.Content.ToLower()))
-				//{
-				//	e.Channel.SendMessageAsync("*Check the date*");
-				//}
+				AprilFools.Madoka2017(e);
 
 				//For the pre Symphogear AXZ rewatch
 				//if (e.Content.ToLower().Contains("!rewatch"))
@@ -384,6 +378,9 @@ namespace SGMessageBot.Bot
 			}
 			public static async Task ProcessServerUpdated(SocketGuild before, SocketGuild after)
 			{
+				//A server can't have a empty name or no users so if this happens assume its a bad update and dont do it
+				if (string.IsNullOrWhiteSpace(after.Name) || after.Users.Count == 0)
+					return;
 				var queryString = @"INSERT INTO servers (serverID, ownerID, serverName, userCount, channelCount, roleCount, regionID, createdDate)
 				VALUES(@serverID, @ownerID, @serverName, @userCount, @channelCount, @roleCount, @regionID, @createdDate)
 				ON DUPLICATE KEY UPDATE serverID=@serverID, ownerID=@ownerID, serverName=@serverName, userCount=@userCount, channelCount=@channelCount, roleCount=@roleCount,

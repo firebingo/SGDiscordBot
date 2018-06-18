@@ -31,7 +31,7 @@ namespace SGMessageBot.Bot
 			running = new BotCommandsRunning();
 			commands = new CommandService();
 			map = _map;
-			await commands.AddModulesAsync(Assembly.GetEntryAssembly());
+			await commands.AddModulesAsync(Assembly.GetEntryAssembly(), _map);
 			Client.MessageReceived += HandleCommand;
 		}
 
@@ -94,7 +94,7 @@ namespace SGMessageBot.Bot
 		public async Task Shutdown()
 		{
 			await Context.Channel.SendMessageAsync("Goodbye").ConfigureAwait(false);
-			Context.Client.StopAsync();
+			await Context.Client.StopAsync();
 			await Task.Delay(2000).ConfigureAwait(false);
 			Environment.Exit(0);
 		}
@@ -103,9 +103,9 @@ namespace SGMessageBot.Bot
 		public async Task restart()
 		{
 			await Context.Channel.SendMessageAsync("Restarting...");
-			Context.Client.StopAsync();
+			await Context.Client.StopAsync();
 			await Task.Delay(2000);
-			System.Diagnostics.Process.Start(System.Reflection.Assembly.GetExecutingAssembly().Location);
+			System.Diagnostics.Process.Start(Assembly.GetExecutingAssembly().Location);
 			Environment.Exit(0);
 		}
 
@@ -214,7 +214,18 @@ namespace SGMessageBot.Bot
 			await processor.reloadMessageCounts(Context);
 			Context.Channel.SendMessageAsync("Operation Complete");
 		}
-}
+
+		[Command("aprilfools"), Summary("Enable/disable april fools event for a year")]
+		public async Task enableAprilFools(string year, bool enable)
+		{
+			if (enable)
+				AprilFools.StartYear(year);
+			else
+				AprilFools.EndYear();
+
+			Context.Channel.SendMessageAsync("Operation Complete");
+		}
+	}
 
 	//[Group("||")]
 	[RequireGuildMessage]
@@ -360,7 +371,14 @@ namespace SGMessageBot.Bot
 				var split = input.Split(' ');
 				input = split[0].Trim();
 				var result = await markovAi.generateMessage(input);
-				await Context.Channel.SendMessageAsync(result);
+				if(result.Contains("|?|"))
+				{
+					var sendSplit = result.Split(new string[] { "|?|" }, StringSplitOptions.None);
+					foreach(var send in sendSplit)
+						await Context.Channel.SendMessageAsync(send);
+				}
+				else
+					await Context.Channel.SendMessageAsync(result);
 			}
 			catch(Exception e)
 			{

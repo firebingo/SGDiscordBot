@@ -24,12 +24,12 @@ namespace SGMessageBot
 		}
 
 		public static DiscordSocketClient Client { get; private set; }
-		public static BotConfig botConfig { get; private set; }		
-		public static string BotMention = "";
+		public static BotConfig botConfig { get; private set; }
 		public static bool ready { get; set; }
 		private static BotCommandHandler cHandler;
 		private static BotCommandProcessor cProcessor;
 		private static Markov cMarkov;
+		private static StatTracker statTracker;
 		private static long connectedTimes = 0;
 
 		public async Task runBot()
@@ -38,7 +38,7 @@ namespace SGMessageBot
 			{
 				botConfig = new BotConfig();
 				var botCResult = botConfig.loadCredConfig();
-				BotMention = $"<@{botConfig.botInfo.botId}>";
+				botConfig.saveCredConfig();
 
 				#region DB Init
 				var dbResult = DataLayerShortcut.loadConfig();
@@ -50,6 +50,8 @@ namespace SGMessageBot
 				var createResult = DataLayerShortcut.createDataBase();
 				if (!createResult.success)
 					Console.WriteLine(createResult.message);
+				statTracker = new StatTracker();
+				statTracker.Start();
 				#endregion
 
 				#region Other Init
@@ -66,12 +68,19 @@ namespace SGMessageBot
 				});
 				Client.Connected += onConnected;
 				Client.Disconnected += onDisconnected;
-				Client.Log += async (message) => Console.WriteLine($"Discord Error:{message.ToString()}");
+				Client.Log += (message) =>
+				{
+					Console.WriteLine($"Discord Error:{message.ToString()}");
+					ErrorLog.writeLog($"Discord Error:{message.ToString()}");
+					return Task.CompletedTask;
+				};
 				await Client.LoginAsync(TokenType.Bot, botConfig.botInfo.token);
 				await Client.StartAsync();
 
 				//Delay until application quit
 				await Task.Delay(-1);
+
+				statTracker.Stop();
 
 				Console.WriteLine("Exiting!");
 			}
@@ -127,9 +136,6 @@ namespace SGMessageBot
 			var serviceProvider = ConfigureServices();
 			await cHandler.installCommandService(serviceProvider);
 
-			if(connectedTimes == 0)
-				await BotExamineServers.startupCheck(Client.Guilds);
-
 			//Event hooks
 			Client.MessageReceived += BotEventHandler.ClientMessageReceived;
 			Client.MessageUpdated += BotEventHandler.ClientMessageUpdated;
@@ -151,6 +157,10 @@ namespace SGMessageBot
 			Client.ReactionAdded += BotEventHandler.ClientReactionAdded;
 			Client.ReactionRemoved += BotEventHandler.ClientReactionRemoved;
 			Client.ReactionsCleared += BotEventHandler.ClientReactionsCleared;
+
+			Task startTask = null;
+			if (connectedTimes == 0)
+				startTask = BotExamineServers.startupCheck(Client.Guilds);
 
 			ready = true;
 			Console.WriteLine("Ready!");

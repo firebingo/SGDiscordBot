@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 using System.Collections.Concurrent;
 using System.Threading;
 using SGMessageBot.Bot;
+using SGMessageBot.Helpers;
 
 namespace SGMessageBot.AI
 {
@@ -44,40 +45,49 @@ namespace SGMessageBot.AI
 				}
 				var tempMes = await BotCommandProcessor.loadMessages();
 				messages.AddRange(tempMes);
+				//https://stackoverflow.com/questions/5306729/how-do-markov-chain-chatbots-work
 				Parallel.ForEach(messages, (message) =>
 				{
-					var split = message.mesText.Trim().Split(' ');
-					var length = split.Length;
-					if (length < 3)
-						return;
-					var i = 0;
-					var operate = true;
-					while (operate)
+					try
 					{
-						var key = string.Empty;
-						var value = string.Empty;
-						if (i + 2 < length)
+						var split = message.mesText.Trim().Split(' ');
+						var length = split.Length;
+						if (length < 3)
+							return;
+						var i = 0;
+						var operate = true;
+						while (operate)
 						{
-							key = $"{split[i]} {split[++i]}";
-							value = split[i + 1];
-							if (wordDict.ContainsKey(key))
+							var key = string.Empty;
+							var value = string.Empty;
+							if (i + 2 < length)
 							{
-								wordDict[key].Add(value);
+								key = $"{split[i]} {split[++i]}";
+								value = split[i + 1];
+								if (wordDict.ContainsKey(key))
+								{
+									wordDict[key].Add(value);
+								}
+								else
+								{
+									wordDict.AddOrUpdate(key, new ConcurrentBag<string>() { value }, (xKey, xExistingVal) =>
+									{
+										xExistingVal.Add(value);
+										return xExistingVal;
+									});
+								}
 							}
 							else
 							{
-								wordDict.AddOrUpdate(key, new ConcurrentBag<string>() { value }, (xKey, xExistingVal) =>
-								{
-									xExistingVal.Add(value);
-									return xExistingVal;
-								});
+								operate = false;
+								break;
 							}
 						}
-						else
-						{
-							operate = false;
-							break;
-						}
+					}
+					catch(Exception ex)
+					{
+						ErrorLog.writeLog($"Exception on message in buildCorpus, Message: \"{message.mesText}\", Exception: {ex.Message}, Stack: {ex.StackTrace}");
+						return;
 					}
 				});
 				lock (corpusLock)
@@ -93,9 +103,10 @@ namespace SGMessageBot.AI
 					}
 				}
 			}
-			catch
+			catch(Exception ex)
 			{
-				throw;
+				ErrorLog.writeError(ex);
+				throw ex;
 			}
 		}
 
@@ -106,6 +117,8 @@ namespace SGMessageBot.AI
 			{
 				if (File.Exists(dataDirectory))
 					File.Delete(dataDirectory);
+
+				await loadCorpus();
 			}
 			catch (Exception e)
 			{
@@ -113,7 +126,6 @@ namespace SGMessageBot.AI
 				throw;
 			}
 
-			await loadCorpus();
 			sem.Release();
 		}
 
@@ -181,6 +193,7 @@ namespace SGMessageBot.AI
 				var result = string.Empty;
 				lock (corpusLock)
 				{
+					var startTime = DateTime.UtcNow;
 					Random rand = new Random();
 					List<string> keys = Enumerable.ToList(AICorpus.Keys);
 
@@ -198,16 +211,29 @@ namespace SGMessageBot.AI
 					result += startValue;
 					string nextValue = startValue;
 					var operate = true;
+					var splitLength = 0;
 					do
 					{
+						//If we have taken longer than 15 seconds just kill it because its probably in some weird loop.
+						if((DateTime.UtcNow - startTime).TotalSeconds > 15)
+						{
+							operate = false;
+							break;
+						}
 						if (AICorpus.ContainsKey(nextValue))
 						{
 							if (AICorpus[nextValue].Length > 0)
 							{
 								var toAdd = AICorpus[nextValue][(rand.Next(AICorpus[nextValue].Length))];
+								splitLength += 1 + toAdd.Length;
 								result += $" {toAdd}";
 								var split = result.Split(' ');
 								nextValue = $"{split[split.Length - 2]} {split[split.Length - 1]}";
+								if (splitLength > 1900)
+								{
+									result += $"|?|";
+									splitLength = 0;
+								}
 							}
 							else
 							{
