@@ -53,6 +53,9 @@ namespace SGMessageBot.DataBase
 			buildQueries.Add(8, new List<string>());
 			buildQueries[8].Add("CREATE TABLE stats (serverID BIGINT UNSIGNED, statType INT UNSIGNED, statTime DATETIME, statValue BIGINT, statText TEXT, CONSTRAINT kf_statServerID FOREIGN KEY (serverID) REFERENCES servers(serverID))");
 			buildQueries[8].Add("CREATE INDEX idx_statType ON stats (statType)");
+			buildQueries.Add(9, new List<string>());
+			buildQueries[9].Add("ALTER TABLE stats ADD COLUMN dateGroup INT UNSIGNED NOT NULL DEFAULT 1");
+			buildQueries[9].Add("ALTER TABLE stats ADD id INT NOT NULL AUTO_INCREMENT PRIMARY KEY");
 		}
 
 		public BaseResult createDatabase()

@@ -60,6 +60,15 @@ namespace SGMessageBot.Bot
 		}
 	}
 
+	public enum DateGroup
+	{
+		hour = 0,
+		day = 1,
+		week = 2,
+		month = 3,
+		year = 4
+	}
+
 	public enum StatType
 	{
 		userCount = 0,
@@ -74,5 +83,6 @@ namespace SGMessageBot.Bot
 		public DateTime statTime;
 		public long statValue;
 		public string statText;
+		public DateGroup dateGroup;
 	}
 }

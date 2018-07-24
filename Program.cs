@@ -29,7 +29,8 @@ namespace SGMessageBot
 		private static BotCommandHandler cHandler;
 		private static BotCommandProcessor cProcessor;
 		private static Markov cMarkov;
-		private static StatTracker statTracker;
+		private static TimeThread timeThread;
+		public static StatTracker statTracker;
 		private static long connectedTimes = 0;
 
 		public async Task runBot()
@@ -51,7 +52,8 @@ namespace SGMessageBot
 				if (!createResult.success)
 					Console.WriteLine(createResult.message);
 				statTracker = new StatTracker();
-				statTracker.Start();
+				timeThread = new TimeThread();
+				timeThread.Start();
 				#endregion
 
 				#region Other Init
@@ -80,7 +82,7 @@ namespace SGMessageBot
 				//Delay until application quit
 				await Task.Delay(-1);
 
-				statTracker.Stop();
+				timeThread.Stop();
 
 				Console.WriteLine("Exiting!");
 			}

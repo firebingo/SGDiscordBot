@@ -10,55 +10,80 @@ namespace SGMessageBot.Bot
 {
 	public class StatTracker
 	{
-		private bool doRun = false;
-		private ConcurrentDictionary<StatType, DateTime> NextUpdateTimes;
-
-		public void Start()
+		private void insertRow(StatModel res)
 		{
-			NextUpdateTimes = new ConcurrentDictionary<StatType, DateTime>(new Dictionary<StatType, DateTime>()
-			{
-				{ StatType.userCount, DateTime.Now.Date },
-				{ StatType.uniqueUsers, DateTime.Now.Date }
-			});
-			Thread runThread = new Thread(RunThread)
-			{
-				Name = "StatTracker",
-				IsBackground = true
-			};
-			runThread.Start();
-			doRun = true;
+			var query = @"INSERT INTO stats (serverID, statType, statTime, statValue, statText, dateGroup)
+							VALUES(@serverID, @statType, @statTime, @statValue, @statText, @dateGroup)";
+			DataLayerShortcut.ExecuteNonQuery(query, new MySqlParameter("@serverID", res.serverID), new MySqlParameter("@statType", res.statType), new MySqlParameter("@statTime", res.statTime),
+				 new MySqlParameter("@statValue", res.statValue), new MySqlParameter("@statText", res.statText), new MySqlParameter("@dateGroup", res.dateGroup));
 		}
 
-		public void Stop()
+		public void onHourChanged(object sender, DateTime time)
 		{
-			NextUpdateTimes.Clear();
-			doRun = false;
-		}
-
-		private void RunThread()
-		{
-			do
+			foreach (var server in SGMessageBot.botConfig.botInfo.statServerIds)
 			{
-				Parallel.ForEach(NextUpdateTimes, (stat) =>
-				{
-					foreach (var server in SGMessageBot.botConfig.botInfo.statServerIds)
-					{
-						if (DateTime.UtcNow > stat.Value)
-						{
-							var res = CalculateStat(stat.Key, server, out var nextUpdate);
-							var query = @"INSERT INTO stats (serverID, statType, statTime, statValue, statText)
-							VALUES(@serverID, @statType, @statTime, @statValue, @statText)";
-							DataLayerShortcut.ExecuteNonQuery(query, new MySqlParameter("@serverID", res.serverID), new MySqlParameter("@statType", res.statType), new MySqlParameter("@statTime", res.statTime),
-								 new MySqlParameter("@statValue", res.statValue), new MySqlParameter("@statText", res.statText));
-							NextUpdateTimes[stat.Key] = nextUpdate;
-						}
-					}
-				});
-				Thread.Sleep(100);
-			} while (doRun);
+				var res = CalculateStat(StatType.userCount, server, time.AddHours(-1.0));
+				res.dateGroup = DateGroup.hour;
+				insertRow(res);
+				res = CalculateStat(StatType.uniqueUsers, server, time.AddHours(-1.0));
+				res.dateGroup = DateGroup.hour;
+				insertRow(res);
+			}
 		}
 
-		private StatModel CalculateStat(StatType type, ulong serverid, out DateTime nextUpdate)
+		public void onDayChanged(object sender, DateTime time)
+		{
+			foreach (var server in SGMessageBot.botConfig.botInfo.statServerIds)
+			{
+				var res = CalculateStat(StatType.userCount, server, time.AddHours(-24.0));
+				res.dateGroup = DateGroup.day;
+				insertRow(res);
+				res = CalculateStat(StatType.uniqueUsers, server, time.AddHours(-24.0));
+				res.dateGroup = DateGroup.day;
+				insertRow(res);
+			}
+		}
+
+		public void onWeekChanged(object sender, DateTime time)
+		{
+			foreach (var server in SGMessageBot.botConfig.botInfo.statServerIds)
+			{
+				var res = CalculateStat(StatType.userCount, server, time.AddDays(-7.0));
+				res.dateGroup = DateGroup.week;
+				insertRow(res);
+				res = CalculateStat(StatType.uniqueUsers, server, time.AddDays(-7.0));
+				res.dateGroup = DateGroup.week;
+				insertRow(res);
+			}
+		}
+
+		public void onMonthChanged(object sender, DateTime time)
+		{
+			foreach (var server in SGMessageBot.botConfig.botInfo.statServerIds)
+			{
+				var res = CalculateStat(StatType.userCount, server, time.AddMonths(-1));
+				res.dateGroup = DateGroup.month;
+				insertRow(res);
+				res = CalculateStat(StatType.uniqueUsers, server, time.AddMonths(-1));
+				res.dateGroup = DateGroup.month;
+				insertRow(res);
+			}
+		}
+
+		public void onYearChanged(object sender, DateTime time)
+		{
+			foreach (var server in SGMessageBot.botConfig.botInfo.statServerIds)
+			{
+				var res = CalculateStat(StatType.userCount, server, time.AddYears(-1));
+				res.dateGroup = DateGroup.year;
+				insertRow(res);
+				res = CalculateStat(StatType.uniqueUsers, server, time.AddYears(-1));
+				res.dateGroup = DateGroup.year;
+				insertRow(res);
+			}
+		}
+
+		private StatModel CalculateStat(StatType type, ulong serverid, DateTime fromDate)
 		{
 			var retVal = new StatModel()
 			{
@@ -66,24 +91,21 @@ namespace SGMessageBot.Bot
 				statType = type,
 				statTime = DateTime.UtcNow
 			};
-			nextUpdate = DateTime.UtcNow.AddHours(24);
 			var query = "";
 			switch (type)
 			{
 				case StatType.userCount:
 					{
-						query = "SELECT userCount FROM servers WHERE serverID=@serverID";
+						query = "SELECT COUNT(*) FROM usersinservers WHERE serverID=@serverID AND NOT isDeleted";
 						var res = DataLayerShortcut.ExecuteScalarInt(query, new MySqlParameter("@serverID", serverid));
 						retVal.statValue = res.HasValue ? res.Value : 0;
-						nextUpdate = DateTime.UtcNow.AddHours(24);
 						break;
 					}
 				case StatType.uniqueUsers:
 					{
 						query = "SELECT COUNT(*) FROM (SELECT COUNT(*) from MESSAGES WHERE mesTime > @statTime GROUP BY userID) cqu";
-						var res = DataLayerShortcut.ExecuteScalarInt(query, new MySqlParameter("@statTime", DateTime.UtcNow.AddHours(-24.0)));
+						var res = DataLayerShortcut.ExecuteScalarInt(query, new MySqlParameter("@statTime", fromDate));
 						retVal.statValue = res.HasValue ? res.Value : 0;
-						nextUpdate = DateTime.UtcNow.AddHours(24);
 						break;
 					}
 			}
