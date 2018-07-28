@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SGMessageBot.Helpers;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -7,7 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 
-namespace SGMessageBot.Bot
+namespace SGMessageBot.DiscordBot
 {
 	public class TimeThread
 	{
@@ -26,12 +27,6 @@ namespace SGMessageBot.Bot
 
 		public void Start()
 		{
-			onHourPassed += SGMessageBot.statTracker.onHourChanged;
-			onDayPassed += SGMessageBot.statTracker.onDayChanged;
-			onWeekPassed += SGMessageBot.statTracker.onWeekChanged;
-			onMonthPassed += SGMessageBot.statTracker.onMonthChanged;
-			onYearPassed += SGMessageBot.statTracker.onYearChanged;
-
 			var now = DateTime.UtcNow;
 			int lastHour = now.Hour;
 			int lastDay = now.Day;
@@ -50,6 +45,43 @@ namespace SGMessageBot.Bot
 		public void Stop()
 		{
 			doRun = false;
+		}
+
+		public void AddBindings(TimePassedHandler onHourChanged = null, TimePassedHandler onDayChanged = null, 
+			TimePassedHandler onWeekChanged = null, TimePassedHandler onMonthChanged = null, TimePassedHandler onYearChanged = null)
+		{
+			if (onHourChanged != null)
+				onHourPassed += onHourChanged;
+			if (onDayChanged != null)
+				onDayChanged += onDayChanged;
+			if (onWeekChanged != null)
+				onWeekChanged += onWeekChanged;
+			if (onMonthChanged != null)
+				onMonthChanged += onMonthChanged;
+			if (onYearChanged != null)
+				onYearChanged += onYearChanged;
+		}
+
+		public void RemoveBindings(TimePassedHandler onHourChanged = null, TimePassedHandler onDayChanged = null,
+			TimePassedHandler onWeekChanged = null, TimePassedHandler onMonthChanged = null, TimePassedHandler onYearChanged = null)
+		{
+			try
+			{
+				if (onHourChanged != null)
+					onHourPassed -= onHourChanged;
+				if (onDayChanged != null)
+					onDayChanged -= onDayChanged;
+				if (onWeekChanged != null)
+					onWeekChanged -= onWeekChanged;
+				if (onMonthChanged != null)
+					onMonthChanged -= onMonthChanged;
+				if (onYearChanged != null)
+					onYearChanged -= onYearChanged;
+			}
+			catch(Exception ex)
+			{
+				ErrorLog.WriteError(ex);
+			}
 		}
 
 		public void RunThread()

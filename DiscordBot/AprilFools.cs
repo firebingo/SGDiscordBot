@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace SGMessageBot.Bot
+namespace SGMessageBot.DiscordBot
 {
 	public static class AprilFools
 	{
@@ -63,12 +63,12 @@ namespace SGMessageBot.Bot
 				{
 					Thread.Sleep(60000);
 					runningTime += 60;
-					if (!SGMessageBot.botConfig.botInfo.randomMessageSend.ContainsKey("ddlc"))
+					if (!SGMessageBot.BotConfig.BotInfo.DiscordConfig.randomMessageSend.ContainsKey("ddlc"))
 					{
 						runningYear = string.Empty;
 						return;
 					}
-					var toCheck = SGMessageBot.botConfig.botInfo.randomMessageSend["ddlc"];
+					var toCheck = SGMessageBot.BotConfig.BotInfo.DiscordConfig.randomMessageSend["ddlc"];
 					var percent = (runningTime / toCheck.maxSeconds) * 100;
 					var pickList = new List<bool>();
 					for (var i = 0; i < 100; ++i)
@@ -82,13 +82,13 @@ namespace SGMessageBot.Bot
 					pickList.ShuffleList();
 					if (pickList[r])
 					{
-						var guild = SGMessageBot.Client.GetGuild(toCheck.serverId);
+						var guild = DiscordMain.DiscordClient.GetGuild(toCheck.serverId);
 						if (guild == null)
 						{
 							runningYear = string.Empty;
 							return;
 						}
-						var channel = SGMessageBot.Client.GetChannel(toCheck.channelId) as SocketTextChannel;
+						var channel = DiscordMain.DiscordClient.GetChannel(toCheck.channelId) as SocketTextChannel;
 						if (channel == null)
 						{
 							runningYear = string.Empty;
@@ -102,7 +102,7 @@ namespace SGMessageBot.Bot
 				catch(Exception ex)
 				{
 					runningYear = string.Empty;
-					ErrorLog.writeLog($"message: {ex.Message}, trace: {ex.StackTrace}");
+					ErrorLog.WriteLog($"message: {ex.Message}, trace: {ex.StackTrace}");
 					return;
 				}
 			} while (runningYear == "2018");

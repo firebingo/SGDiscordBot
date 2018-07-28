@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace SGMessageBot.Bot
+namespace SGMessageBot.DiscordBot
 {
 	public class StatTracker
 	{
@@ -20,7 +20,7 @@ namespace SGMessageBot.Bot
 
 		public void onHourChanged(object sender, DateTime time)
 		{
-			foreach (var server in SGMessageBot.botConfig.botInfo.statServerIds)
+			foreach (var server in SGMessageBot.BotConfig.BotInfo.DiscordConfig.statServerIds)
 			{
 				var res = CalculateStat(StatType.userCount, server, time.AddHours(-1.0));
 				res.dateGroup = DateGroup.hour;
@@ -33,7 +33,7 @@ namespace SGMessageBot.Bot
 
 		public void onDayChanged(object sender, DateTime time)
 		{
-			foreach (var server in SGMessageBot.botConfig.botInfo.statServerIds)
+			foreach (var server in SGMessageBot.BotConfig.BotInfo.DiscordConfig.statServerIds)
 			{
 				var res = CalculateStat(StatType.userCount, server, time.AddHours(-24.0));
 				res.dateGroup = DateGroup.day;
@@ -46,7 +46,7 @@ namespace SGMessageBot.Bot
 
 		public void onWeekChanged(object sender, DateTime time)
 		{
-			foreach (var server in SGMessageBot.botConfig.botInfo.statServerIds)
+			foreach (var server in SGMessageBot.BotConfig.BotInfo.DiscordConfig.statServerIds)
 			{
 				var res = CalculateStat(StatType.userCount, server, time.AddDays(-7.0));
 				res.dateGroup = DateGroup.week;
@@ -59,7 +59,7 @@ namespace SGMessageBot.Bot
 
 		public void onMonthChanged(object sender, DateTime time)
 		{
-			foreach (var server in SGMessageBot.botConfig.botInfo.statServerIds)
+			foreach (var server in SGMessageBot.BotConfig.BotInfo.DiscordConfig.statServerIds)
 			{
 				var res = CalculateStat(StatType.userCount, server, time.AddMonths(-1));
 				res.dateGroup = DateGroup.month;
@@ -72,7 +72,7 @@ namespace SGMessageBot.Bot
 
 		public void onYearChanged(object sender, DateTime time)
 		{
-			foreach (var server in SGMessageBot.botConfig.botInfo.statServerIds)
+			foreach (var server in SGMessageBot.BotConfig.BotInfo.DiscordConfig.statServerIds)
 			{
 				var res = CalculateStat(StatType.userCount, server, time.AddYears(-1));
 				res.dateGroup = DateGroup.year;

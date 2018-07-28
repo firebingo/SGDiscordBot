@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace SGMessageBot.Bot
+namespace SGMessageBot.DiscordBot
 {
 	[Serializable]
 	public class UserCountModel

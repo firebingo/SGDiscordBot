@@ -72,6 +72,9 @@
       <HintPath>packages\Microsoft.Win32.Primitives.4.3.0\lib\net46\Microsoft.Win32.Primitives.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Microsoft.Win32.Registry, Version=4.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>packages\Microsoft.Win32.Registry.4.4.0\lib\net461\Microsoft.Win32.Registry.dll</HintPath>
+    </Reference>
     <Reference Include="MySql.Data, Version=6.9.9.0, Culture=neutral, PublicKeyToken=c5687fc88969c44d, processorArchitecture=MSIL">
       <HintPath>packages\MySql.Data.6.9.9\lib\net45\MySql.Data.dll</HintPath>
       <Private>True</Private>
@@ -91,9 +94,15 @@
       <HintPath>packages\Nito.AsyncEx.3.0.1\lib\net45\Nito.AsyncEx.Enlightenment.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="protobuf-net, Version=2.1.0.0, Culture=neutral, PublicKeyToken=257b51d87d2e4d67, processorArchitecture=MSIL">
+      <HintPath>packages\protobuf-net.2.1.0\lib\net451\protobuf-net.dll</HintPath>
+    </Reference>
     <Reference Include="RestSharp, Version=105.2.3.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>packages\RestSharp.105.2.3\lib\net452\RestSharp.dll</HintPath>
       <Private>True</Private>
+    </Reference>
+    <Reference Include="SteamKit2, Version=2.1.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>packages\SteamKit2.2.1.0\lib\netstandard2.0\SteamKit2.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.AppContext, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
@@ -181,6 +190,9 @@
       <HintPath>packages\System.Runtime.Serialization.Primitives.4.3.0\lib\net46\System.Runtime.Serialization.Primitives.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="System.Security.AccessControl, Version=4.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>packages\System.Security.AccessControl.4.4.0\lib\net461\System.Security.AccessControl.dll</HintPath>
+    </Reference>
     <Reference Include="System.Security.Cryptography.Algorithms, Version=4.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>packages\System.Security.Cryptography.Algorithms.4.3.0\lib\net461\System.Security.Cryptography.Algorithms.dll</HintPath>
       <Private>True</Private>
@@ -196,6 +208,9 @@
     <Reference Include="System.Security.Cryptography.X509Certificates, Version=4.1.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>packages\System.Security.Cryptography.X509Certificates.4.3.0\lib\net461\System.Security.Cryptography.X509Certificates.dll</HintPath>
       <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Security.Principal.Windows, Version=4.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>packages\System.Security.Principal.Windows.4.4.0\lib\net461\System.Security.Principal.Windows.dll</HintPath>
     </Reference>
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -213,16 +228,17 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AI\Markov.cs" />
-    <Compile Include="Bot\AprilFools.cs" />
-    <Compile Include="Bot\BotCommandHandler.cs" />
-    <Compile Include="Bot\BotCommandProcessor.cs" />
-    <Compile Include="Bot\BotEventHandler.cs" />
-    <Compile Include="Bot\BotExamineServers.cs" />
-    <Compile Include="Bot\BotModels.cs" />
-    <Compile Include="Bot\BotPermissions.cs" />
-    <Compile Include="Bot\OtherFunctions.cs" />
-    <Compile Include="Bot\StatTracker.cs" />
-    <Compile Include="Bot\TimeThread.cs" />
+    <Compile Include="DiscordBot\AprilFools.cs" />
+    <Compile Include="DiscordBot\BotCommandHandler.cs" />
+    <Compile Include="DiscordBot\BotCommandProcessor.cs" />
+    <Compile Include="DiscordBot\BotEventHandler.cs" />
+    <Compile Include="DiscordBot\BotExamineServers.cs" />
+    <Compile Include="DiscordBot\BotModels.cs" />
+    <Compile Include="DiscordBot\BotPermissions.cs" />
+    <Compile Include="DiscordBot\DiscordMain.cs" />
+    <Compile Include="DiscordBot\OtherFunctions.cs" />
+    <Compile Include="DiscordBot\StatTracker.cs" />
+    <Compile Include="DiscordBot\TimeThread.cs" />
     <Compile Include="Config\DBConfig.cs" />
     <Compile Include="Config\DiscordConfig.cs" />
     <Compile Include="DataBase\DataHelper.cs" />

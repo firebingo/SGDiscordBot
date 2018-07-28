@@ -4,7 +4,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace SGMessageBot.Bot
+namespace SGMessageBot.DiscordBot
 {
 	public class RequireModRoleAttribute : PreconditionAttribute
 	{
@@ -16,7 +16,7 @@ namespace SGMessageBot.Bot
 				return Task.FromResult(PreconditionResult.FromError("Could not find user for command."));
 			}
 			var hasPerm = false;
-			foreach (var permRole in SGMessageBot.botConfig.botInfo.commandRoleIds)
+			foreach (var permRole in SGMessageBot.BotConfig.BotInfo.DiscordConfig.commandRoleIds)
 			{
 				var checkMatch = gUser.Roles.Where(r => r.Id == permRole).FirstOrDefault()?.Id;
 				if (checkMatch.HasValue && checkMatch.Value != 0)

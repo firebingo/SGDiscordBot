@@ -12,7 +12,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace SGMessageBot.Bot
+namespace SGMessageBot.DiscordBot
 {
 	public class BotCommandHandler
 	{
@@ -47,10 +47,10 @@ namespace SGMessageBot.Bot
 			return Task.FromResult<bool>(true).Result;
 		}
 
-		public async Task HandleCommand(SocketMessage e)
+		public Task HandleCommand(SocketMessage e)
 		{
 			var uMessage = e as SocketUserMessage;
-			if (uMessage == null) return;
+			if (uMessage == null) return Task.CompletedTask;
 			int argPos = 0;
 			if (uMessage.HasMentionPrefix(Client.CurrentUser, ref argPos))
 			{
@@ -74,6 +74,7 @@ namespace SGMessageBot.Bot
 				//if (!result.IsSuccess)
 				//	await uMessage.Channel.SendMessageAsync(result.ErrorReason);
 			}
+			return Task.CompletedTask;
 		}
 	}
 
@@ -111,17 +112,17 @@ namespace SGMessageBot.Bot
 
 #if DEBUG
 		[Command("disconnect"), Summary("For debug purpose, disconnects bot")]
-		public async Task removeCommands()
+		public void removeCommands()
 		{
-			Context.Client.StopAsync();
+			Task.Run(() => Context.Client.StopAsync());
 			return;
 		}
 
 		[Command("wait"), Summary("For debug purpose, waits x seconds")]
 		public async Task waitSeconds(int seconds)
 		{
-			Thread.Sleep(seconds * 1000);
-			Context.Channel.SendMessageAsync($"Waited {seconds} seconds");
+			await Task.Delay(seconds * 1000);
+			await Context.Channel.SendMessageAsync($"Waited {seconds} seconds");
 			return;
 		}
 #endif
@@ -180,9 +181,9 @@ namespace SGMessageBot.Bot
 			{
 				await markovAi.rebuildCorpus();
 			}
-			catch(Exception e)
+			catch(Exception ex)
 			{
-				await Context.Channel.SendMessageAsync($"Exception: {e.Message}");
+				await Context.Channel.SendMessageAsync($"Exception: {ex.Message}");
 			}
 			await Context.Channel.SendMessageAsync("Operation Complete");
 		}
@@ -197,22 +198,22 @@ namespace SGMessageBot.Bot
 				channelId = channel.Id,
 				message = message
 			};
-			if (SGMessageBot.botConfig.botInfo.messageCount == null)
-				SGMessageBot.botConfig.botInfo.messageCount = new Dictionary<ulong, MessageCountTracker>();
+			if (SGMessageBot.BotConfig.BotInfo.DiscordConfig.messageCount == null)
+				SGMessageBot.BotConfig.BotInfo.DiscordConfig.messageCount = new Dictionary<ulong, MessageCountTracker>();
 
-			if (SGMessageBot.botConfig.botInfo.messageCount.ContainsKey(Context.Guild.Id))
-				SGMessageBot.botConfig.botInfo.messageCount[Context.Guild.Id] = newConfig;
+			if (SGMessageBot.BotConfig.BotInfo.DiscordConfig.messageCount.ContainsKey(Context.Guild.Id))
+				SGMessageBot.BotConfig.BotInfo.DiscordConfig.messageCount[Context.Guild.Id] = newConfig;
 			else
-				SGMessageBot.botConfig.botInfo.messageCount.Add(Context.Guild.Id, newConfig);
-			SGMessageBot.botConfig.saveCredConfig();
-			Context.Channel.SendMessageAsync("Operation Complete");
+				SGMessageBot.BotConfig.BotInfo.DiscordConfig.messageCount.Add(Context.Guild.Id, newConfig);
+			SGMessageBot.BotConfig.SaveCredConfig();
+			await Context.Channel.SendMessageAsync("Operation Complete");
 		}
 
 		[Command("reloadmescount"), Summary("Reloads the message count column for usersinservers")]
 		public async Task reloadMessageCounts()
 		{
-			await processor.reloadMessageCounts(Context);
-			Context.Channel.SendMessageAsync("Operation Complete");
+			await processor.ReloadMessageCounts(Context);
+			await Context.Channel.SendMessageAsync("Operation Complete");
 		}
 
 		[Command("aprilfools"), Summary("Enable/disable april fools event for a year")]
@@ -223,7 +224,7 @@ namespace SGMessageBot.Bot
 			else
 				AprilFools.EndYear();
 
-			Context.Channel.SendMessageAsync("Operation Complete");
+			await Context.Channel.SendMessageAsync("Operation Complete");
 		}
 	}
 
@@ -380,9 +381,9 @@ namespace SGMessageBot.Bot
 				else
 					await Context.Channel.SendMessageAsync(result);
 			}
-			catch(Exception e)
+			catch(Exception ex)
 			{
-				await Context.Channel.SendMessageAsync(e.Message);
+				await Context.Channel.SendMessageAsync(ex.Message);
 				return;
 			}
 		}
@@ -433,7 +434,7 @@ namespace SGMessageBot.Bot
 						}
 						catch (Exception e)
 						{
-							ErrorLog.writeError(e);
+							ErrorLog.WriteError(e);
 							continue;
 						}
 					}

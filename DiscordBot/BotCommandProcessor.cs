@@ -11,27 +11,27 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace SGMessageBot.Bot
+namespace SGMessageBot.DiscordBot
 {
 	public class BotCommandProcessor
 	{
 		private string dateFormat = "yyyy/MM/dd";
 
 		#region Calc Functions
-		public async Task<DateModel> getEarliestMessage(ICommandContext context)
+		public Task<DateModel> getEarliestMessage(ICommandContext context)
 		{
 			var result = new DateModel();
 			var queryString = "SELECT mesTime FROM messages WHERE serverID = @serverID AND mesTime IS NOT NULL ORDER BY mesTime LIMIT 1";
-			DataLayerShortcut.ExecuteReader<DateModel>(readEarliestDate, result, queryString, new MySqlParameter("@serverID", context.Guild.Id));
-			return Task.FromResult<DateModel>(result).Result;
+			DataLayerShortcut.ExecuteReader(readEarliestDate, result, queryString, new MySqlParameter("@serverID", context.Guild.Id));
+			return Task.FromResult(result);
 		}
 
-		public async Task<int> getTotalMessageCount(ICommandContext context)
+		public Task<int> getTotalMessageCount(ICommandContext context)
 		{
 			int? result = 0;
 			var queryString = "SELECT COUNT(*) FROM messages WHERE isDeleted = false AND serverID = @serverID";
 			result = DataLayerShortcut.ExecuteScalarInt(queryString, new MySqlParameter("@serverID", context.Guild.Id));
-			return Task.FromResult<int>(result.HasValue ? result.Value : 0).Result;
+			return Task.FromResult(result.HasValue ? result.Value : 0);
 		}
 
 		#region Admin Functions
@@ -70,7 +70,7 @@ namespace SGMessageBot.Bot
 			}
 			catch (Exception e)
 			{
-				ErrorLog.writeError(e);
+				ErrorLog.WriteError(e);
 				result = e.Message;
 			}
 			return Task.FromResult<string>(result).Result;
@@ -183,7 +183,7 @@ namespace SGMessageBot.Bot
 			return Task.FromResult<string>(result).Result;
 		}
 
-		public async Task<string> reloadMessageCounts(ICommandContext context)
+		public Task<string> ReloadMessageCounts(ICommandContext context)
 		{
 			var result = string.Empty;
 			List<UsersInServersModel> users = new List<UsersInServersModel>();
@@ -202,21 +202,21 @@ namespace SGMessageBot.Bot
 						sparams[2] = new MySqlParameter("@mesCount", user.mesCount);
 						DataLayerShortcut.ExecuteNonQuery(@"UPDATE usersinservers SET mesCount = @mesCount WHERE usersinservers.userID=@userID AND usersinservers.serverID=@serverID", sparams);
 					}
-					catch(Exception e)
+					catch(Exception ex)
 					{
-						result += e.Message;
+						result += ex.Message;
 						return;
 					}
 				});
 			}
-			catch (Exception e)
+			catch (Exception ex)
 			{
-				result += e.Message;
+				result += ex.Message;
 			}
 
 			if (result != string.Empty)
-				ErrorLog.writeLog(result);
-			return result;
+				ErrorLog.WriteLog(result);
+			return Task.FromResult(result);
 		}
 		#endregion
 
@@ -538,7 +538,7 @@ namespace SGMessageBot.Bot
 		#endregion
 
 		#region Nadeko Counts
-		public async Task<string> calculateNadekoUserCounts(SocketUser user, CommandContext context)
+		public Task<string> CalculateNadekoUserCounts(SocketUser user, CommandContext context)
 		{
 			var result = "";
 			int? totalCommandCount = 0;
@@ -550,11 +550,11 @@ namespace SGMessageBot.Bot
 			if (!totalCommandCount.HasValue || !userCommandCount.HasValue)
 			{
 				result = "Failed to get command counts. Possible failure to connect to db.";
-				return Task.FromResult<string>(result).Result;
+				return Task.FromResult(result);
 			}
 			var percent = Math.Round(((float)userCommandCount.Value / (float)totalCommandCount.Value) * 100, 2);
 			result = $"{user.Mention} has sent {userCommandCount} commands to NadekoBot, which is {percent}% of commands sent.";
-			return Task.FromResult<string>(result).Result;
+			return Task.FromResult(result);
 		}
 		#endregion
 		#endregion
@@ -636,7 +636,7 @@ namespace SGMessageBot.Bot
 		{
 			var queryParams = new MySqlParameter[] {
 				new MySqlParameter("@serverID", context.Guild.Id),
-				new MySqlParameter("@botID", SGMessageBot.botConfig.botInfo.botId)
+				new MySqlParameter("@botID", SGMessageBot.BotConfig.BotInfo.DiscordConfig.botId)
 			};
 			//var queryString = $"SELECT mS.userID, mS.messageID, uS.nickNameMention, mS.rawText FROM messages AS mS LEFT JOIN usersinservers AS uS ON mS.userID = uS.userID WHERE uS.serverID = @serverID AND mS.mesText LIKE @emojiID AND mS.serverID = @serverID AND mS.isDeleted = 0 AND mS.userID != @botID AND mS.mesText NOT LIKE '%emojicount%'";
 			var queryString = $"SELECT eU.emojiID, eU.emojiName, eU.userID, uS.nickNameMention " +
@@ -657,12 +657,12 @@ namespace SGMessageBot.Bot
 			return result;
 		}
 
-		public static async Task<List<MessageTextModel>> loadMessages()
+		public static List<MessageTextModel> loadMessages()
 		{
 			var result = new List<MessageTextModel>();
 
 			var query = "SELECT txt FROM (SELECT COALESCE(mesText, editedMesText) AS txt FROM messages WHERE NOT isDeleted AND userId != @botId) x WHERE txt != '' AND txt NOT LIKE '%@botId%'";
-			DataLayerShortcut.ExecuteReader<List<MessageTextModel>>(readMessagesText, result, query, new MySqlParameter("@botId", SGMessageBot.botConfig.botInfo.botId));
+			DataLayerShortcut.ExecuteReader<List<MessageTextModel>>(readMessagesText, result, query, new MySqlParameter("@botId", SGMessageBot.BotConfig.BotInfo.DiscordConfig.botId));
 
 			return result;
 		}

@@ -9,7 +9,7 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace SGMessageBot.Bot
+namespace SGMessageBot.DiscordBot
 {
 	public static class BotEventHandler
 	{
@@ -22,7 +22,7 @@ namespace SGMessageBot.Bot
 			}
 			catch (Exception ex)
 			{
-				ErrorLog.writeError(ex);
+				ErrorLog.WriteError(ex);
 			}
 		}
 
@@ -34,7 +34,7 @@ namespace SGMessageBot.Bot
 			}
 			catch (Exception e)
 			{
-				ErrorLog.writeError(e);
+				ErrorLog.WriteError(e);
 			}
 		}
 
@@ -46,7 +46,7 @@ namespace SGMessageBot.Bot
 			}
 			catch (Exception e)
 			{
-				ErrorLog.writeError(e);
+				ErrorLog.WriteError(e);
 			}
 		}
 		#endregion
@@ -59,7 +59,7 @@ namespace SGMessageBot.Bot
 			}
 			catch (Exception ex)
 			{
-				ErrorLog.writeError(ex);
+				ErrorLog.WriteError(ex);
 			}
 		}
 		public static async Task ClientServerUpdated(SocketGuild before, SocketGuild after)
@@ -70,7 +70,7 @@ namespace SGMessageBot.Bot
 			}
 			catch (Exception e)
 			{
-				ErrorLog.writeError(e);
+				ErrorLog.WriteError(e);
 			}
 		}
 		#endregion
@@ -83,7 +83,7 @@ namespace SGMessageBot.Bot
 			}
 			catch (Exception ex)
 			{
-				ErrorLog.writeError(ex);
+				ErrorLog.WriteError(ex);
 			}
 		}
 
@@ -95,7 +95,7 @@ namespace SGMessageBot.Bot
 			}
 			catch (Exception e)
 			{
-				ErrorLog.writeError(e);
+				ErrorLog.WriteError(e);
 			}
 		}
 
@@ -107,7 +107,7 @@ namespace SGMessageBot.Bot
 			}
 			catch (Exception e)
 			{
-				ErrorLog.writeError(e);
+				ErrorLog.WriteError(e);
 			}
 		}
 
@@ -119,7 +119,7 @@ namespace SGMessageBot.Bot
 			}
 			catch (Exception ex)
 			{
-				ErrorLog.writeError(ex);
+				ErrorLog.WriteError(ex);
 			}
 		}
 
@@ -131,7 +131,7 @@ namespace SGMessageBot.Bot
 			}
 			catch (Exception e)
 			{
-				ErrorLog.writeError(e);
+				ErrorLog.WriteError(e);
 			}
 		}
 
@@ -143,7 +143,7 @@ namespace SGMessageBot.Bot
 			}
 			catch (Exception e)
 			{
-				ErrorLog.writeError(e);
+				ErrorLog.WriteError(e);
 			}
 		}
 		#endregion
@@ -156,7 +156,7 @@ namespace SGMessageBot.Bot
 			}
 			catch (Exception ex)
 			{
-				ErrorLog.writeError(ex);
+				ErrorLog.WriteError(ex);
 			}
 		}
 
@@ -168,7 +168,7 @@ namespace SGMessageBot.Bot
 			}
 			catch (Exception e)
 			{
-				ErrorLog.writeError(e);
+				ErrorLog.WriteError(e);
 			}
 		}
 		
@@ -180,7 +180,7 @@ namespace SGMessageBot.Bot
 			}
 			catch (Exception ex)
 			{
-				ErrorLog.writeError(ex);
+				ErrorLog.WriteError(ex);
 			}
 		}
 		#endregion
@@ -193,7 +193,7 @@ namespace SGMessageBot.Bot
 			}
 			catch (Exception ex)
 			{
-				ErrorLog.writeError(ex);
+				ErrorLog.WriteError(ex);
 			}
 		}
 
@@ -205,7 +205,7 @@ namespace SGMessageBot.Bot
 			}
 			catch (Exception e)
 			{
-				ErrorLog.writeError(e);
+				ErrorLog.WriteError(e);
 			}
 		}
 
@@ -217,7 +217,7 @@ namespace SGMessageBot.Bot
 			}
 			catch (Exception ex)
 			{
-				ErrorLog.writeError(ex);
+				ErrorLog.WriteError(ex);
 			}
 		}
 		#endregion
@@ -230,7 +230,7 @@ namespace SGMessageBot.Bot
 			}
 			catch (Exception e)
 			{
-				ErrorLog.writeError(e);
+				ErrorLog.WriteError(e);
 			}
 		}
 
@@ -242,7 +242,7 @@ namespace SGMessageBot.Bot
 			}
 			catch (Exception e)
 			{
-				ErrorLog.writeError(e);
+				ErrorLog.WriteError(e);
 			}
 		}
 
@@ -254,7 +254,7 @@ namespace SGMessageBot.Bot
 			}
 			catch (Exception e)
 			{
-				ErrorLog.writeError(e);
+				ErrorLog.WriteError(e);
 			}
 		}
 		#endregion
@@ -262,7 +262,7 @@ namespace SGMessageBot.Bot
 		protected static class BotEventProcessor
 		{
 			#region Messages
-			public static async Task ProcessMessageReceived(SocketMessage e)
+			public static Task ProcessMessageReceived(SocketMessage e)
 			{
 				AprilFools.Madoka2017(e);
 
@@ -303,11 +303,12 @@ namespace SGMessageBot.Bot
 				}
 				catch (Exception ex)
 				{
-					ErrorLog.writeError(ex);
+					ErrorLog.WriteError(ex);
 				}
+				return Task.CompletedTask;
 			}
 
-			public static async Task ProcessMessageUpdated(Cacheable<IMessage, ulong> before, SocketMessage after)
+			public static Task ProcessMessageUpdated(Cacheable<IMessage, ulong> before, SocketMessage after)
 			{
 				try
 				{
@@ -339,11 +340,12 @@ namespace SGMessageBot.Bot
 				}
 				catch (Exception e)
 				{
-					ErrorLog.writeError(e);
+					ErrorLog.WriteError(e);
 				}
+				return Task.CompletedTask;
 			}
 
-			public static async Task ProcessMessageDeleted(Cacheable<IMessage, ulong> mes)
+			public static Task ProcessMessageDeleted(Cacheable<IMessage, ulong> mes)
 			{
 				try
 				{
@@ -367,8 +369,9 @@ namespace SGMessageBot.Bot
 				}
 				catch (Exception e)
 				{
-					ErrorLog.writeError(e);
+					ErrorLog.WriteError(e);
 				}
+				return Task.CompletedTask;
 			}
 			#endregion
 			#region Server
@@ -376,11 +379,11 @@ namespace SGMessageBot.Bot
 			{
 				await BotExamineServers.updateDatabaseServer(e);
 			}
-			public static async Task ProcessServerUpdated(SocketGuild before, SocketGuild after)
+			public static Task ProcessServerUpdated(SocketGuild before, SocketGuild after)
 			{
 				//A server can't have a empty name or no users so if this happens assume its a bad update and dont do it
 				if (string.IsNullOrWhiteSpace(after.Name) || after.Users.Count == 0)
-					return;
+					return Task.CompletedTask;
 				var queryString = @"INSERT INTO servers (serverID, ownerID, serverName, userCount, channelCount, roleCount, regionID, createdDate)
 				VALUES(@serverID, @ownerID, @serverName, @userCount, @channelCount, @roleCount, @regionID, @createdDate)
 				ON DUPLICATE KEY UPDATE serverID=@serverID, ownerID=@ownerID, serverName=@serverName, userCount=@userCount, channelCount=@channelCount, roleCount=@roleCount,
@@ -388,10 +391,12 @@ namespace SGMessageBot.Bot
 				DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", after.Id), new MySqlParameter("@ownerID", after.OwnerId),
 				new MySqlParameter("@serverName", after.Name), new MySqlParameter("@userCount", after.Users.Count), new MySqlParameter("@channelCount", after.Channels.Count),
 				new MySqlParameter("@roleCount", after.Roles.Count), new MySqlParameter("@regionID", after.VoiceRegionId), new MySqlParameter("@createdDate", after.CreatedAt.UtcDateTime));
+
+				return Task.CompletedTask;
 			}
 			#endregion
 			#region User
-			public static async Task ProcessUserJoined(SocketGuildUser e)
+			public static Task ProcessUserJoined(SocketGuildUser e)
 			{
 				var queryString = @"INSERT INTO users (userID, userName, mention, isBot)
 				VALUES(@userID, @userName, @mention, @isBot)
@@ -412,32 +417,40 @@ namespace SGMessageBot.Bot
 				new MySqlParameter("@discriminator", e.Discriminator), new MySqlParameter("@nickName", e.Nickname), new MySqlParameter("@nickNameMention", e.Mention.Replace("!", String.Empty)),
 				new MySqlParameter("@joinedDate", joinedAtDateTime), new MySqlParameter("@avatarID", e.AvatarId), new MySqlParameter("@avatarUrl", e.GetAvatarUrl()),
 				new MySqlParameter("@lastOnline", joinedAtDateTime), new MySqlParameter("@isDeleted", false), new MySqlParameter("@roleIds", JsonConvert.SerializeObject(roleIds)), new MySqlParameter("@mesCount", value:0));
+
+				return Task.CompletedTask;
 			}
 
-			public static async Task ProcessUserBannedStatus(SocketUser u, SocketGuild s, bool banned)
+			public static Task ProcessUserBannedStatus(SocketUser u, SocketGuild s, bool banned)
 			{
 				var queryString = "UPDATE usersInServers SET isBanned=@isBanned WHERE userID=@userID AND serverID=@serverID";
 				DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@isBanned", banned), new MySqlParameter("@userID", u.Id),
 				new MySqlParameter("@serverID", s.Id));
+
+				return Task.CompletedTask;
 			}
 
-			public static async Task ProcessUserLeft(SocketGuildUser e)
+			public static Task ProcessUserLeft(SocketGuildUser e)
 			{
 				var queryString = "UPDATE usersInServers SET isDeleted=@isDeleted WHERE userID=@userID AND serverID=@serverID";
 				DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@isDeleted", true), new MySqlParameter("@userID", e.Id),
 				new MySqlParameter("@serverID", e.Guild.Id));
+
+				return Task.CompletedTask;
 			}
 
-			public static async Task ProcessUserUpdated(SocketUser before, SocketUser after)
+			public static Task ProcessUserUpdated(SocketUser before, SocketUser after)
 			{
 				var queryString = @"INSERT INTO users (userID, userName, mention, isBot)
 				VALUES(@userID, @userName, @mention, @isBot)
 				ON DUPLICATE KEY UPDATE userID=@userID, userName=@userName, mention=@mention, isBot=@isBot";
 				DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@userID", after.Id), new MySqlParameter("@userName", after.Username),
 				new MySqlParameter("@mention", after.Mention.Replace("!", String.Empty)), new MySqlParameter("@isBot", after.IsBot));
+
+				return Task.CompletedTask;
 			}
 
-			public static async Task ProcessUserServerUpdated(SocketGuildUser before, SocketGuildUser after)
+			public static Task ProcessUserServerUpdated(SocketGuildUser before, SocketGuildUser after)
 			{
 				var roleIds = new List<ulong>();
 				foreach (var role in after.Roles)
@@ -452,10 +465,12 @@ namespace SGMessageBot.Bot
 				new MySqlParameter("@discriminator", after.Discriminator), new MySqlParameter("@nickName", after.Nickname), new MySqlParameter("@nickNameMention", after.Mention.Replace("!", String.Empty)),
 				new MySqlParameter("@joinedDate", joinedAtDateTime), new MySqlParameter("@avatarID", after.AvatarId), new MySqlParameter("@avatarUrl", after.GetAvatarUrl()),
 				new MySqlParameter("@lastOnline", joinedAtDateTime), new MySqlParameter("@roleIds", JsonConvert.SerializeObject(roleIds)), new MySqlParameter("@mesCount", value:0));
+
+				return Task.CompletedTask;
 			}
 			#endregion
 			#region Role
-			public static async Task ProcessRoleCreated(SocketRole e)
+			public static Task ProcessRoleCreated(SocketRole e)
 			{
 				var queryString = @"INSERT INTO roles (serverID, roleID, roleName, roleColor, roleMention, isEveryone, isDeleted)
 				VALUES(@serverID, @roleID, @roleName, @roleColor, @roleMention, @isEveryone, @isDeleted)
@@ -464,9 +479,11 @@ namespace SGMessageBot.Bot
 				DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", e.Guild.Id), new MySqlParameter("@roleID", e.Id),
 				new MySqlParameter("@roleName", e.Name), new MySqlParameter("@roleColor", e.Color.ToString()), new MySqlParameter("@roleMention", e.Mention),
 				new MySqlParameter("@isEveryone", e.IsEveryone), new MySqlParameter("@isDeleted", false));
+
+				return Task.CompletedTask;
 			}
 
-			public static async Task ProcessRoleUpdated(SocketRole before, SocketRole after)
+			public static Task ProcessRoleUpdated(SocketRole before, SocketRole after)
 			{
 				var queryString = @"INSERT INTO roles (serverID, roleID, roleName, roleColor, roleMention, isEveryone)
 				VALUES(@serverID, @roleID, @roleName, @roleColor, @roleMention, @isEveryone)
@@ -474,16 +491,20 @@ namespace SGMessageBot.Bot
 				DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", after.Guild.Id), new MySqlParameter("@roleID", after.Id),
 				new MySqlParameter("@roleName", after.Name), new MySqlParameter("@roleColor", after.Color.ToString()), new MySqlParameter("@roleMention", after.Mention),
 				new MySqlParameter("@isEveryone", after.IsEveryone));
+
+				return Task.CompletedTask;
 			}
 
-			public static async Task ProcessRoleDeleted(SocketRole e)
+			public static Task ProcessRoleDeleted(SocketRole e)
 			{
 				var queryString = "UPDATE roles SET isDeleted=@isDeleted WHERE roleID=@roleID";
 				DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@isDeleted", true), new MySqlParameter("@roleID", e.Id));
+
+				return Task.CompletedTask;
 			}
 			#endregion
 			#region Channel
-			public static async Task ProcessChannelCreated(SocketChannel e)
+			public static Task ProcessChannelCreated(SocketChannel e)
 			{
 				var gChannel = e as SocketGuildChannel;
 				//var channelServer = e.Discord.Guilds.FirstOrDefault(s => s.GetChannel(e.Id) != null);
@@ -499,9 +520,11 @@ namespace SGMessageBot.Bot
 					new MySqlParameter("@channelMention", gTChannel != null ? gTChannel.Mention : null), new MySqlParameter("@channelName", gChannel.Name), new MySqlParameter("@channelPosition", gChannel.Position),
 					new MySqlParameter("@channelType", gTChannel != null ? 0 : 2), new MySqlParameter("@isDeleted", false));
 				}
+
+				return Task.CompletedTask;
 			}
 
-			public static async Task ProcessChannelUpdated(SocketChannel before, SocketChannel after)
+			public static Task ProcessChannelUpdated(SocketChannel before, SocketChannel after)
 			{
 				var gChannel = after as SocketGuildChannel;
 				//var channelServer = after.Discord.Guilds.FirstOrDefault(s => s.GetChannel(after.Id) != null);
@@ -517,16 +540,19 @@ namespace SGMessageBot.Bot
 					new MySqlParameter("@channelMention", gTChannel != null ? gTChannel.Mention : null), new MySqlParameter("@channelName", gChannel.Name), new MySqlParameter("@channelPosition", gChannel.Position),
 					new MySqlParameter("@channelType", gTChannel != null ? 0 : 2), new MySqlParameter("@isDeleted", false));
 				}
+
+				return Task.CompletedTask;
 			}
 
-			public static async Task ProcessChannelDestroyed(SocketChannel e)
+			public static Task ProcessChannelDestroyed(SocketChannel e)
 			{
 				var queryString = "UPDATE channels SET isDeleted=@isDeleted WHERE channelID=@channelID";
 				DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@isDeleted", true), new MySqlParameter("@channelID", e.Id));
+				return Task.CompletedTask;
 			}
 			#endregion
 			#region Reactions
-			public static async Task ProcessReactionAdded(Cacheable<IUserMessage, ulong> mes, ISocketMessageChannel channel, SocketReaction react)
+			public static Task ProcessReactionAdded(Cacheable<IUserMessage, ulong> mes, ISocketMessageChannel channel, SocketReaction react)
 			{
 				var emote = react.Emote as Emote;
 				var queryString = @"INSERT INTO reactions (serverID, userID, channelID, messageID, emojiID, emojiName, isDeleted)
@@ -535,23 +561,28 @@ namespace SGMessageBot.Bot
 				DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", (channel as SocketTextChannel).Guild.Id), new MySqlParameter("@channelID", channel.Id),
 				new MySqlParameter("@userID", react.UserId), new MySqlParameter("@messageID", react.MessageId), new MySqlParameter("@emojiID", (emote == null ? 0 : emote.Id)), new MySqlParameter("@emojiName", react.Emote.Name), 
 				new MySqlParameter("@isDeleted", false));
+
+				return Task.CompletedTask;
 			}
 
-			public static async Task ClientReactionRemoved(Cacheable<IUserMessage, ulong> mes, ISocketMessageChannel channel, SocketReaction react)
+			public static Task ClientReactionRemoved(Cacheable<IUserMessage, ulong> mes, ISocketMessageChannel channel, SocketReaction react)
 			{
 				var emote = react.Emote as Emote;
 				var queryString = "UPDATE reactions SET isDeleted=@isDeleted WHERE messageID=@messageID AND emojiID=@emojiID AND userID = @userID";
 				DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@isDeleted", true), new MySqlParameter("@messageID", react.MessageId),
 				new MySqlParameter("@emojiID", emote == null ? 0 : emote.Id), new MySqlParameter("@userID", react.UserId));
+
+				return Task.CompletedTask;
 			}
 
-			public static async Task ClientReactionsCleared(Cacheable<IUserMessage, ulong> mes, ISocketMessageChannel channel)
+			public static Task ClientReactionsCleared(Cacheable<IUserMessage, ulong> mes, ISocketMessageChannel channel)
 			{
 				ulong messageId = 0;
 				if (mes.HasValue)
 					messageId = mes.Value.Id;
 				var queryString = "UPDATE reactions SET isDeleted=@isDeleted WHERE messageID=@messageID";
 				DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@isDeleted", true), new MySqlParameter("@messageID", messageId));
+				return Task.CompletedTask;
 			}
 			#endregion
 			#region Other Functions
@@ -573,7 +604,7 @@ namespace SGMessageBot.Bot
 					}
 					catch (Exception ex)
 					{
-						ErrorLog.writeError(ex);
+						ErrorLog.WriteError(ex);
 						continue;
 					}
 				}

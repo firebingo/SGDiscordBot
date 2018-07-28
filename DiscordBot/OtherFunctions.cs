@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace SGMessageBot.Bot
+namespace SGMessageBot.DiscordBot
 {
 	public static class OtherFunctions
 	{
@@ -42,7 +42,7 @@ namespace SGMessageBot.Bot
 
 		public static void sendMessageTrack(SocketGuild guild)
 		{
-			var config = SGMessageBot.botConfig.botInfo.messageCount;
+			var config = SGMessageBot.BotConfig.BotInfo.DiscordConfig.messageCount;
 			if(config != null && config.ContainsKey(guild.Id) && config[guild.Id].enabled)
 			{
 				var count = DataLayerShortcut.ExecuteScalarInt("SELECT COUNT(*) FROM messages WHERE isDeleted = false AND serverID = @serverId", new MySqlParameter("@serverId", guild.Id));
@@ -55,7 +55,7 @@ namespace SGMessageBot.Bot
 						var message = config[guild.Id].message.Replace("%c%", config[guild.Id].messageCount.ToString());
 						gChannel?.SendMessageAsync(message);
 						config[guild.Id].enabled = false;
-						SGMessageBot.botConfig.saveCredConfig();
+						SGMessageBot.BotConfig.SaveCredConfig();
 					}
 				}
 			}

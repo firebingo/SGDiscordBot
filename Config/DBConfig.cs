@@ -22,24 +22,24 @@ namespace SGMessageBot.Config
 					config = JsonConvert.DeserializeObject<DBConfigInfo>(File.ReadAllText("Data/DBConfig.json"));
 					if (config == null)
 					{
-						result.success = false;
-						result.message = "FAIL_LOAD_DB_CONFIG";
+						result.Success = false;
+						result.Message = "FAIL_LOAD_DB_CONFIG";
 					}
 				}
-				catch(Exception e)
+				catch(Exception ex)
 				{
-					ErrorLog.writeError(e);
-					result.success = false;
-					result.message = e.Message;
+					ErrorLog.WriteError(ex);
+					result.Success = false;
+					result.Message = ex.Message;
 					return result;
 				}
 			}
 			else
 			{
-				result.success = false;
-				result.message = "FAIL_FIND_DB_CONFIG";
+				result.Success = false;
+				result.Message = "FAIL_FIND_DB_CONFIG";
 			}
-			result.success = true;
+			result.Success = true;
 			connectionString = $"Server={config.address};Port={config.port};Database={config.schemaName};Uid={config.userName};Pwd={config.password};Charset=utf8mb4";
 			return result;
 		}

@@ -9,8 +9,8 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using System.Collections.Concurrent;
 using System.Threading;
-using SGMessageBot.Bot;
 using SGMessageBot.Helpers;
+using SGMessageBot.DiscordBot;
 
 namespace SGMessageBot.AI
 {
@@ -21,17 +21,17 @@ namespace SGMessageBot.AI
 		private static SemaphoreSlim sem = new SemaphoreSlim(1, 1);
 		private static object corpusLock = new object();
 
-		private async Task buildCorpus()
+		private Task buildCorpus()
 		{
 			try
 			{
 				var wordDict = new ConcurrentDictionary<string, ConcurrentBag<string>>();
 				List<MessageTextModel> messages = new List<MessageTextModel>();
-				if (!string.IsNullOrWhiteSpace(SGMessageBot.botConfig.botInfo.aiCorpusExtraPath))
+				if (!string.IsNullOrWhiteSpace(SGMessageBot.BotConfig.BotInfo.DiscordConfig.aiCorpusExtraPath))
 				{
 					try
 					{
-						var lines = File.ReadAllLines(SGMessageBot.botConfig.botInfo.aiCorpusExtraPath);
+						var lines = File.ReadAllLines(SGMessageBot.BotConfig.BotInfo.DiscordConfig.aiCorpusExtraPath);
 						lines = lines.Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
 						for (var i = 0; i < lines.Length; ++i)
 						{
@@ -43,7 +43,7 @@ namespace SGMessageBot.AI
 						throw;
 					}
 				}
-				var tempMes = await BotCommandProcessor.loadMessages();
+				var tempMes = BotCommandProcessor.loadMessages();
 				messages.AddRange(tempMes);
 				//https://stackoverflow.com/questions/5306729/how-do-markov-chain-chatbots-work
 				Parallel.ForEach(messages, (message) =>
@@ -86,7 +86,7 @@ namespace SGMessageBot.AI
 					}
 					catch(Exception ex)
 					{
-						ErrorLog.writeLog($"Exception on message in buildCorpus, Message: \"{message.mesText}\", Exception: {ex.Message}, Stack: {ex.StackTrace}");
+						ErrorLog.WriteLog($"Exception on message in buildCorpus, Message: \"{message.mesText}\", Exception: {ex.Message}, Stack: {ex.StackTrace}");
 						return;
 					}
 				});
@@ -105,9 +105,10 @@ namespace SGMessageBot.AI
 			}
 			catch(Exception ex)
 			{
-				ErrorLog.writeError(ex);
+				ErrorLog.WriteError(ex);
 				throw ex;
 			}
+			return Task.CompletedTask;
 		}
 
 		public async Task rebuildCorpus()
@@ -120,8 +121,9 @@ namespace SGMessageBot.AI
 
 				await loadCorpus();
 			}
-			catch (Exception e)
+			catch (Exception ex)
 			{
+				ErrorLog.WriteError(ex);
 				sem.Release();
 				throw;
 			}

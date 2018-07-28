@@ -73,12 +73,12 @@ namespace SGMessageBot.DataBase
 			}
 			catch (MySqlException e)
 			{
-				ErrorLog.writeError(e);
-				result.message = e.Message;
-				result.success = false;
+				ErrorLog.WriteError(e);
+				result.Message = e.Message;
+				result.Success = false;
 				return result;
 			}
-			result.success = true;
+			result.Success = true;
 			return result;
 		}
 
@@ -87,7 +87,7 @@ namespace SGMessageBot.DataBase
 			var result = new BaseResult();
 			var metaDataGet = getMetaData();
 			//this hopefully should only happen if a db was made on version 1 before the metaData table.
-			if(!metaDataGet.success)
+			if(!metaDataGet.Success)
 			{
 				Console.WriteLine("Database could not get metadata, this probally means the database was created before metadata was added. \nVersion will be set to 1 then new >version 1 tables will be created.\n" + 
 					"If you were somehow above version 1 type n to exit and backup your database before this is run.");
@@ -101,7 +101,7 @@ namespace SGMessageBot.DataBase
 				metaQuery = "INSERT INTO metaData (mkey, version, createdDate, updatedDate) VALUES (@mkey, @version, @createdDate, @updatedDate)";
 				DataLayerShortcut.ExecuteNonQuery(metaQuery, new MySqlParameter("@mkey", mkey), new MySqlParameter("@version", 1), new MySqlParameter("@createdDate", DateTime.UtcNow), new MySqlParameter("@updatedDate", DateTime.UtcNow));
 				metaDataGet = getMetaData();
-				if(!metaDataGet.success)
+				if(!metaDataGet.Success)
 				{
 					Console.WriteLine("Getting metaData still failed, press any key to exit.");
 					Console.Read();
@@ -112,8 +112,8 @@ namespace SGMessageBot.DataBase
 			{
 				if (metaDataGet.metaData.version < 0)
 				{
-					result.message = "Failure to build database. Metadata reported a version below 0.";
-					result.success = false;
+					result.Message = "Failure to build database. Metadata reported a version below 0.";
+					result.Success = false;
 					return result;
 				}
 				else
@@ -142,12 +142,12 @@ namespace SGMessageBot.DataBase
 			}
 			catch (MySqlException e)
 			{
-				ErrorLog.writeError(e);
-				result.message = e.Message;
-				result.success = false;
+				ErrorLog.WriteError(e);
+				result.Message = e.Message;
+				result.Success = false;
 				return result;
 			}
-			result.success = true;
+			result.Success = true;
 			return result;
 		}
 
@@ -160,14 +160,14 @@ namespace SGMessageBot.DataBase
 				var getVersion = "SELECT * FROM metaData";
 				DataLayerShortcut.ExecuteReader<MetaDataModel>(readMetaData, metaData, getVersion);
 				result.metaData = metaData;
-				result.success = true;
+				result.Success = true;
 				return result;
 			}
 			catch(MySqlException e)
 			{
-				ErrorLog.writeError(e);
-				result.success = false;
-				result.message = e.Message;
+				ErrorLog.WriteError(e);
+				result.Success = false;
+				result.Message = e.Message;
 				return result;
 			}
 		}

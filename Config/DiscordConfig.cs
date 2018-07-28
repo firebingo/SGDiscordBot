@@ -8,68 +8,134 @@ namespace SGMessageBot.Config
 {
 	public class BotConfig
 	{
-		public BotCredentialInfo botInfo { get; private set; }
+		private readonly string ConfigPath = "Data/BotConfig.json";
+		private readonly string OldCredConfigPath = "Data/CredConfig.json";
+		private object locker { get; } = new object();
+		public MainBotConfig BotInfo { get; private set; }
 
-		public BaseResult loadCredConfig()
+		public BaseResult LoadConfig()
 		{
-			botInfo = null;
 			var result = new BaseResult();
-
-			if (File.Exists("Data/CredConfig.json"))
+			lock(locker)
 			{
-				try
+				if (File.Exists(OldCredConfigPath))
 				{
-					botInfo = JsonConvert.DeserializeObject<BotCredentialInfo>(File.ReadAllText("Data/CredConfig.json"));
-					if (botInfo == null)
+					try
 					{
-						result.success = false;
-						result.message = "FAIL_LOAD_CRED";
+						var oldConfig = LoadOldDiscordConfig();
+						File.Move(OldCredConfigPath, "Data/CredConfig.bak.json");
+						if(oldConfig != null)
+						{
+							BotInfo = new MainBotConfig();
+							SaveCredConfig(oldConfig);
+						}
+					}
+					catch(Exception ex)
+					{
+						ErrorLog.WriteError(ex);
+						return new BaseResult() { Success = false, Message = ex.Message };
 					}
 				}
-				catch (Exception e)
+				else
 				{
-					result.success = false;
-					result.message = e.Message;
-					ErrorLog.writeError(e);
-					return result;
+					if (File.Exists(ConfigPath))
+					{
+						var config = DeserializeConfig(ref result);
+						if (config == null || !result.Success)
+							return result;
+						BotInfo = config;
+					}
+					else
+						SaveCredConfig();
 				}
 			}
-			else
-			{
-				result.success = false;
-				result.message = "FAIL_FIND_CRED";
-				ErrorLog.writeLog("Failed to find DB Config");
-			}
-			result.success = true;
+			result.Success = true;
+			result.Message = string.Empty;
 			return result;
 		}
 
-		public BaseResult saveCredConfig()
+		private MainBotConfig DeserializeConfig(ref BaseResult result)
 		{
-			var result = new BaseResult();
+			MainBotConfig retval = null;
 			try
 			{
-				File.WriteAllText("Data/CredConfig.json", JsonConvert.SerializeObject(botInfo, Formatting.Indented));
+				retval = JsonConvert.DeserializeObject<MainBotConfig>(File.ReadAllText(ConfigPath));
+				result.Success = true;
+				result.Message = string.Empty;
 			}
-			catch (Exception e)
+			catch (Exception ex)
 			{
-				result.success = false;
-				result.message = "FAIL_SAVE_CRED";
+				result.Success = false;
+				result.Message = ex.Message;
+				ErrorLog.WriteError(ex);
+				return null;
 			}
-			result.success = true;
-			return result;
+
+			return retval;
+		}
+
+		private DiscordConfig LoadOldDiscordConfig()
+		{
+			lock (locker)
+			{
+				DiscordConfig OldInfo = null;
+
+				try
+				{
+					OldInfo = JsonConvert.DeserializeObject<DiscordConfig>(File.ReadAllText(OldCredConfigPath));
+				}
+				catch (Exception ex)
+				{
+					ErrorLog.WriteError(ex);
+					return null;
+				}
+
+				return OldInfo;
+			}
+		}
+
+		public BaseResult SaveCredConfig(DiscordConfig discordConfig = null)
+		{
+			lock (locker)
+			{
+				var result = new BaseResult();
+				try
+				{
+					if (BotInfo == null)
+						BotInfo = new MainBotConfig();
+					if (discordConfig != null)
+						BotInfo.DiscordConfig = discordConfig;
+					File.WriteAllText(ConfigPath, JsonConvert.SerializeObject(BotInfo, Formatting.Indented));
+				}
+				catch (Exception ex)
+				{
+					result.Success = false;
+					result.Message = "FAIL_SAVE_CRED";
+					ErrorLog.WriteError(ex);
+				}
+				result.Success = true;
+				return result;
+			}
 		}
 	}
 
 	[Serializable]
-	public class BotCredentialInfo
+	public class MainBotConfig
 	{
-		public string token;
-		public string clientId;
-		public string botId;
+		public bool DiscordEnabled = true;
+		public bool SteamEnabled = false;
+		public DiscordConfig DiscordConfig = new DiscordConfig();
+
+	}
+
+	[Serializable]
+	public class DiscordConfig
+	{
+		public string token = string.Empty;
+		public string botId = string.Empty;
 		public string aiCorpusExtraPath = string.Empty;
-		public List<ulong> ownerIds;
-		public List<ulong> commandRoleIds;
+		public List<ulong> ownerIds = new List<ulong>();
+		public List<ulong> commandRoleIds = new List<ulong>();
 		public Dictionary<ulong, MessageCountTracker> messageCount = new Dictionary<ulong, MessageCountTracker>();
 		public Dictionary<string, RandomMessageInfo> randomMessageSend = new Dictionary<string, RandomMessageInfo>();
 		public List<ulong> statServerIds = new List<ulong>();
@@ -78,10 +144,10 @@ namespace SGMessageBot.Config
 	[Serializable]
 	public class MessageCountTracker
 	{
-		public bool enabled;
-		public ulong channelId;
-		public int messageCount;
-		public string message;
+		public bool enabled = false;
+		public ulong channelId = 0;
+		public int messageCount = 0;
+		public string message = string.Empty;
 	}
 
 	[Serializable]

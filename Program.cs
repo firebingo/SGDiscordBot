@@ -2,7 +2,6 @@
 using Discord.Commands;
 using Discord.WebSocket;
 using MySql.Data.MySqlClient;
-using SGMessageBot.Bot;
 using SGMessageBot.Config;
 using SGMessageBot.DataBase;
 using System;
@@ -13,182 +12,47 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using SGMessageBot.Helpers;
 using SGMessageBot.AI;
+using System.Threading;
+using SGMessageBot.DiscordBot;
 
 namespace SGMessageBot
 {
 	class SGMessageBot
 	{
+		private static DiscordMain DiscordThread;
+		public static TimeThread TimeThread;
+
+		public static BotConfig BotConfig { get; private set; }
+
 		static void Main(string[] args)
 		{
-			new SGMessageBot().runBot().GetAwaiter().GetResult();
+			BotConfig = new BotConfig();
+			var botCResult = BotConfig.LoadConfig();
+			BotConfig.SaveCredConfig();
+
+			TimeThread = new TimeThread();
+			TimeThread.Start();
+
+			new SGMessageBot().runApp().GetAwaiter().GetResult();
 		}
 
-		public static DiscordSocketClient Client { get; private set; }
-		public static BotConfig botConfig { get; private set; }
-		public static bool ready { get; set; }
-		private static BotCommandHandler cHandler;
-		private static BotCommandProcessor cProcessor;
-		private static Markov cMarkov;
-		private static TimeThread timeThread;
-		public static StatTracker statTracker;
-		private static long connectedTimes = 0;
-
-		public async Task runBot()
+		private async Task runApp()
 		{
-			try
+			Task loadDiscord = Task.CompletedTask;
+			if (BotConfig.BotInfo.DiscordEnabled)
 			{
-				botConfig = new BotConfig();
-				var botCResult = botConfig.loadCredConfig();
-				botConfig.saveCredConfig();
-
-				#region DB Init
-				var dbResult = DataLayerShortcut.loadConfig();
-				if (!dbResult.success)
-					Console.WriteLine(dbResult.message);
-				var dbTestResult = DataLayerShortcut.testConnection();
-				if (!dbTestResult.success)
-					Console.WriteLine(dbTestResult.message);
-				var createResult = DataLayerShortcut.createDataBase();
-				if (!createResult.success)
-					Console.WriteLine(createResult.message);
-				statTracker = new StatTracker();
-				timeThread = new TimeThread();
-				timeThread.Start();
-				#endregion
-
-				#region Other Init
-				OtherFunctions.loadTimes();
-				#endregion
-
-				#region Discord Client
-				//create new discord client and log
-				Client = new DiscordSocketClient(new DiscordSocketConfig()
-				{
-					MessageCacheSize = 10,
-					ConnectionTimeout = int.MaxValue,
-					LogLevel = LogSeverity.Warning
-				});
-				Client.Connected += onConnected;
-				Client.Disconnected += onDisconnected;
-				Client.Log += (message) =>
-				{
-					Console.WriteLine($"Discord Error:{message.ToString()}");
-					ErrorLog.writeLog($"Discord Error:{message.ToString()}");
-					return Task.CompletedTask;
-				};
-				await Client.LoginAsync(TokenType.Bot, botConfig.botInfo.token);
-				await Client.StartAsync();
-
-				//Delay until application quit
-				await Task.Delay(-1);
-
-				timeThread.Stop();
-
-				Console.WriteLine("Exiting!");
-			}
-			catch (Exception e)
-			{
-				ErrorLog.writeError(e);
-				return;
-			}
-			#endregion
-		}
-
-		private async Task onDisconnected(Exception arg)
-		{
-			try
-			{
-				await cHandler.removeCommandService();
-				cHandler = null;
-				cProcessor = null;
-				Client.MessageReceived -= BotEventHandler.ClientMessageReceived;
-				Client.MessageUpdated -= BotEventHandler.ClientMessageUpdated;
-				Client.MessageDeleted -= BotEventHandler.ClientMessageDeleted;
-				Client.JoinedGuild -= BotEventHandler.ClientJoinedServer;
-				Client.GuildUpdated -= BotEventHandler.ClientServerUpdated;
-				Client.UserJoined -= BotEventHandler.ClientUserJoined;
-				Client.UserUnbanned -= BotEventHandler.ClientUserUnbanned;
-				Client.UserBanned -= BotEventHandler.ClientUserBanned;
-				Client.UserLeft -= BotEventHandler.ClientUserLeft;
-				Client.UserUpdated -= BotEventHandler.ClientUserUpdated;
-				Client.GuildMemberUpdated -= BotEventHandler.ClientServerUserUpdated;
-				Client.RoleCreated -= BotEventHandler.ClientRoleCreated;
-				Client.RoleUpdated -= BotEventHandler.ClientRoleUpdated;
-				Client.RoleDeleted -= BotEventHandler.ClientRoleDeleted;
-				Client.ChannelCreated -= BotEventHandler.ClientChannelCreated;
-				Client.ChannelUpdated -= BotEventHandler.ClientChannelUpdated;
-				Client.ChannelDestroyed -= BotEventHandler.ClientChannelDestroyed;
-				Client.ReactionAdded -= BotEventHandler.ClientReactionAdded;
-				Client.ReactionRemoved -= BotEventHandler.ClientReactionRemoved;
-				Client.ReactionsCleared -= BotEventHandler.ClientReactionsCleared;
-			}
-			catch (Exception e)
-			{
-				ErrorLog.writeError(e);
-				Console.WriteLine(e.Message);
+				DiscordThread = new DiscordMain();
+				loadDiscord = Task.Run(() => DiscordThread.RunBot());
 			}
 
-			Console.WriteLine("Disconnected");
-			Console.WriteLine(arg.Message);
-			ready = false;
-		}
+			await loadDiscord;
 
-		private async Task onConnected()
-		{
-			var serviceProvider = ConfigureServices();
-			await cHandler.installCommandService(serviceProvider);
+			//Delay until application quit
+			await Task.Delay(-1);
 
-			//Event hooks
-			Client.MessageReceived += BotEventHandler.ClientMessageReceived;
-			Client.MessageUpdated += BotEventHandler.ClientMessageUpdated;
-			Client.MessageDeleted += BotEventHandler.ClientMessageDeleted;
-			Client.JoinedGuild += BotEventHandler.ClientJoinedServer;
-			Client.GuildUpdated += BotEventHandler.ClientServerUpdated;
-			Client.UserJoined += BotEventHandler.ClientUserJoined;
-			Client.UserUnbanned += BotEventHandler.ClientUserUnbanned;
-			Client.UserBanned += BotEventHandler.ClientUserBanned;
-			Client.UserLeft += BotEventHandler.ClientUserLeft;
-			Client.UserUpdated += BotEventHandler.ClientUserUpdated;
-			Client.GuildMemberUpdated += BotEventHandler.ClientServerUserUpdated;
-			Client.RoleCreated += BotEventHandler.ClientRoleCreated;
-			Client.RoleUpdated += BotEventHandler.ClientRoleUpdated;
-			Client.RoleDeleted += BotEventHandler.ClientRoleDeleted;
-			Client.ChannelCreated += BotEventHandler.ClientChannelCreated;
-			Client.ChannelUpdated += BotEventHandler.ClientChannelUpdated;
-			Client.ChannelDestroyed += BotEventHandler.ClientChannelDestroyed;
-			Client.ReactionAdded += BotEventHandler.ClientReactionAdded;
-			Client.ReactionRemoved += BotEventHandler.ClientReactionRemoved;
-			Client.ReactionsCleared += BotEventHandler.ClientReactionsCleared;
+			TimeThread.Stop();
 
-			Task startTask = null;
-			if (connectedTimes == 0)
-				startTask = BotExamineServers.startupCheck(Client.Guilds);
-
-			ready = true;
-			Console.WriteLine("Ready!");
-			connectedTimes++;
-		}
-
-		private Task Client_ReactionsCleared(Cacheable<IUserMessage, ulong> arg1, ISocketMessageChannel arg2)
-		{
-			throw new NotImplementedException();
-		}
-
-		private IServiceProvider ConfigureServices()
-		{
-			//setup and add command service.
-			cHandler = new BotCommandHandler();
-			cProcessor = new BotCommandProcessor();
-			cMarkov = new Markov();
-
-			var services = new ServiceCollection()
-				.AddSingleton(Client)
-				.AddSingleton(botConfig)
-				.AddSingleton(cHandler)
-				.AddSingleton(cProcessor)
-				.AddSingleton(cMarkov);
-			var provider = new DefaultServiceProviderFactory().CreateServiceProvider(services);
-			return provider;
+			Console.WriteLine("Exiting!");
 		}
 	}
 }
@@ -196,6 +60,6 @@ namespace SGMessageBot
 [Serializable]
 public class BaseResult
 {
-	public bool success;
-	public string message;
+	public bool Success;
+	public string Message;
 }

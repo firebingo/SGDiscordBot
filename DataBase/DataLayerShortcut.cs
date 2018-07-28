@@ -33,15 +33,15 @@ namespace SGMessageBot.DataBase
 			}
 			catch (MySqlException e)
 			{
-				ErrorLog.writeError(e);
+				ErrorLog.WriteError(e);
 				if (e.InnerException.Message.ToUpperInvariant().Contains("UNKNOWN DATABASE"))
 					schemaExists = false;
 
-				result.success = false;
-				result.message = e.Message;
+				result.Success = false;
+				result.Message = e.Message;
 				return result;
 			}
-			result.success = true;
+			result.Success = true;
 			return result;
 		}
 
@@ -49,20 +49,20 @@ namespace SGMessageBot.DataBase
 		{
 			DatebaseCreate dataCreator = new DatebaseCreate();
 			var result = new BaseResult();
-			result.success = true;
+			result.Success = true;
 			if (!schemaExists) {
 				result = dataCreator.createDatabase();
 			}
-			if(!result.success)
+			if(!result.Success)
 				return result;
 			else
 			{
 				result = dataCreator.buildDatabase();
-				if (!result.success)
+				if (!result.Success)
 					return result;
 			}
 			schemaExists = true;
-			result.success = true;
+			result.Success = true;
 			return result;
 		}
 
@@ -111,7 +111,7 @@ namespace SGMessageBot.DataBase
 			}
 			catch (Exception e)
 			{
-				ErrorLog.writeError(e);
+				ErrorLog.WriteError(e);
 				connection.Close();
 				connection.Dispose();
 				return $"Exception: {e.Message}, Query: {query}";
@@ -152,7 +152,7 @@ namespace SGMessageBot.DataBase
 				}
 				catch (Exception e)
 				{
-					ErrorLog.writeError(e);
+					ErrorLog.WriteError(e);
 					cmd.Dispose();
 					connection.Close();
 					connection.Dispose();
@@ -184,7 +184,7 @@ namespace SGMessageBot.DataBase
 				}
 				catch (Exception e)
 				{
-					ErrorLog.writeError(e);
+					ErrorLog.WriteError(e);
 					cmd.Dispose();
 					connection.Close();
 					connection.Dispose();
@@ -223,12 +223,12 @@ namespace SGMessageBot.DataBase
 			}
 			catch (SQLiteException e)
 			{
-				ErrorLog.writeError(e);
-				result.success = false;
-				result.message = e.Message;
+				ErrorLog.WriteError(e);
+				result.Success = false;
+				result.Message = e.Message;
 			}
 			hasNadeko = true;
-			result.success = true;
+			result.Success = true;
 			return result;
 		}
 
@@ -245,11 +245,11 @@ namespace SGMessageBot.DataBase
 			}
 			catch (SQLiteException e)
 			{
-				ErrorLog.writeError(e);
-				result.success = false;
-				result.message = e.Message;
+				ErrorLog.WriteError(e);
+				result.Success = false;
+				result.Message = e.Message;
 			}
-			result.success = true;
+			result.Success = true;
 			return result;
 		}
 
@@ -257,7 +257,7 @@ namespace SGMessageBot.DataBase
 		{
 			int? result = null;
 			var isOpen = openLiteConnection(serverId);
-			if(!isOpen.success)
+			if(!isOpen.Success)
 			{
 				return result;
 			}
@@ -274,7 +274,7 @@ namespace SGMessageBot.DataBase
 				}
 				catch (Exception e)
 				{
-					ErrorLog.writeError(e);
+					ErrorLog.WriteError(e);
 					command.Dispose();
 					closeLiteConnection();
 					return result;
@@ -283,7 +283,7 @@ namespace SGMessageBot.DataBase
 			}
 			catch(SQLiteException e)
 			{
-				ErrorLog.writeError(e);
+				ErrorLog.WriteError(e);
 				closeLiteConnection();
 				return result = null;
 			}

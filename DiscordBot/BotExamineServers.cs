@@ -12,7 +12,7 @@ using Discord;
 using Newtonsoft.Json;
 using SGMessageBot.Helpers;
 
-namespace SGMessageBot.Bot
+namespace SGMessageBot.DiscordBot
 {
 	/// <summary>
 	/// This class is used for the process to run through the bots server list and add missing data to the database.
@@ -108,7 +108,7 @@ namespace SGMessageBot.Bot
 			}
 			catch (Exception e)
 			{
-				ErrorLog.writeError(e);
+				ErrorLog.WriteError(e);
 				return;
 			}
 		}
@@ -119,7 +119,7 @@ namespace SGMessageBot.Bot
 		/// </summary>
 		/// <param name="context">The context from the command, used to get the channel to reload</param>
 		/// <returns></returns>
-		public static async Task<string> updateMessageHistoryChannel(ICommandContext context, IMessageChannel channel)
+		public static Task<string> updateMessageHistoryChannel(ICommandContext context, IMessageChannel channel)
 		{
 			try
 			{
@@ -130,12 +130,12 @@ namespace SGMessageBot.Bot
 				var reactRemove = $"DELETE FROM reactions WHERE channelID = @channelID";
 				var delRes = DataLayerShortcut.ExecuteNonQuery(reactRemove, new MySqlParameter("@channelID", channel.Id));
 				if (delRes != String.Empty)
-					return delRes;
+					return Task.FromResult(delRes);
 				//Old emoji uses must be removed since they have no identification of their own.
 				var emojiRemove = $"DELETE FROM emojiUses WHERE channelID = @channelID AND NOT isDeleted";
 				delRes = DataLayerShortcut.ExecuteNonQuery(emojiRemove, new MySqlParameter("@channelID", channel.Id));
 				if (delRes != String.Empty)
-					return delRes;
+					return Task.FromResult(delRes);
 				var messages = channel.GetMessagesAsync(Int32.MaxValue).ToList().Result;
 				var cCount = 0;
 				var totalMessages = messages.Sum(m => m.Count);
@@ -172,8 +172,8 @@ namespace SGMessageBot.Bot
 						var mesRes = DataLayerShortcut.ExecuteNonQuery(mesQueryString);
 						if (mesRes != String.Empty)
 						{
-							ErrorLog.writeLog(mesRes);
-							return mesRes;
+							ErrorLog.WriteLog(mesRes);
+							return Task.FromResult(mesRes);
 						}
 					}
 					if (attachRows.Count > 0)
@@ -182,8 +182,8 @@ namespace SGMessageBot.Bot
 						var mesRes = DataLayerShortcut.ExecuteNonQuery(attachQueryString);
 						if (mesRes != String.Empty)
 						{
-							ErrorLog.writeLog(mesRes);
-							return mesRes;
+							ErrorLog.WriteLog(mesRes);
+							return Task.FromResult(mesRes);
 						}
 					}
 					if(reactionsRows.Count > 0)
@@ -192,8 +192,8 @@ namespace SGMessageBot.Bot
 						var mesRes = DataLayerShortcut.ExecuteNonQuery(reactQueryString);
 						if (mesRes != String.Empty)
 						{
-							ErrorLog.writeLog(mesRes);
-							return mesRes;
+							ErrorLog.WriteLog(mesRes);
+							return Task.FromResult(mesRes);
 						}
 					}
 					if(emojiRows.Count > 0)
@@ -202,8 +202,8 @@ namespace SGMessageBot.Bot
 						var mesRes = DataLayerShortcut.ExecuteNonQuery(emojiQueryString);
 						if (mesRes != String.Empty)
 						{
-							ErrorLog.writeLog(mesRes);
-							return mesRes;
+							ErrorLog.WriteLog(mesRes);
+							return Task.FromResult(mesRes);
 						}
 					}
 				}
@@ -218,16 +218,16 @@ namespace SGMessageBot.Bot
 					{
 						exceptions.Add(ex.Message);
 					}
-					ErrorLog.writeLog(string.Join(", ", exceptions));
-					return $"Exceptions: {string.Join(", ", exceptions)}";
+					ErrorLog.WriteLog(string.Join(", ", exceptions));
+					return Task.FromResult($"Exceptions: {string.Join(", ", exceptions)}");
 				}
 				else
 				{
-					ErrorLog.writeError(e);
-					return $"Exception: {e.Message}";
+					ErrorLog.WriteError(e);
+					return Task.FromResult($"Exception: {e.Message}");
 				}
 			}
-			return "Operation Complete";
+			return Task.FromResult("Operation Complete");
 		}
 
 		/// <summary>
@@ -236,7 +236,7 @@ namespace SGMessageBot.Bot
 		/// </summary>
 		/// <param name="context">The context from the command, used to get the server to reload</param>
 		/// <returns></returns>
-		public static async Task<string> updateMessageHistoryServer(ICommandContext context)
+		public static Task<string> updateMessageHistoryServer(ICommandContext context)
 		{
 			var exceptionsResult = new List<string>();
 			Console.WriteLine("Reloading all server messages");
@@ -244,12 +244,12 @@ namespace SGMessageBot.Bot
 			var reactRemove = $"DELETE FROM reactions WHERE serverID = @serverID AND NOT isDeleted";
 			var delRes = DataLayerShortcut.ExecuteNonQuery(reactRemove, new MySqlParameter("@serverID", context.Guild.Id));
 			if (delRes != String.Empty)
-				return delRes;
+				return Task.FromResult(delRes);
 			//Old emoji uses must be removed since they have no identification of their own.
 			var emojiRemove = $"DELETE FROM emojiUses WHERE serverID = @serverID AND NOT isDeleted";
 			delRes = DataLayerShortcut.ExecuteNonQuery(emojiRemove, new MySqlParameter("@serverID", context.Guild.Id));
 			if (delRes != String.Empty)
-				return delRes;
+				return Task.FromResult(delRes);
 			try
 			{
 				var channels = context.Guild.GetChannelsAsync().Result;
@@ -298,8 +298,8 @@ namespace SGMessageBot.Bot
 									var mesRes = DataLayerShortcut.ExecuteNonQuery(mesQueryString);
 									if (mesRes != String.Empty)
 									{
-										ErrorLog.writeLog(mesRes);
-										return mesRes;
+										ErrorLog.WriteLog(mesRes);
+										return Task.FromResult(mesRes);
 									}
 								}
 								if (attachRows.Count > 0)
@@ -308,8 +308,8 @@ namespace SGMessageBot.Bot
 									var mesRes = DataLayerShortcut.ExecuteNonQuery(attachQueryString);
 									if (mesRes != String.Empty)
 									{
-										ErrorLog.writeLog(mesRes);
-										return mesRes;
+										ErrorLog.WriteLog(mesRes);
+										return Task.FromResult(mesRes);
 									}
 								}
 								if (reactionsRows.Count > 0)
@@ -318,8 +318,8 @@ namespace SGMessageBot.Bot
 									var mesRes = DataLayerShortcut.ExecuteNonQuery(reactQueryString);
 									if (mesRes != String.Empty)
 									{
-										ErrorLog.writeLog(mesRes);
-										return mesRes;
+										ErrorLog.WriteLog(mesRes);
+										return Task.FromResult(mesRes);
 									}
 								}
 								if (emojiRows.Count > 0)
@@ -328,8 +328,8 @@ namespace SGMessageBot.Bot
 									var mesRes = DataLayerShortcut.ExecuteNonQuery(emojiQueryString);
 									if (mesRes != String.Empty)
 									{
-										ErrorLog.writeLog(mesRes);
-										return mesRes;
+										ErrorLog.WriteLog(mesRes);
+										return Task.FromResult(mesRes);
 									}
 								}
 							}
@@ -345,12 +345,12 @@ namespace SGMessageBot.Bot
 							{
 								exceptions.Add(ex.Message);
 							}
-							ErrorLog.writeLog(string.Join(", ", exceptions));
+							ErrorLog.WriteLog(string.Join(", ", exceptions));
 							exceptionsResult.Add($"Exceptions: {string.Join(", ", exceptions)}");
 						}
 						else
 						{
-							ErrorLog.writeError(e);
+							ErrorLog.WriteError(e);
 							exceptionsResult.Add($"Exception: {e.Message}");
 						}
 						continue;
@@ -367,23 +367,19 @@ namespace SGMessageBot.Bot
 					{
 						exceptions.Add(ex.Message);
 					}
-					ErrorLog.writeLog(string.Join(", ", exceptions));
-					return $"Exceptions: {string.Join(", ", exceptions)}";
+					ErrorLog.WriteLog(string.Join(", ", exceptions));
+					return Task.FromResult($"Exceptions: {string.Join(", ", exceptions)}");
 				}
 				else
 				{
-					ErrorLog.writeError(e);
-					return $"Exception: {e.Message}";
+					ErrorLog.WriteError(e);
+					return Task.FromResult($"Exception: {e.Message}");
 				}
 			}
 			if (exceptionsResult.Count > 0)
-			{
-				return $"Operation complete with exceptions, {string.Join(",", exceptionsResult)}";
-			}
-			else
-			{
-				return "Operation Complete";
-			}
+				return Task.FromResult($"Operation complete with exceptions, {string.Join(",", exceptionsResult)}");
+
+			return Task.FromResult("Operation Complete");
 		}
 
 		private static void checkMessageForEmoji(ICommandContext context, IMessage message, IMessageChannel channel, ref List<string> rows)
@@ -403,7 +399,7 @@ namespace SGMessageBot.Bot
 				}
 				catch (Exception e)
 				{
-					ErrorLog.writeError(e);
+					ErrorLog.WriteError(e);
 					continue;
 				}
 			}

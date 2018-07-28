@@ -5,7 +5,7 @@ namespace SGMessageBot.Helpers
 {
 	public static class ErrorLog
 	{
-		private static object lockobj = new object();
+		private static object locker = new object();
 		private static string folderLocation = String.Empty;
 		static ErrorLog()
 		{
@@ -16,11 +16,11 @@ namespace SGMessageBot.Helpers
 			}
 		}
 
-		public static void writeLog(string log)
+		public static void WriteLog(string log)
 		{
 			try
 			{
-				lock (lockobj)
+				lock (locker)
 				{
 					var dateString = DateTime.Now.ToString("yyyyMMdd");
 					var path = $"Data/Logs/{dateString}_Errors.log";
@@ -33,17 +33,17 @@ namespace SGMessageBot.Helpers
 					}
 				}
 			}
-			catch(Exception e)
+			catch(Exception ex)
 			{
-				Console.WriteLine($"Shits fucked yo\n(Failed to write to error log: {e.Message})");
+				Console.WriteLine($"Shits fucked yo\n(Failed to write to error log: {ex.Message})");
 			}
 		}
 
-		public static void writeError(Exception e)
+		public static void WriteError(Exception e)
 		{
 			try
 			{
-				lock (lockobj)
+				lock (locker)
 				{
 					var dateString = DateTime.Now.ToString("yyyyMMdd");
 					var path = $"Data/Logs/{dateString}_Errors.log";
