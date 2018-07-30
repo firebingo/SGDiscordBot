@@ -10,8 +10,7 @@ namespace SGMessageBot.DiscordBot
 	{
 		public override Task<PreconditionResult> CheckPermissionsAsync(ICommandContext context, CommandInfo command, IServiceProvider services)
 		{
-			var gUser = context.User as SocketGuildUser;
-			if (gUser == null)
+			if (!(context.User is SocketGuildUser gUser))
 			{
 				return Task.FromResult(PreconditionResult.FromError("Could not find user for command."));
 			}
@@ -33,8 +32,7 @@ namespace SGMessageBot.DiscordBot
 	{
 		public override Task<PreconditionResult> CheckPermissionsAsync(ICommandContext context, CommandInfo command, IServiceProvider services)
 		{
-			var gChannel = context.Channel as SocketGuildChannel;
-			if (gChannel == null)
+			if (!(context.Channel is SocketGuildChannel gChannel))
 			{
 				return Task.FromResult(PreconditionResult.FromError("Command can only be used on a server"));
 			}

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace SGMessageBot.DiscordBot
 {
@@ -13,7 +14,7 @@ namespace SGMessageBot.DiscordBot
 	{
 		private static Dictionary<string, DateTime> times = new Dictionary<string, DateTime>();
 
-		public static void loadTimes()
+		public static void LoadTimes()
 		{
 			if (File.Exists("Data/SGTimes.json"))
 			{
@@ -29,7 +30,7 @@ namespace SGMessageBot.DiscordBot
 		public static string SGRewatchNext()
 		{
 			var now = DateTime.UtcNow;
-			loadTimes();
+			LoadTimes();
 			var next = times.FirstOrDefault(x => x.Value > now);
 			if (!next.Equals(default(KeyValuePair<string, DateTime>)))
 			{
@@ -40,12 +41,12 @@ namespace SGMessageBot.DiscordBot
 			return "Rewatch has ended.";
 		}
 
-		public static void sendMessageTrack(SocketGuild guild)
+		public static async Task SendMessageTrack(SocketGuild guild)
 		{
 			var config = SGMessageBot.BotConfig.BotInfo.DiscordConfig.messageCount;
 			if(config != null && config.ContainsKey(guild.Id) && config[guild.Id].enabled)
 			{
-				var count = DataLayerShortcut.ExecuteScalarInt("SELECT COUNT(*) FROM messages WHERE isDeleted = false AND serverID = @serverId", new MySqlParameter("@serverId", guild.Id));
+				var count = await DataLayerShortcut.ExecuteScalarInt("SELECT COUNT(*) FROM messages WHERE isDeleted = false AND serverID = @serverId", new MySqlParameter("@serverId", guild.Id));
 				if (count.HasValue && count.Value >= config[guild.Id].messageCount - 1)
 				{
 					var channel = guild.GetChannel(config[guild.Id].channelId);

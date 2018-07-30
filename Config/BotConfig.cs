@@ -10,7 +10,7 @@ namespace SGMessageBot.Config
 	{
 		private readonly string ConfigPath = "Data/BotConfig.json";
 		private readonly string OldCredConfigPath = "Data/CredConfig.json";
-		private object locker { get; } = new object();
+		private readonly object locker = new object();
 		public MainBotConfig BotInfo { get; private set; }
 
 		public BaseResult LoadConfig()
@@ -125,9 +125,10 @@ namespace SGMessageBot.Config
 		public bool DiscordEnabled = true;
 		public bool SteamEnabled = false;
 		public DiscordConfig DiscordConfig = new DiscordConfig();
-
+		public SteamConfig SteamConfig = new SteamConfig();
 	}
 
+	//Don't rename/recase these variables since they have already created configs with these names
 	[Serializable]
 	public class DiscordConfig
 	{
@@ -158,5 +159,15 @@ namespace SGMessageBot.Config
 		public ulong channelId = 0;
 		public double maxSeconds = 7200.0; //2hours
 		public List<string> messagesToPick = new List<string>();
+	}
+
+	[Serializable]
+	public class SteamConfig
+	{
+		public string Username = string.Empty;
+		public string Password = string.Empty;
+		public string AuthCode = string.Empty;
+		public string TwoFactorCode = string.Empty;
+		public string SentryFileLocation = string.Empty;
 	}
 }

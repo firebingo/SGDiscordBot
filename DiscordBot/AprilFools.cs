@@ -82,14 +82,12 @@ namespace SGMessageBot.DiscordBot
 					pickList.ShuffleList();
 					if (pickList[r])
 					{
-						var guild = DiscordMain.DiscordClient.GetGuild(toCheck.serverId);
-						if (guild == null)
+						if (DiscordMain.DiscordClient.GetGuild(toCheck.serverId) == null)
 						{
 							runningYear = string.Empty;
 							return;
 						}
-						var channel = DiscordMain.DiscordClient.GetChannel(toCheck.channelId) as SocketTextChannel;
-						if (channel == null)
+						if (!(DiscordMain.DiscordClient.GetChannel(toCheck.channelId) is SocketTextChannel channel))
 						{
 							runningYear = string.Empty;
 							return;

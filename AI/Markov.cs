@@ -19,9 +19,9 @@ namespace SGMessageBot.AI
 		private const string dataDirectory = @"Data\AICorpus.json";
 		private Dictionary<string, string[]> AICorpus;
 		private static SemaphoreSlim sem = new SemaphoreSlim(1, 1);
-		private static object corpusLock = new object();
+		private static readonly object corpusLock = new object();
 
-		private Task buildCorpus()
+		private async Task BuildCorpus()
 		{
 			try
 			{
@@ -43,14 +43,14 @@ namespace SGMessageBot.AI
 						throw;
 					}
 				}
-				var tempMes = BotCommandProcessor.loadMessages();
+				var tempMes = await BotCommandProcessor.LoadMessages();
 				messages.AddRange(tempMes);
 				//https://stackoverflow.com/questions/5306729/how-do-markov-chain-chatbots-work
 				Parallel.ForEach(messages, (message) =>
 				{
 					try
 					{
-						var split = message.mesText.Trim().Split(' ');
+						var split = message.MesText.Trim().Split(' ');
 						var length = split.Length;
 						if (length < 3)
 							return;
@@ -86,7 +86,7 @@ namespace SGMessageBot.AI
 					}
 					catch(Exception ex)
 					{
-						ErrorLog.WriteLog($"Exception on message in buildCorpus, Message: \"{message.mesText}\", Exception: {ex.Message}, Stack: {ex.StackTrace}");
+						ErrorLog.WriteLog($"Exception on message in buildCorpus, Message: \"{message.MesText}\", Exception: {ex.Message}, Stack: {ex.StackTrace}");
 						return;
 					}
 				});
@@ -108,10 +108,9 @@ namespace SGMessageBot.AI
 				ErrorLog.WriteError(ex);
 				throw ex;
 			}
-			return Task.CompletedTask;
 		}
 
-		public async Task rebuildCorpus()
+		public async Task RebuildCorpus()
 		{
 			await sem.WaitAsync();
 			try
@@ -119,7 +118,7 @@ namespace SGMessageBot.AI
 				if (File.Exists(dataDirectory))
 					File.Delete(dataDirectory);
 
-				await loadCorpus();
+				await LoadCorpus();
 			}
 			catch (Exception ex)
 			{
@@ -131,14 +130,14 @@ namespace SGMessageBot.AI
 			sem.Release();
 		}
 
-		private async Task loadCorpus()
+		private async Task LoadCorpus()
 		{
 			try
 			{
 				var wordDict = new Dictionary<string, string[]>();
 				if (!File.Exists(dataDirectory))
 				{
-					await buildCorpus();
+					await BuildCorpus();
 					return;
 				}
 				else
@@ -172,14 +171,14 @@ namespace SGMessageBot.AI
 			}
 		}
 
-		public async Task<string> generateMessage(string startWord)
+		public async Task<string> GenerateMessage(string startWord)
 		{
 			try
 			{
 				await sem.WaitAsync();
 				if (AICorpus == null)
 				{
-					await loadCorpus();
+					await LoadCorpus();
 				}
 			}
 			catch

@@ -23,7 +23,7 @@ namespace SGMessageBot.DiscordBot
 		private IServiceProvider map;
 		private BotCommandsRunning running;
 
-		public async Task installCommandService(IServiceProvider _map)
+		public async Task InstallCommandService(IServiceProvider _map)
 		{
 			Client = _map.GetService(typeof(DiscordSocketClient)) as DiscordSocketClient;
 			processor = _map.GetService(typeof(BotCommandProcessor)) as BotCommandProcessor;
@@ -35,7 +35,7 @@ namespace SGMessageBot.DiscordBot
 			Client.MessageReceived += HandleCommand;
 		}
 
-		public async Task<bool> removeCommandService()
+		public async Task<bool> RemoveCommandService()
 		{
 			var modules = commands.Modules.ToList();
 			for (var i = modules.Count - 1; i > -1; --i)
@@ -49,8 +49,7 @@ namespace SGMessageBot.DiscordBot
 
 		public Task HandleCommand(SocketMessage e)
 		{
-			var uMessage = e as SocketUserMessage;
-			if (uMessage == null) return Task.CompletedTask;
+			if (!(e is SocketUserMessage uMessage)) return Task.CompletedTask;
 			int argPos = 0;
 			if (uMessage.HasMentionPrefix(Client.CurrentUser, ref argPos))
 			{
@@ -101,7 +100,7 @@ namespace SGMessageBot.DiscordBot
 		}
 
 		[Command("restart"), Summary("Tells the bot to restart")]
-		public async Task restart()
+		public async Task Restart()
 		{
 			await Context.Channel.SendMessageAsync("Restarting...");
 			await Context.Client.StopAsync();
@@ -112,14 +111,14 @@ namespace SGMessageBot.DiscordBot
 
 #if DEBUG
 		[Command("disconnect"), Summary("For debug purpose, disconnects bot")]
-		public void removeCommands()
+		public void RemoveCommands()
 		{
 			Task.Run(() => Context.Client.StopAsync());
 			return;
 		}
 
 		[Command("wait"), Summary("For debug purpose, waits x seconds")]
-		public async Task waitSeconds(int seconds)
+		public async Task WaitSeconds(int seconds)
 		{
 			await Task.Delay(seconds * 1000);
 			await Context.Channel.SendMessageAsync($"Waited {seconds} seconds");
@@ -128,58 +127,56 @@ namespace SGMessageBot.DiscordBot
 #endif
 
 		[Command("reloadmessages"), Summary("Regets all the messages for a given channel.")]
-		public async Task reloadMessages([Summary("The channel to reload")] IMessageChannel channel = null)
+		public async Task ReloadMessages([Summary("The channel to reload")] IMessageChannel channel = null)
 		{
 			if (channel != null)
 			{
-				var result = await BotExamineServers.updateMessageHistoryChannel(Context, channel);
+				var result = await BotExamineServers.UpdateMessageHistoryChannel(Context, channel);
 				await Context.Channel.SendMessageAsync(result);
 			}
 			else
 			{
-				var result = await BotExamineServers.updateMessageHistoryServer(Context);
+				var result = await BotExamineServers.UpdateMessageHistoryServer(Context);
 				await Context.Channel.SendMessageAsync(result);
 			}
 		}
 
 		[Command("rolecounts"), Summary("Gets user role counts for server.")]
-		public async Task roleCounts([Summary("Whether to mention the roles in the list")]bool useMentions = true)
+		public async Task RoleCounts([Summary("Whether to mention the roles in the list")]bool useMentions = true)
 		{
 			var result = "";
-			var textChannel = Context.Channel as SocketTextChannel;
-			if (textChannel == null)
+			if (!(Context.Channel is SocketTextChannel textChannel))
 			{
 				await Context.Channel.SendMessageAsync("Channel is not a text channel");
 				return;
 			}
-			result = await processor.calculateRoleCounts(textChannel, useMentions, Context);
+			result = await processor.CalculateRoleCounts(textChannel, useMentions, Context);
 			await textChannel.SendMessageAsync(result);
 		}
 
 		[Command("rolecounts"), Summary("Gets user role counts for server.")]
-		public async Task roleCounts([Summary("The channel to output the list to.")] SocketChannel outputChannel = null, [Summary("Whether to mention the roles in the list")]bool useMentions = true)
+		public async Task RoleCounts([Summary("The channel to output the list to.")] SocketChannel outputChannel = null, [Summary("Whether to mention the roles in the list")]bool useMentions = true)
 		{
 			var result = "";
 			if (outputChannel == null)
 			{
 				outputChannel = Context.Channel as SocketChannel;
 			}
-			var textChannel = outputChannel as SocketTextChannel;
-			if (textChannel == null)
+			if (!(outputChannel is SocketTextChannel textChannel))
 			{
 				await Context.Channel.SendMessageAsync("Channel is not a text channel");
 				return;
 			}
-			result = await processor.calculateRoleCounts(textChannel, useMentions, Context);
+			result = await processor.CalculateRoleCounts(textChannel, useMentions, Context);
 			await textChannel.SendMessageAsync(result);
 		}
 
 		[Command("buildcorpus"), Summary("Rebuilds the corpus for AI chat commands")]
-		public async Task buildCorpus()
+		public async Task BuildCorpus()
 		{
 			try
 			{
-				await markovAi.rebuildCorpus();
+				await markovAi.RebuildCorpus();
 			}
 			catch(Exception ex)
 			{
@@ -189,7 +186,7 @@ namespace SGMessageBot.DiscordBot
 		}
 
 		[Command("messagetrack"), Summary("Enables sending a message when a specific message count is reached")]
-		public async Task messageTrackSetup(bool enabled, int count, SocketTextChannel channel, string message)
+		public async Task MessageTrackSetup(bool enabled, int count, SocketTextChannel channel, string message)
 		{
 			var newConfig = new MessageCountTracker()
 			{
@@ -210,14 +207,14 @@ namespace SGMessageBot.DiscordBot
 		}
 
 		[Command("reloadmescount"), Summary("Reloads the message count column for usersinservers")]
-		public async Task reloadMessageCounts()
+		public async Task ReloadMessageCounts()
 		{
 			await processor.ReloadMessageCounts(Context);
 			await Context.Channel.SendMessageAsync("Operation Complete");
 		}
 
 		[Command("aprilfools"), Summary("Enable/disable april fools event for a year")]
-		public async Task enableAprilFools(string year, bool enable)
+		public async Task EnableAprilFools(string year, bool enable)
 		{
 			if (enable)
 				AprilFools.StartYear(year);
@@ -242,7 +239,7 @@ namespace SGMessageBot.DiscordBot
 		}
 
 		[Command("messagecount"), Summary("Gets message counts for the server.")]
-		public async Task messageCounts([Summary("the user to get message counts for")] string input = null)
+		public async Task MessageCounts([Summary("the user to get message counts for")] string input = null)
 		{
 			var result = "";
 			var inputParsed = -1;
@@ -253,7 +250,7 @@ namespace SGMessageBot.DiscordBot
 
 			if (inputParsed > -1)
 			{
-				result = await processor.calculateTopMessageCounts(inputParsed, Context);
+				result = await processor.CalculateTopMessageCounts(inputParsed, Context);
 				if (result.Contains("||"))
 				{
 					var results = result.Split(new string[] { "||" }, StringSplitOptions.None);
@@ -272,19 +269,19 @@ namespace SGMessageBot.DiscordBot
 
 			if (Regex.IsMatch(input, @"<@&\d+>"))
 			{
-				result = await processor.calculateRoleMessageCounts(input, Context);
+				result = await processor.CalculateRoleMessageCounts(input, Context);
 				await Context.Channel.SendMessageAsync(result);
 				return;
 			}
 
 			input = input != null ? input.Replace("!", String.Empty) : input;
-			result = await processor.calculateUserMessageCounts(input, Context);
+			result = await processor.CalculateUserMessageCounts(input, Context);
 			await Context.Channel.SendMessageAsync(result);
 			return;
 		}
 
 		[Command("emojicount"), Summary("Gets counts of emojis used")]
-		public async Task emojiCounts([Summary("The emoji or user to get counts for")] string input = null,
+		public async Task EmojiCounts([Summary("The emoji or user to get counts for")] string input = null,
 			[Summary("The emoji to get for a specific user, or the user to get top counts for")] string input2 = null)
 		{
 			var result = "";
@@ -304,7 +301,7 @@ namespace SGMessageBot.DiscordBot
 						input2 = input2.Replace("!", string.Empty);
 						if (Regex.IsMatch(input2, @"<@\d+>"))
 						{
-							result = await processor.calculateTopEmojiCountsUser(inputParsed, input2, Context);
+							result = await processor.CalculateTopEmojiCountsUser(inputParsed, input2, Context);
 							if (result.Contains("||"))
 							{
 								var results = result.Split(new string[] { "||" }, StringSplitOptions.None);
@@ -321,7 +318,7 @@ namespace SGMessageBot.DiscordBot
 							}
 						}
 					}
-					result = await processor.calculateTopEmojiCounts(inputParsed, Context);
+					result = await processor.CalculateTopEmojiCounts(inputParsed, Context);
 					if (result.Contains("||"))
 					{
 						var results = result.Split(new string[] { "||" }, StringSplitOptions.None);
@@ -340,7 +337,7 @@ namespace SGMessageBot.DiscordBot
 
 				if (Regex.IsMatch(input, @"<:.+:\d+>"))
 				{
-					result = await processor.calculateEmojiCounts(input, Context);
+					result = await processor.CalculateEmojiCounts(input, Context);
 					await Context.Channel.SendMessageAsync(result);
 					return;
 				}
@@ -348,7 +345,7 @@ namespace SGMessageBot.DiscordBot
 				input = input.Replace("!", string.Empty);
 				if (Regex.IsMatch(input, @"<@\d+>"))
 				{
-					result = await processor.calculateUserEmojiCounts(input, Context);
+					result = await processor.CalculateUserEmojiCounts(input, Context);
 					await Context.Channel.SendMessageAsync(result);
 					return;
 				}
@@ -363,7 +360,7 @@ namespace SGMessageBot.DiscordBot
 		}
 
 		[Command("chat"), Summary("Makes the bot return a generated message")]
-		public async Task generateChatMessage([Summary("The bot will attempt to start the message with this word")] string input = null)
+		public async Task GenerateChatMessage([Summary("The bot will attempt to start the message with this word")] string input = null)
 		{
 			try
 			{
@@ -371,7 +368,7 @@ namespace SGMessageBot.DiscordBot
 					input = string.Empty;
 				var split = input.Split(' ');
 				input = split[0].Trim();
-				var result = await markovAi.generateMessage(input);
+				var result = await markovAi.GenerateMessage(input);
 				if(result.Contains("|?|"))
 				{
 					var sendSplit = result.Split(new string[] { "|?|" }, StringSplitOptions.None);
@@ -408,7 +405,7 @@ namespace SGMessageBot.DiscordBot
 	{
 		private Dictionary<Guid, SocketTextChannel> _commands;
 		private object _commandsLock;
-		private TimerCallback timerCallback;
+		private readonly TimerCallback timerCallback;
 		private Timer timer;
 
 		public BotCommandsRunning()
@@ -466,7 +463,7 @@ namespace SGMessageBot.DiscordBot
 			}
 		}
 
-		public void resetCommandsTimer()
+		public void ResetCommandsTimer()
 		{
 			lock (_commandsLock)
 			{

@@ -4,29 +4,31 @@ using System;
 using System.Data;
 using System.Data.SQLite;
 using SGMessageBot.Helpers;
+using System.Threading.Tasks;
+using System.Data.Common;
 
 namespace SGMessageBot.DataBase
 {
 	public static class DataLayerShortcut
 	{
 		public static DBConfig DBConfig { get; private set; }
-		public static bool schemaExists { get; private set; } = true;
+		public static bool SchemaExists { get; private set; } = true;
 		private static SQLiteConnection liteDBConn;
-		public static bool hasNadeko { get; private set; } = false;
+		public static bool HasNadeko { get; private set; } = false;
 
-		public static BaseResult loadConfig()
+		public static BaseResult LoadConfig()
 		{
 			DBConfig = new DBConfig();
-			var result = DBConfig.loadDBConfig();
+			var result = DBConfig.LoadDBConfig();
 			return result;
 		}
 
-		public static BaseResult testConnection()
+		public static BaseResult TestConnection()
 		{
 			var result = new BaseResult();
 			try
 			{
-				var connection = new MySql.Data.MySqlClient.MySqlConnection(DBConfig.connectionString);
+				var connection = new MySqlConnection(DBConfig.ConnectionString);
 				connection.Open();
 				connection.Close();
 				connection.Dispose();
@@ -35,7 +37,7 @@ namespace SGMessageBot.DataBase
 			{
 				ErrorLog.WriteError(e);
 				if (e.InnerException.Message.ToUpperInvariant().Contains("UNKNOWN DATABASE"))
-					schemaExists = false;
+					SchemaExists = false;
 
 				result.Success = false;
 				result.Message = e.Message;
@@ -45,39 +47,41 @@ namespace SGMessageBot.DataBase
 			return result;
 		}
 
-		public static BaseResult createDataBase()
+		public static async Task<BaseResult> CreateDataBase()
 		{
 			DatebaseCreate dataCreator = new DatebaseCreate();
-			var result = new BaseResult();
-			result.Success = true;
-			if (!schemaExists) {
-				result = dataCreator.createDatabase();
+			var result = new BaseResult
+			{
+				Success = true
+			};
+			if (!SchemaExists) {
+				result = await dataCreator.CreateDatabase();
 			}
 			if(!result.Success)
 				return result;
 			else
 			{
-				result = dataCreator.buildDatabase();
+				result = await dataCreator.BuildDatabase();
 				if (!result.Success)
 					return result;
 			}
-			schemaExists = true;
+			SchemaExists = true;
 			result.Success = true;
 			return result;
 		}
 
-		public static void ExecuteReader<T>(Action<IDataReader, T> workFunction, T otherdata, string query, params MySqlParameter[] parameters)
+		public static async Task ExecuteReader<T>(Action<IDataReader, T> workFunction, T otherdata, string query, params MySqlParameter[] parameters)
 		{
-			var connection = new MySqlConnection(DBConfig.connectionString);
+			var connection = new MySqlConnection(DBConfig.ConnectionString);
 			connection.Open();
 			if (connection.State == ConnectionState.Open)
 			{
 				MySqlCommand cmd = new MySqlCommand(query, connection);
-				MySqlDataReader reader = null;
+				DbDataReader reader = null;
 				if (parameters != null)
 					DataHelper.addParams(ref cmd, parameters);
 
-				reader = cmd.ExecuteReader();
+				reader = await cmd.ExecuteReaderAsync();
 
 				while (reader.Read())
 					workFunction(reader, otherdata);
@@ -89,20 +93,22 @@ namespace SGMessageBot.DataBase
 			connection.Dispose();
 		}
 
-		public static string ExecuteNonQuery(string query, params MySqlParameter[] parameters)
+		public static async Task<string> ExecuteNonQuery(string query, params MySqlParameter[] parameters)
 		{
-			var connection = new MySqlConnection(DBConfig.connectionString);
+			var connection = new MySqlConnection(DBConfig.ConnectionString);
 			try
 			{
 				connection.Open();
 				if (connection.State == ConnectionState.Open)
 				{
-					MySqlCommand cmd = new MySqlCommand(query, connection);
-					cmd.CommandType = CommandType.Text;
+					MySqlCommand cmd = new MySqlCommand(query, connection)
+					{
+						CommandType = CommandType.Text
+					};
 					if (parameters != null)
 						DataHelper.addParams(ref cmd, parameters);
 
-					cmd.ExecuteNonQuery();
+					await cmd.ExecuteNonQueryAsync();
 					cmd.Dispose();
 				}
 				connection.Close();
@@ -118,34 +124,38 @@ namespace SGMessageBot.DataBase
 			}
 		}
 
-		public static void ExecuteSpecialNonQuery(string query, string connection, params MySqlParameter[] parameters)
+		public static async Task ExecuteSpecialNonQuery(string query, string connection, params MySqlParameter[] parameters)
 		{
 			var conn = new MySqlConnection(connection);
 			conn.Open();
-			MySqlCommand cmd = new MySqlCommand(query, conn);
-			cmd.CommandType = CommandType.Text;
+			MySqlCommand cmd = new MySqlCommand(query, conn)
+			{
+				CommandType = CommandType.Text
+			};
 			if (parameters != null)
 				DataHelper.addParams(ref cmd, parameters);
 
-			cmd.ExecuteNonQuery();
+			await cmd.ExecuteNonQueryAsync();
 			cmd.Dispose();
 			conn.Close();
 			conn.Dispose();
 		}
 
-		public static int? ExecuteScalarInt(string query, params MySqlParameter[] parameters)
+		public static async Task<int?> ExecuteScalarInt(string query, params MySqlParameter[] parameters)
 		{
 			int? result = null;
-			var connection = new MySqlConnection(DBConfig.connectionString);
+			var connection = new MySqlConnection(DBConfig.ConnectionString);
 			connection.Open();
 			if (connection.State == ConnectionState.Open)
 			{
-				MySqlCommand cmd = new MySqlCommand(query, connection);
-				cmd.CommandType = CommandType.Text;
+				MySqlCommand cmd = new MySqlCommand(query, connection)
+				{
+					CommandType = CommandType.Text
+				};
 				if (parameters != null)
 					DataHelper.addParams(ref cmd, parameters);
 
-				object scalar = cmd.ExecuteScalar();
+				object scalar = await cmd.ExecuteScalarAsync();
 				try
 				{
 					result = Convert.ToInt32(scalar);
@@ -165,19 +175,21 @@ namespace SGMessageBot.DataBase
 			return result;
 		}
 
-		public static uint? ExecuteScalarUInt(string query, params MySqlParameter[] parameters)
+		public static async Task<uint?> ExecuteScalarUInt(string query, params MySqlParameter[] parameters)
 		{
 			uint? result = null;
-			var connection = new MySqlConnection(DBConfig.connectionString);
+			var connection = new MySqlConnection(DBConfig.ConnectionString);
 			connection.Open();
 			if (connection.State == ConnectionState.Open)
 			{
-				MySqlCommand cmd = new MySqlCommand(query, connection);
-				cmd.CommandType = CommandType.Text;
+				MySqlCommand cmd = new MySqlCommand(query, connection)
+				{
+					CommandType = CommandType.Text
+				};
 				if (parameters != null)
 					DataHelper.addParams(ref cmd, parameters);
 
-				object scalar = cmd.ExecuteScalar();
+				object scalar = await cmd.ExecuteScalarAsync();
 				try
 				{
 					result = Convert.ToUInt32(scalar);
@@ -197,7 +209,7 @@ namespace SGMessageBot.DataBase
 			return result;
 		}
 
-		public static BaseResult openLiteConnection(ulong serverId)
+		public static BaseResult OpenLiteConnection(ulong serverId)
 		{
 			var result = new BaseResult();
 			try
@@ -227,12 +239,12 @@ namespace SGMessageBot.DataBase
 				result.Success = false;
 				result.Message = e.Message;
 			}
-			hasNadeko = true;
+			HasNadeko = true;
 			result.Success = true;
 			return result;
 		}
 
-		public static BaseResult closeLiteConnection()
+		public static BaseResult CloseLiteConnection()
 		{
 			var result = new BaseResult();
 			try
@@ -253,10 +265,10 @@ namespace SGMessageBot.DataBase
 			return result;
 		}
 
-		public static int? executeScalarLite(ulong serverId, string query, params SQLiteParameter[] parameters)
+		public static int? ExecuteScalarLite(ulong serverId, string query, params SQLiteParameter[] parameters)
 		{
 			int? result = null;
-			var isOpen = openLiteConnection(serverId);
+			var isOpen = OpenLiteConnection(serverId);
 			if(!isOpen.Success)
 			{
 				return result;
@@ -276,7 +288,7 @@ namespace SGMessageBot.DataBase
 				{
 					ErrorLog.WriteError(e);
 					command.Dispose();
-					closeLiteConnection();
+					CloseLiteConnection();
 					return result;
 				}
 				command.Dispose();
@@ -284,7 +296,7 @@ namespace SGMessageBot.DataBase
 			catch(SQLiteException e)
 			{
 				ErrorLog.WriteError(e);
-				closeLiteConnection();
+				CloseLiteConnection();
 				return result = null;
 			}
 			return result;

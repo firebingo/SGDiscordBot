@@ -3,21 +3,25 @@ using SGMessageBot.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
+using System.Threading.Tasks;
 
 namespace SGMessageBot.DataBase
 {
 	public class DatebaseCreate
 	{
-		private List<string> createQueries;
-		private Dictionary<int, List<string>> buildQueries;
+		private readonly List<string> createQueries;
+		private readonly Dictionary<int, List<string>> buildQueries;
 		private const int mkey = 345; //this is just so metadata can be updated.
 
 		public DatebaseCreate()
 		{
-			createQueries = new List<string>();
-			createQueries.Add($"CREATE DATABASE {DataLayerShortcut.DBConfig.config.schemaName}");
-			createQueries.Add($"ALTER DATABASE {DataLayerShortcut.DBConfig.config.schemaName} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
-			createQueries.Add("CREATE TABLE metaData (mkey INT, version INT UNSIGNED, createdDate DATETIME, updatedDate DATETIME, PRIMARY KEY(mkey))");
+			createQueries = new List<string>
+			{
+				$"CREATE DATABASE {DataLayerShortcut.DBConfig.Config.schemaName}",
+				$"ALTER DATABASE {DataLayerShortcut.DBConfig.Config.schemaName} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci",
+				"CREATE TABLE metaData (mkey INT, version INT UNSIGNED, createdDate DATETIME, updatedDate DATETIME, PRIMARY KEY(mkey))"
+			};
 			buildQueries = new Dictionary<int, List<string>>();
 			buildQueries.Add(1, new List<string>());
 			buildQueries[1].Add("CREATE TABLE servers (serverID BIGINT UNSIGNED, ownerID BIGINT UNSIGNED, serverName VARCHAR(256), userCount INT UNSIGNED, channelCount SMALLINT UNSIGNED, roleCount SMALLINT UNSIGNED, regionID varChar(64), createdDate DATETIME, isDeleted BOOL DEFAULT FALSE, PRIMARY KEY (serverID))");
@@ -58,17 +62,17 @@ namespace SGMessageBot.DataBase
 			buildQueries[9].Add("ALTER TABLE stats ADD id INT NOT NULL AUTO_INCREMENT PRIMARY KEY");
 		}
 
-		public BaseResult createDatabase()
+		public async Task<BaseResult> CreateDatabase()
 		{
 			var result = new BaseResult();
 			try
 			{
 				foreach (var query in createQueries)
 				{
-					DataLayerShortcut.ExecuteSpecialNonQuery(query, $"server={DataLayerShortcut.DBConfig.config.address};uid={DataLayerShortcut.DBConfig.config.userName};pwd={DataLayerShortcut.DBConfig.config.password};charset=utf8mb4");
+					await DataLayerShortcut.ExecuteSpecialNonQuery(query, $"server={DataLayerShortcut.DBConfig.Config.address};uid={DataLayerShortcut.DBConfig.Config.userName};pwd={DataLayerShortcut.DBConfig.Config.password};charset=utf8mb4");
 				}
 				var metaData = "INSERT INTO metaData (mkey, version, createdDate, updatedDate) VALUES (@mkey, @version, @createdDate, @updatedDate)";
-				DataLayerShortcut.ExecuteSpecialNonQuery(metaData, $"server={DataLayerShortcut.DBConfig.config.address};uid={DataLayerShortcut.DBConfig.config.userName};pwd={DataLayerShortcut.DBConfig.config.password};charset=utf8mb4",
+				await DataLayerShortcut.ExecuteSpecialNonQuery(metaData, $"server={DataLayerShortcut.DBConfig.Config.address};uid={DataLayerShortcut.DBConfig.Config.userName};pwd={DataLayerShortcut.DBConfig.Config.password};charset=utf8mb4",
 					new MySqlParameter("@mkey", mkey), new MySqlParameter("@version", 0), new MySqlParameter("@createdDate", DateTime.UtcNow), new MySqlParameter("@updatedDate", DateTime.UtcNow));
 			}
 			catch (MySqlException e)
@@ -82,10 +86,10 @@ namespace SGMessageBot.DataBase
 			return result;
 		}
 
-		public BaseResult buildDatabase()
+		public async Task<BaseResult> BuildDatabase()
 		{
 			var result = new BaseResult();
-			var metaDataGet = getMetaData();
+			var metaDataGet = await GetMetaData();
 			//this hopefully should only happen if a db was made on version 1 before the metaData table.
 			if(!metaDataGet.Success)
 			{
@@ -97,10 +101,10 @@ namespace SGMessageBot.DataBase
 					Environment.Exit(0);
 
 				var metaQuery = "CREATE TABLE metaData (mkey INT, version INT UNSIGNED, createdDate DATETIME, updatedDate DATETIME, PRIMARY KEY(mkey))";
-				DataLayerShortcut.ExecuteNonQuery(metaQuery);
+				await DataLayerShortcut.ExecuteNonQuery(metaQuery);
 				metaQuery = "INSERT INTO metaData (mkey, version, createdDate, updatedDate) VALUES (@mkey, @version, @createdDate, @updatedDate)";
-				DataLayerShortcut.ExecuteNonQuery(metaQuery, new MySqlParameter("@mkey", mkey), new MySqlParameter("@version", 1), new MySqlParameter("@createdDate", DateTime.UtcNow), new MySqlParameter("@updatedDate", DateTime.UtcNow));
-				metaDataGet = getMetaData();
+				await DataLayerShortcut.ExecuteNonQuery(metaQuery, new MySqlParameter("@mkey", mkey), new MySqlParameter("@version", 1), new MySqlParameter("@createdDate", DateTime.UtcNow), new MySqlParameter("@updatedDate", DateTime.UtcNow));
+				metaDataGet = await GetMetaData();
 				if(!metaDataGet.Success)
 				{
 					Console.WriteLine("Getting metaData still failed, press any key to exit.");
@@ -132,11 +136,11 @@ namespace SGMessageBot.DataBase
 						{
 							foreach(var query in buildQueries[v])
 							{
-								DataLayerShortcut.ExecuteNonQuery(query);
+								await DataLayerShortcut.ExecuteNonQuery(query);
 							}
 						}
 						var metaDataUpdate = "UPDATE metaData SET version=@version, updatedDate=@updatedDate WHERE mkey=@mkey";
-						DataLayerShortcut.ExecuteNonQuery(metaDataUpdate, new MySqlParameter("@version", v), new MySqlParameter("@updatedDate", DateTime.UtcNow), new MySqlParameter("@mkey", mkey));
+						await DataLayerShortcut.ExecuteNonQuery(metaDataUpdate, new MySqlParameter("@version", v), new MySqlParameter("@updatedDate", DateTime.UtcNow), new MySqlParameter("@mkey", mkey));
 					}
 				}
 			}
@@ -151,14 +155,14 @@ namespace SGMessageBot.DataBase
 			return result;
 		}
 
-		private MetaDataModelResult getMetaData()
+		private async Task<MetaDataModelResult> GetMetaData()
 		{
 			var result = new MetaDataModelResult();
 			try
 			{
 				var metaData = new MetaDataModel();
 				var getVersion = "SELECT * FROM metaData";
-				DataLayerShortcut.ExecuteReader<MetaDataModel>(readMetaData, metaData, getVersion);
+				await DataLayerShortcut.ExecuteReader<MetaDataModel>(ReadMetaData, metaData, getVersion);
 				result.metaData = metaData;
 				result.Success = true;
 				return result;
@@ -172,9 +176,9 @@ namespace SGMessageBot.DataBase
 			}
 		}
 
-		private void readMetaData(IDataReader reader, MetaDataModel data)
+		private void ReadMetaData(IDataReader reader, MetaDataModel data)
 		{
-			reader = reader as MySqlDataReader;
+			reader = reader as DbDataReader;
 			if (reader != null)
 			{
 				if (reader.FieldCount >= 4)

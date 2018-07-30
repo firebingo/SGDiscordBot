@@ -27,21 +27,21 @@ namespace SGMessageBot.DiscordBot
 			try
 			{
 				#region DB Init
-				var dbResult = DataLayerShortcut.loadConfig();
+				var dbResult = DataLayerShortcut.LoadConfig();
 				if (!dbResult.Success)
 					Console.WriteLine(dbResult.Message);
-				var dbTestResult = DataLayerShortcut.testConnection();
+				var dbTestResult = DataLayerShortcut.TestConnection();
 				if (!dbTestResult.Success)
 					Console.WriteLine(dbTestResult.Message);
-				var createResult = DataLayerShortcut.createDataBase();
+				var createResult = await DataLayerShortcut.CreateDataBase();
 				if (!createResult.Success)
 					Console.WriteLine(createResult.Message);
 				#endregion
 
 				#region Other Init
-				OtherFunctions.loadTimes();
+				OtherFunctions.LoadTimes();
 				DiscordStatTracker = new StatTracker();
-				SGMessageBot.TimeThread.AddBindings(DiscordStatTracker.onHourChanged, DiscordStatTracker.onDayChanged, DiscordStatTracker.onWeekChanged, DiscordStatTracker.onMonthChanged, DiscordStatTracker.onYearChanged);
+				SGMessageBot.TimeThread.AddBindings(DiscordStatTracker.OnHourChanged, DiscordStatTracker.OnDayChanged, DiscordStatTracker.OnWeekChanged, DiscordStatTracker.OnMonthChanged, DiscordStatTracker.OnYearChanged);
 				#endregion
 
 				#region Discord Client
@@ -52,8 +52,8 @@ namespace SGMessageBot.DiscordBot
 					ConnectionTimeout = int.MaxValue,
 					LogLevel = LogSeverity.Warning
 				});
-				DiscordClient.Connected += onConnected;
-				DiscordClient.Disconnected += onDisconnected;
+				DiscordClient.Connected += OnConnected;
+				DiscordClient.Disconnected += OnDisconnected;
 				DiscordClient.Log += (message) =>
 				{
 					Console.WriteLine($"Discord Error:{message.ToString()}");
@@ -74,11 +74,11 @@ namespace SGMessageBot.DiscordBot
 
 
 
-		private async Task onDisconnected(Exception arg)
+		private async Task OnDisconnected(Exception arg)
 		{
 			try
 			{
-				await cDiscordHandler.removeCommandService();
+				await cDiscordHandler.RemoveCommandService();
 				cDiscordHandler = null;
 				cDiscordProcessor = null;
 				DiscordClient.MessageReceived -= BotEventHandler.ClientMessageReceived;
@@ -113,10 +113,10 @@ namespace SGMessageBot.DiscordBot
 			DiscordReady = false;
 		}
 
-		private async Task onConnected()
+		private async Task OnConnected()
 		{
 			var serviceProvider = ConfigureServices();
-			await cDiscordHandler.installCommandService(serviceProvider);
+			await cDiscordHandler.InstallCommandService(serviceProvider);
 
 			//Event hooks
 			DiscordClient.MessageReceived += BotEventHandler.ClientMessageReceived;
@@ -142,7 +142,7 @@ namespace SGMessageBot.DiscordBot
 
 			Task startTask = null;
 			if (discordConnectedTimes == 0)
-				startTask = BotExamineServers.startupCheck(DiscordClient.Guilds);
+				startTask = BotExamineServers.StartupCheck(DiscordClient.Guilds);
 
 			DiscordReady = true;
 			Console.WriteLine("Discord Ready!");

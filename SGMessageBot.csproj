@@ -240,13 +240,14 @@
     <Compile Include="DiscordBot\StatTracker.cs" />
     <Compile Include="DiscordBot\TimeThread.cs" />
     <Compile Include="Config\DBConfig.cs" />
-    <Compile Include="Config\DiscordConfig.cs" />
+    <Compile Include="Config\BotConfig.cs" />
     <Compile Include="DataBase\DataHelper.cs" />
     <Compile Include="DataBase\DataLayerShortcut.cs" />
     <Compile Include="DataBase\DatebaseCreate.cs" />
     <Compile Include="Helpers\ErrorLog.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SteamBot\SteamMain.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

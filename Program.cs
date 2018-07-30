@@ -1,25 +1,15 @@
-﻿using Discord;
-using Discord.Commands;
-using Discord.WebSocket;
-using MySql.Data.MySqlClient;
-using SGMessageBot.Config;
-using SGMessageBot.DataBase;
+﻿using SGMessageBot.Config;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
-using SGMessageBot.Helpers;
-using SGMessageBot.AI;
-using System.Threading;
 using SGMessageBot.DiscordBot;
+using SGMessageBot.SteamBot;
 
 namespace SGMessageBot
 {
 	class SGMessageBot
 	{
 		private static DiscordMain DiscordThread;
+		private static SteamMain SteamThread;
 		public static TimeThread TimeThread;
 
 		public static BotConfig BotConfig { get; private set; }
@@ -33,10 +23,10 @@ namespace SGMessageBot
 			TimeThread = new TimeThread();
 			TimeThread.Start();
 
-			new SGMessageBot().runApp().GetAwaiter().GetResult();
+			new SGMessageBot().RunApp().GetAwaiter().GetResult();
 		}
 
-		private async Task runApp()
+		private async Task RunApp()
 		{
 			Task loadDiscord = Task.CompletedTask;
 			if (BotConfig.BotInfo.DiscordEnabled)
@@ -45,7 +35,15 @@ namespace SGMessageBot
 				loadDiscord = Task.Run(() => DiscordThread.RunBot());
 			}
 
+			Task loadSteam = Task.CompletedTask;
+			if (BotConfig.BotInfo.SteamEnabled)
+			{
+				SteamThread = new SteamMain();
+				loadSteam = Task.Run(() => SteamThread.RunBot());
+			}
+
 			await loadDiscord;
+			await loadSteam;
 
 			//Delay until application quit
 			await Task.Delay(-1);

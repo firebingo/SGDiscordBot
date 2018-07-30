@@ -18,12 +18,12 @@ namespace SGMessageBot.DiscordBot
 		private int lastMonth = DateTime.UtcNow.Month;
 		private int lastYear = DateTime.UtcNow.Year;
 		private CultureInfo culture = CultureInfo.CurrentCulture;
-		public delegate void TimePassedHandler(object sender, DateTime time);
-		public static event TimePassedHandler onHourPassed;
-		public static event TimePassedHandler onDayPassed;
-		public static event TimePassedHandler onWeekPassed;
-		public static event TimePassedHandler onMonthPassed;
-		public static event TimePassedHandler onYearPassed;
+		public delegate Task TimePassedHandler(object sender, DateTime time);
+		public static event TimePassedHandler OnHourPassed;
+		public static event TimePassedHandler OnDayPassed;
+		public static event TimePassedHandler OnWeekPassed;
+		public static event TimePassedHandler OnMonthPassed;
+		public static event TimePassedHandler OnYearPassed;
 
 		public void Start()
 		{
@@ -51,7 +51,7 @@ namespace SGMessageBot.DiscordBot
 			TimePassedHandler onWeekChanged = null, TimePassedHandler onMonthChanged = null, TimePassedHandler onYearChanged = null)
 		{
 			if (onHourChanged != null)
-				onHourPassed += onHourChanged;
+				OnHourPassed += onHourChanged;
 			if (onDayChanged != null)
 				onDayChanged += onDayChanged;
 			if (onWeekChanged != null)
@@ -68,7 +68,7 @@ namespace SGMessageBot.DiscordBot
 			try
 			{
 				if (onHourChanged != null)
-					onHourPassed -= onHourChanged;
+					OnHourPassed -= onHourChanged;
 				if (onDayChanged != null)
 					onDayChanged -= onDayChanged;
 				if (onWeekChanged != null)
@@ -91,24 +91,24 @@ namespace SGMessageBot.DiscordBot
 				var now = DateTime.UtcNow;
 				if (now.Hour != lastHour)
 				{
-					onHourPassed?.Invoke(this, now);
+					OnHourPassed?.Invoke(this, now);
 					lastHour = now.Hour;
 				}
 				if (now.Day != lastDay)
 				{
-					onDayPassed?.Invoke(this, now);
+					OnDayPassed?.Invoke(this, now);
 					lastDay = now.Day;
 					if(now.DayOfWeek == culture.DateTimeFormat.FirstDayOfWeek)
-						onWeekPassed?.Invoke(this, now);
+						OnWeekPassed?.Invoke(this, now);
 				}
 				if (now.Month != lastMonth)
 				{
-					onMonthPassed?.Invoke(this, now);
+					OnMonthPassed?.Invoke(this, now);
 					lastMonth = now.Month;
 				}
 				if (now.Year != lastYear)
 				{
-					onYearPassed?.Invoke(this, now);
+					OnYearPassed?.Invoke(this, now);
 					lastYear = now.Year;
 				}
 				Thread.Sleep(5000);

@@ -7,20 +7,20 @@ namespace SGMessageBot.Config
 {
 	public class DBConfig
 	{
-		public DBConfigInfo config { get; private set; }
-		public string connectionString { get; private set; }
+		public DBConfigInfo Config { get; private set; }
+		public string ConnectionString { get; private set; }
 
-		public BaseResult loadDBConfig()
+		public BaseResult LoadDBConfig()
 		{
-			config = null;
+			Config = null;
 			var result = new BaseResult();
 			
 			if (File.Exists("Data/DBConfig.json"))
 			{
 				try
 				{
-					config = JsonConvert.DeserializeObject<DBConfigInfo>(File.ReadAllText("Data/DBConfig.json"));
-					if (config == null)
+					Config = JsonConvert.DeserializeObject<DBConfigInfo>(File.ReadAllText("Data/DBConfig.json"));
+					if (Config == null)
 					{
 						result.Success = false;
 						result.Message = "FAIL_LOAD_DB_CONFIG";
@@ -40,7 +40,7 @@ namespace SGMessageBot.Config
 				result.Message = "FAIL_FIND_DB_CONFIG";
 			}
 			result.Success = true;
-			connectionString = $"Server={config.address};Port={config.port};Database={config.schemaName};Uid={config.userName};Pwd={config.password};Charset=utf8mb4";
+			ConnectionString = $"Server={Config.address};Port={Config.port};Database={Config.schemaName};Uid={Config.userName};Pwd={Config.password};Charset=utf8mb4";
 			return result;
 		}
 	}

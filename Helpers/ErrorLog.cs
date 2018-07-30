@@ -5,8 +5,8 @@ namespace SGMessageBot.Helpers
 {
 	public static class ErrorLog
 	{
-		private static object locker = new object();
-		private static string folderLocation = String.Empty;
+		private static readonly object locker = new object();
+		private static readonly string folderLocation = string.Empty;
 		static ErrorLog()
 		{
 			folderLocation = "Data/Logs";

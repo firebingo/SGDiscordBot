@@ -52,7 +52,7 @@ namespace SGMessageBot.DiscordBot
 	public struct MessageTextModel
 	{
 		private readonly string _mesText;
-		public string mesText => _mesText;
+		public string MesText => _mesText;
 
 		public MessageTextModel(string t)
 		{

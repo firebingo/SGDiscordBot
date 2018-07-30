@@ -6,6 +6,7 @@ using SGMessageBot.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Data.SQLite;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -15,27 +16,27 @@ namespace SGMessageBot.DiscordBot
 {
 	public class BotCommandProcessor
 	{
-		private string dateFormat = "yyyy/MM/dd";
+		private readonly string dateFormat = "yyyy/MM/dd";
 
 		#region Calc Functions
-		public Task<DateModel> getEarliestMessage(ICommandContext context)
+		public async Task<DateModel> GetEarliestMessage(ICommandContext context)
 		{
 			var result = new DateModel();
 			var queryString = "SELECT mesTime FROM messages WHERE serverID = @serverID AND mesTime IS NOT NULL ORDER BY mesTime LIMIT 1";
-			DataLayerShortcut.ExecuteReader(readEarliestDate, result, queryString, new MySqlParameter("@serverID", context.Guild.Id));
-			return Task.FromResult(result);
+			await DataLayerShortcut.ExecuteReader(ReadEarliestDate, result, queryString, new MySqlParameter("@serverID", context.Guild.Id));
+			return result;
 		}
 
-		public Task<int> getTotalMessageCount(ICommandContext context)
+		public async Task<int> GetTotalMessageCount(ICommandContext context)
 		{
 			int? result = 0;
 			var queryString = "SELECT COUNT(*) FROM messages WHERE isDeleted = false AND serverID = @serverID";
-			result = DataLayerShortcut.ExecuteScalarInt(queryString, new MySqlParameter("@serverID", context.Guild.Id));
-			return Task.FromResult(result.HasValue ? result.Value : 0);
+			result = await DataLayerShortcut.ExecuteScalarInt(queryString, new MySqlParameter("@serverID", context.Guild.Id));
+			return result ?? 0;
 		}
 
 		#region Admin Functions
-		public async Task<string> calculateRoleCounts(SocketTextChannel channel, bool useMentions, ICommandContext context)
+		public async Task<string> CalculateRoleCounts(SocketTextChannel channel, bool useMentions, ICommandContext context)
 		{
 			var result = "";
 			try
@@ -78,11 +79,11 @@ namespace SGMessageBot.DiscordBot
 		#endregion
 
 		#region Message Counts
-		public async Task<string> calculateTopMessageCounts(int count, ICommandContext context)
+		public async Task<string> CalculateTopMessageCounts(int count, ICommandContext context)
 		{
 			var result = "";
-			var earliest = await getEarliestMessage(context);
-			var totalCount = await getTotalMessageCount(context);
+			var earliest = await GetEarliestMessage(context);
+			var totalCount = await GetTotalMessageCount(context);
 			var nextSplitLength = 2000;
 			List<UserCountModel> results = new List<UserCountModel>();
 			var queryString = "";
@@ -92,7 +93,7 @@ namespace SGMessageBot.DiscordBot
 			else
 				queryString = $@"SELECT usersinservers.userID, usersinservers.nickNameMention, usersinservers.mesCount FROM usersinservers 
 				WHERE usersinservers.serverID=@serverID ORDER BY mesCount DESC LIMIT {count}";
-			DataLayerShortcut.ExecuteReader<List<UserCountModel>>(readMessageCounts, results, queryString, new MySqlParameter("@serverID", context.Guild.Id));
+			await DataLayerShortcut.ExecuteReader<List<UserCountModel>>(ReadMessageCounts, results, queryString, new MySqlParameter("@serverID", context.Guild.Id));
 			if (count == 0)
 			{
 				var mostCount = results.FirstOrDefault();
@@ -120,32 +121,31 @@ namespace SGMessageBot.DiscordBot
 			return Task.FromResult<string>(result).Result;
 		}
 
-		public async Task<string> calculateUserMessageCounts(string user, ICommandContext context)
+		public async Task<string> CalculateUserMessageCounts(string user, ICommandContext context)
 		{
 			var result = "";
-			var earliest = await getEarliestMessage(context);
-			var totalCount = await getTotalMessageCount(context);
+			var earliest = await GetEarliestMessage(context);
+			var totalCount = await GetTotalMessageCount(context);
 			List<UserCountModel> results = new List<UserCountModel>();
 			var queryString = @"SELECT usersinservers.userID, usersinservers.nickNameMention, usersinservers.mesCount FROM usersinservers 
 			WHERE usersinservers.serverID=@serverID AND usersinservers.nickNameMention=@mention";
-			DataLayerShortcut.ExecuteReader<List<UserCountModel>>(readMessageCounts, results, queryString, new MySqlParameter("@mention", user), new MySqlParameter("@serverID", context.Guild.Id));
+			await DataLayerShortcut.ExecuteReader<List<UserCountModel>>(ReadMessageCounts, results, queryString, new MySqlParameter("@mention", user), new MySqlParameter("@serverID", context.Guild.Id));
 			var userCount = results.FirstOrDefault();
 			var percent = Math.Round(((float)userCount.messageCount / (float)totalCount) * 100, 2);
 			result = $"User {userCount.userMention} has sent {userCount.messageCount} messages which is {percent}% of the server's messages. Starting at {earliest.date.ToString(dateFormat)}";
 			return Task.FromResult<string>(result).Result;
 		}
 
-		public async Task<string> calculateRoleMessageCounts(string role, ICommandContext context)
+		public async Task<string> CalculateRoleMessageCounts(string role, ICommandContext context)
 		{
 			var result = "";
 			var totalRoleCount = 0;
-			var earliest = await getEarliestMessage(context);
-			var totalCount = await getTotalMessageCount(context);
+			var earliest = await GetEarliestMessage(context);
+			var totalCount = await GetTotalMessageCount(context);
 
 			//parse the roleID from the mention passed in.
 			var roleId = Regex.Replace(role, "[<|>|@|&]", "");
-			ulong roleIdParse = 0;
-			var parseRes = ulong.TryParse(roleId, out roleIdParse);
+			var parseRes = ulong.TryParse(roleId, out var roleIdParse);
 			if (!parseRes) //if the roleid was not parseable.
 				return Task.FromResult<string>("Could not find role").Result;
 			//Go through every user in the guild and check if their roleids contains our role.
@@ -164,7 +164,7 @@ namespace SGMessageBot.DiscordBot
 				List<UserCountModel> userResults = new List<UserCountModel>();
 				var queryString = @"SELECT usersinservers.userID, usersinservers.nickNameMention, usersinservers.mesCount FROM usersinservers 
 				WHERE usersinservers.serverID=@serverID AND usersinservers.nickNameMention=@mention LIMIT 1";
-				DataLayerShortcut.ExecuteReader<List<UserCountModel>>(readMessageCounts, userResults, queryString, new MySqlParameter("@mention", user.Mention.Replace("!", string.Empty)), new MySqlParameter("@serverID", context.Guild.Id));
+				await DataLayerShortcut.ExecuteReader<List<UserCountModel>>(ReadMessageCounts, userResults, queryString, new MySqlParameter("@mention", user.Mention.Replace("!", string.Empty)), new MySqlParameter("@serverID", context.Guild.Id));
 				var userFound = userResults.FirstOrDefault();
 				if (userFound == null)
 					continue;
@@ -183,26 +183,35 @@ namespace SGMessageBot.DiscordBot
 			return Task.FromResult<string>(result).Result;
 		}
 
-		public Task<string> ReloadMessageCounts(ICommandContext context)
+		public async Task<string> ReloadMessageCounts(ICommandContext context)
 		{
 			var result = string.Empty;
 			List<UsersInServersModel> users = new List<UsersInServersModel>();
 			try
 			{
 				var queryString = @"SELECT usersinservers.userID FROM usersinservers WHERE usersinservers.serverID=@serverID";
-				DataLayerShortcut.ExecuteReader<List<UsersInServersModel>>(readUsersInServers, users, queryString, new MySqlParameter("@serverID", context.Guild.Id));
-				Parallel.ForEach(users, (user) =>
+				await DataLayerShortcut.ExecuteReader<List<UsersInServersModel>>(ReadUsersInServers, users, queryString, new MySqlParameter("@serverID", context.Guild.Id));
+				List<Task<uint?>> tasks = new List<Task<uint?>>();
+				List<MySqlParameter[]> uparams = new List<MySqlParameter[]>();
+				foreach(var u in users)
+				{
+					var sparams = new MySqlParameter[3] { new MySqlParameter("@serverID", context.Guild.Id), new MySqlParameter("@userID", u.userID), null };
+					uparams.Add(sparams);
+					tasks.Add(DataLayerShortcut.ExecuteScalarUInt(@"SELECT COUNT(*) FROM messages WHERE messages.userID=@userID AND messages.serverID=@serverID AND NOT messages.isDeleted", sparams));
+				}
+				await Task.WhenAll(tasks.ToArray());
+				Parallel.For(0, tasks.Count, (i) =>
 				{
 					try
 					{
-						var sparams = new MySqlParameter[3] { new MySqlParameter("@serverID", context.Guild.Id), new MySqlParameter("@userID", user.userID), null };
-						var t = DataLayerShortcut.ExecuteScalarUInt(@"SELECT COUNT(*) FROM messages WHERE messages.userID=@userID AND messages.serverID=@serverID AND NOT messages.isDeleted", sparams);
+						var t = tasks[i].Result;
 						if (t.HasValue)
-							user.mesCount = t.Value;
-						sparams[2] = new MySqlParameter("@mesCount", user.mesCount);
-						DataLayerShortcut.ExecuteNonQuery(@"UPDATE usersinservers SET mesCount = @mesCount WHERE usersinservers.userID=@userID AND usersinservers.serverID=@serverID", sparams);
+						{
+							uparams[i][2] = new MySqlParameter("@mesCount", t.Value);
+							Task.Run(() => DataLayerShortcut.ExecuteNonQuery(@"UPDATE usersinservers SET mesCount = @mesCount WHERE usersinservers.userID=@userID AND usersinservers.serverID=@serverID", uparams[i]));
+						}
 					}
-					catch(Exception ex)
+					catch (Exception ex)
 					{
 						result += ex.Message;
 						return;
@@ -216,7 +225,7 @@ namespace SGMessageBot.DiscordBot
 
 			if (result != string.Empty)
 				ErrorLog.WriteLog(result);
-			return Task.FromResult(result);
+			return result;
 		}
 		#endregion
 
@@ -227,14 +236,14 @@ namespace SGMessageBot.DiscordBot
 		/// <param name="count"></param>
 		/// <param name="context"></param>
 		/// <returns></returns>
-		public async Task<string> calculateTopEmojiCounts(int count, ICommandContext context)
+		public async Task<string> CalculateTopEmojiCounts(int count, ICommandContext context)
 		{
 			var result = "";
-			var earliest = await getEarliestMessage(context);
+			var earliest = await GetEarliestMessage(context);
 			var emojiUseModels = new List<EmojiUseModel>();
 			var totalCount = 0;
 			var nextSplitLength = 2000;
-			getEmojiModels(context, ref emojiUseModels);
+			GetEmojiModels(context, ref emojiUseModels);
 			var topEmojis = new Dictionary<string, EmojiCountModel>();
 			foreach(var use in emojiUseModels)
 			{
@@ -247,10 +256,12 @@ namespace SGMessageBot.DiscordBot
 					topEmojis[key].useCount++;
 				else
 				{
-					var m = new EmojiCountModel();
-					m.emojiID = use.emojiID;
-					m.emojiName = use.emojiName;
-					m.useCount = 1;
+					var m = new EmojiCountModel
+					{
+						emojiID = use.emojiID,
+						emojiName = use.emojiName,
+						useCount = 1
+					};
 					topEmojis.Add(key, m);
 				}
 				totalCount++;
@@ -320,20 +331,20 @@ namespace SGMessageBot.DiscordBot
 		/// <param name="user"></param>
 		/// <param name="context"></param>
 		/// <returns></returns>
-		public async Task<string> calculateTopEmojiCountsUser(int count, string user, ICommandContext context)
+		public async Task<string> CalculateTopEmojiCountsUser(int count, string user, ICommandContext context)
 		{
 			var result = "";
-			var userId = getIDFromMention(user);
+			var userId = GetIDFromMention(user);
 			if(userId == 0)
 			{
 				return Task.FromResult<string>("Could not get user from mention.").Result;
 			}
-			var earliest = await getEarliestMessage(context);
+			var earliest = await GetEarliestMessage(context);
 			var emojiUseModels = new List<EmojiUseModel>();
 			var totalCount = 0;
 			var totalUserCount = 0;
 			var nextSplitLength = 2000;
-			getEmojiModels(context, ref emojiUseModels);
+			GetEmojiModels(context, ref emojiUseModels);
 			var topEmojis = new Dictionary<string, EmojiCountModel>();
 			var topEmojisUser = new Dictionary<string, EmojiCountModel>();
 			foreach (var use in emojiUseModels)
@@ -347,10 +358,12 @@ namespace SGMessageBot.DiscordBot
 					topEmojis[key].useCount++;
 				else
 				{
-					var m = new EmojiCountModel();
-					m.emojiID = use.emojiID;
-					m.emojiName = use.emojiName;
-					m.useCount = 1;
+					var m = new EmojiCountModel
+					{
+						emojiID = use.emojiID,
+						emojiName = use.emojiName,
+						useCount = 1
+					};
 					topEmojis.Add(key, m);
 				}
 				totalCount++;
@@ -360,10 +373,12 @@ namespace SGMessageBot.DiscordBot
 						topEmojisUser[key].useCount++;
 					else
 					{
-						var m = new EmojiCountModel();
-						m.emojiID = use.emojiID;
-						m.emojiName = use.emojiName;
-						m.useCount = 1;
+						var m = new EmojiCountModel
+						{
+							emojiID = use.emojiID,
+							emojiName = use.emojiName,
+							useCount = 1
+						};
 						topEmojisUser.Add(key, m);
 					}
 					totalUserCount++;
@@ -412,17 +427,17 @@ namespace SGMessageBot.DiscordBot
 		/// <param name="emojiMention"></param>
 		/// <param name="context"></param>
 		/// <returns></returns>
-		public async Task<string> calculateEmojiCounts(string emojiMention, ICommandContext context)
+		public async Task<string> CalculateEmojiCounts(string emojiMention, ICommandContext context)
 		{
 			var result = "";
-			var emojiID = getIDFromMention(emojiMention);
+			var emojiID = GetIDFromMention(emojiMention);
 			if (emojiID == 0)
 				return "Failed to find id from emoji";
-			var earliest = await getEarliestMessage(context);
+			var earliest = await GetEarliestMessage(context);
 			var emojiUseModels = new List<EmojiUseModel>();
 			var totalCount = 0;
 			var reqEmojiCount = 0;
-			getEmojiModels(context, ref emojiUseModels);
+			GetEmojiModels(context, ref emojiUseModels);
 
 			var topEmojis = new Dictionary<string, EmojiCountModel>();
 			foreach (var use in emojiUseModels)
@@ -436,10 +451,12 @@ namespace SGMessageBot.DiscordBot
 					topEmojis[key].useCount++;
 				else
 				{
-					var m = new EmojiCountModel();
-					m.emojiID = use.emojiID;
-					m.emojiName = use.emojiName;
-					m.useCount = 1;
+					var m = new EmojiCountModel
+					{
+						emojiID = use.emojiID,
+						emojiName = use.emojiName,
+						useCount = 1
+					};
 					topEmojis.Add(key, m);
 				}
 				totalCount++;
@@ -475,16 +492,16 @@ namespace SGMessageBot.DiscordBot
 		/// <param name="userMention"></param>
 		/// <param name="context"></param>
 		/// <returns></returns>
-		public async Task<string> calculateUserEmojiCounts(string userMention, ICommandContext context)
+		public async Task<string> CalculateUserEmojiCounts(string userMention, ICommandContext context)
 		{
 			var result = "";
-			var userID = getIDFromMention(userMention);
+			var userID = GetIDFromMention(userMention);
 			if (userID == 0)
 				return "Failed to find id from user mention";
-			var earliest = await getEarliestMessage(context);
+			var earliest = await GetEarliestMessage(context);
 			var emojiUseModels = new List<EmojiUseModel>();
 			var totalCount = 0;
-			getEmojiModels(context, ref emojiUseModels);
+			GetEmojiModels(context, ref emojiUseModels);
 			var totalUserCount = 0;
 			var topEmojis = new Dictionary<string, EmojiCountModel>();
 			var topEmojisUser = new Dictionary<string, EmojiCountModel>();
@@ -500,10 +517,12 @@ namespace SGMessageBot.DiscordBot
 					topEmojis[key].useCount++;
 				else
 				{
-					var m = new EmojiCountModel();
-					m.emojiID = use.emojiID;
-					m.emojiName = use.emojiName;
-					m.useCount = 1;
+					var m = new EmojiCountModel
+					{
+						emojiID = use.emojiID,
+						emojiName = use.emojiName,
+						useCount = 1
+					};
 					topEmojis.Add(key, m);
 				}
 				totalCount++;
@@ -513,10 +532,12 @@ namespace SGMessageBot.DiscordBot
 						topEmojisUser[key].useCount++;
 					else
 					{
-						var m = new EmojiCountModel();
-						m.emojiID = use.emojiID;
-						m.emojiName = use.emojiName;
-						m.useCount = 1;
+						var m = new EmojiCountModel
+						{
+							emojiID = use.emojiID,
+							emojiName = use.emojiName,
+							useCount = 1
+						};
 						topEmojisUser.Add(key, m);
 					}
 					totalUserCount++;
@@ -544,9 +565,9 @@ namespace SGMessageBot.DiscordBot
 			int? totalCommandCount = 0;
 			int? userCommandCount = 0;
 			var query = "SELECT COUNT(*) FROM Command WHERE ServerId = @serverId";
-			totalCommandCount = DataLayerShortcut.executeScalarLite(context.Guild.Id, query, new SQLiteParameter("@serverId", context.Guild.Id));
+			totalCommandCount = DataLayerShortcut.ExecuteScalarLite(context.Guild.Id, query, new SQLiteParameter("@serverId", context.Guild.Id));
 			query = "SELECT COUNT(*) FROM Command WHERE UserId = @userId AND ServerId = @serverId";
-			userCommandCount = DataLayerShortcut.executeScalarLite(context.Guild.Id, query, new SQLiteParameter("@userId", user.Id), new SQLiteParameter("@serverId", context.Guild.Id));
+			userCommandCount = DataLayerShortcut.ExecuteScalarLite(context.Guild.Id, query, new SQLiteParameter("@userId", user.Id), new SQLiteParameter("@serverId", context.Guild.Id));
 			if (!totalCommandCount.HasValue || !userCommandCount.HasValue)
 			{
 				result = "Failed to get command counts. Possible failure to connect to db.";
@@ -560,25 +581,25 @@ namespace SGMessageBot.DiscordBot
 		#endregion
 
 		#region Data Readers
-		private void readEarliestDate(IDataReader reader, DateModel data)
+		private void ReadEarliestDate(IDataReader reader, DateModel data)
 		{
-			reader = reader as MySqlDataReader;
+			reader = reader as DbDataReader;
 			if (reader != null)
 			{
 				data.date = reader.GetDateTime(0);
 			}
 		}
 
-		private void readMessageCounts(IDataReader reader, List<UserCountModel> data)
+		private void ReadMessageCounts(IDataReader reader, List<UserCountModel> data)
 		{
-			reader = reader as MySqlDataReader;
+			reader = reader as DbDataReader;
 			if (reader != null)
 			{
 				if (reader.FieldCount >= 3)
 				{
 					var userObject = new UserCountModel();
 					ulong? temp = reader.GetValue(0) as ulong?;
-					userObject.userID = temp.HasValue ? temp.Value : 0;
+					userObject.userID = temp ?? 0;
 					userObject.userMention = reader.GetString(1);
 					userObject.messageCount = reader.GetInt32(2);
 					data.Add(userObject);
@@ -586,43 +607,43 @@ namespace SGMessageBot.DiscordBot
 			}
 		}
 
-		private void readUsersInServers(IDataReader reader, List<UsersInServersModel> data)
+		private void ReadUsersInServers(IDataReader reader, List<UsersInServersModel> data)
 		{
-			reader = reader as MySqlDataReader;
+			reader = reader as DbDataReader;
 			if (reader != null)
 			{
 				if(reader.FieldCount >= 1)
 				{
 					var userObject = new UsersInServersModel();
 					ulong? temp = reader.GetValue(0) as ulong?;
-					userObject.userID = temp.HasValue ? temp.Value : 0;
+					userObject.userID = temp ?? 0;
 					data.Add(userObject);
 				}
 			}
 		}
 
-		private void readEmojiCounts(IDataReader reader, List<EmojiUseModel> data)
+		private void ReadEmojiCounts(IDataReader reader, List<EmojiUseModel> data)
 		{
-			reader = reader as MySqlDataReader;
+			reader = reader as DbDataReader;
 			if (reader != null)
 			{
 				if (reader.FieldCount >= 4)
 				{
 					var emojiObject = new EmojiUseModel();
 					ulong? temp = reader.GetValue(0) as ulong?;
-					emojiObject.emojiID = temp.HasValue ? temp.Value : 0;
+					emojiObject.emojiID = temp ?? 0;
 					emojiObject.emojiName = reader.GetString(1);
 					temp = reader.GetValue(2) as ulong?;
-					emojiObject.userID = temp.HasValue ? temp.Value : 0;
+					emojiObject.userID = temp ?? 0;
 					emojiObject.userMention = reader.GetString(3);
 					data.Add(emojiObject);
 				}
 			}
 		}
 
-		private static void readMessagesText(IDataReader reader, List<MessageTextModel> data)
+		private static void ReadMessagesText(IDataReader reader, List<MessageTextModel> data)
 		{
-			reader = reader as MySqlDataReader;
+			reader = reader as DbDataReader;
 			if (reader != null)
 			{
 				var message = new MessageTextModel(reader.GetString(0));
@@ -632,7 +653,7 @@ namespace SGMessageBot.DiscordBot
 		#endregion
 
 		#region Helper Functions
-		private void getEmojiModels(ICommandContext context, ref List<EmojiUseModel> emojiModels)
+		private void GetEmojiModels(ICommandContext context, ref List<EmojiUseModel> emojiModels)
 		{
 			var queryParams = new MySqlParameter[] {
 				new MySqlParameter("@serverID", context.Guild.Id),
@@ -642,10 +663,11 @@ namespace SGMessageBot.DiscordBot
 			var queryString = $"SELECT eU.emojiID, eU.emojiName, eU.userID, uS.nickNameMention " +
 				$"FROM emojiuses AS eU LEFT JOIN messages as mS ON eU.messageID = mS.messageID LEFT JOIN usersinservers AS uS ON eU.userID = uS.userID " +
 			    $"WHERE uS.serverID = @serverID AND eU.serverID = @serverID AND eU.isDeleted = 0 AND eU.userID != @botID AND mS.mesText NOT LIKE '%emojicount%'";
-			DataLayerShortcut.ExecuteReader<List<EmojiUseModel>>(readEmojiCounts, emojiModels, queryString, queryParams);
+			var ret = DataLayerShortcut.ExecuteReader<List<EmojiUseModel>>(ReadEmojiCounts, emojiModels, queryString, queryParams);
+			ret.RunSynchronously();
 		}
 
-		private ulong getIDFromMention(string mention)
+		private ulong GetIDFromMention(string mention)
 		{
 			var match = Regex.Match(mention, @"\d+");
 			if(!match.Success)
@@ -657,12 +679,12 @@ namespace SGMessageBot.DiscordBot
 			return result;
 		}
 
-		public static List<MessageTextModel> loadMessages()
+		public static async Task<List<MessageTextModel>> LoadMessages()
 		{
 			var result = new List<MessageTextModel>();
 
 			var query = "SELECT txt FROM (SELECT COALESCE(mesText, editedMesText) AS txt FROM messages WHERE NOT isDeleted AND userId != @botId) x WHERE txt != '' AND txt NOT LIKE '%@botId%'";
-			DataLayerShortcut.ExecuteReader<List<MessageTextModel>>(readMessagesText, result, query, new MySqlParameter("@botId", SGMessageBot.BotConfig.BotInfo.DiscordConfig.botId));
+			await DataLayerShortcut.ExecuteReader<List<MessageTextModel>>(ReadMessagesText, result, query, new MySqlParameter("@botId", SGMessageBot.BotConfig.BotInfo.DiscordConfig.botId));
 
 			return result;
 		}
