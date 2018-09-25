@@ -36,7 +36,7 @@ namespace SGMessageBot.DataBase
 			catch (MySqlException e)
 			{
 				ErrorLog.WriteError(e);
-				if (e.InnerException.Message.ToUpperInvariant().Contains("UNKNOWN DATABASE"))
+				if (e.InnerException != null && e.InnerException.Message.ToUpperInvariant().Contains("UNKNOWN DATABASE"))
 					SchemaExists = false;
 
 				result.Success = false;

@@ -17,22 +17,22 @@ namespace SGMessageBot.DiscordBot
 	public class BotCommandHandler
 	{
 		private CommandService commands;
-		private DiscordSocketClient Client;
+		private DiscordSocketClient socketClient;
 		private BotCommandProcessor processor;
 		private Markov markovAi;
-		private IServiceProvider map;
+		private IServiceProvider dependencyMap;
 		private BotCommandsRunning running;
 
 		public async Task InstallCommandService(IServiceProvider _map)
 		{
-			Client = _map.GetService(typeof(DiscordSocketClient)) as DiscordSocketClient;
+			socketClient = _map.GetService(typeof(DiscordSocketClient)) as DiscordSocketClient;
 			processor = _map.GetService(typeof(BotCommandProcessor)) as BotCommandProcessor;
 			markovAi = _map.GetService(typeof(Markov)) as Markov;
 			running = new BotCommandsRunning();
 			commands = new CommandService();
-			map = _map;
+			dependencyMap = _map;
 			await commands.AddModulesAsync(Assembly.GetEntryAssembly(), _map);
-			Client.MessageReceived += HandleCommand;
+			socketClient.MessageReceived += HandleCommand;
 		}
 
 		public async Task<bool> RemoveCommandService()
@@ -43,7 +43,7 @@ namespace SGMessageBot.DiscordBot
 				await commands.RemoveModuleAsync(modules[i]);
 			}
 			running.Clear();
-			Client.MessageReceived -= HandleCommand;
+			socketClient.MessageReceived -= HandleCommand;
 			return Task.FromResult<bool>(true).Result;
 		}
 
@@ -51,9 +51,13 @@ namespace SGMessageBot.DiscordBot
 		{
 			if (!(e is SocketUserMessage uMessage)) return Task.CompletedTask;
 			int argPos = 0;
-			if (uMessage.HasMentionPrefix(Client.CurrentUser, ref argPos))
+			if (uMessage.HasMentionPrefix(socketClient.CurrentUser, ref argPos))
 			{
-				var context = new CommandContext(Client, uMessage);
+				if (e.Author.IsBot && SGMessageBot.BotConfig.BotInfo.DiscordConfig.ignoreOtherBots)
+					return Task.CompletedTask;
+				if (SGMessageBot.BotConfig.BotInfo.DiscordConfig.ignoreCommandsFrom.Contains(e.Author.Id))
+					return Task.CompletedTask;
+				var context = new CommandContext(socketClient, uMessage);
 				//This is bad and I should feel bad.
 				//For future the commands themselves shouldnt be dependant on awating the command processor and the
 				// processor itself should handle any operations that need to happen after the processing such
@@ -62,7 +66,7 @@ namespace SGMessageBot.DiscordBot
 				Thread runThread = new Thread(async () => {
 					var guid = Guid.NewGuid();
 					running.Add(guid, context.Channel as SocketTextChannel);
-					result = await commands.ExecuteAsync(context, argPos, map);
+					result = await commands.ExecuteAsync(context, argPos, dependencyMap);
 					running.Remove(guid);
 					if (!result.IsSuccess)
 						await uMessage.Channel.SendMessageAsync(result.ErrorReason);
@@ -369,6 +373,8 @@ namespace SGMessageBot.DiscordBot
 				var split = input.Split(' ');
 				input = split[0].Trim();
 				var result = await markovAi.GenerateMessage(input);
+				if(SGMessageBot.BotConfig.BotInfo.DiscordConfig.escapeMentionsChat)
+					result = Regex.Replace(result, "(<@.*?>)", "`$1`");
 				if(result.Contains("|?|"))
 				{
 					var sendSplit = result.Split(new string[] { "|?|" }, StringSplitOptions.None);

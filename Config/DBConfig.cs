@@ -40,7 +40,7 @@ namespace SGMessageBot.Config
 				result.Message = "FAIL_FIND_DB_CONFIG";
 			}
 			result.Success = true;
-			ConnectionString = $"Server={Config.address};Port={Config.port};Database={Config.schemaName};Uid={Config.userName};Pwd={Config.password};Charset=utf8mb4";
+			ConnectionString = $"Server={Config.address};Port={Config.port};Database={Config.schemaName};Uid={Config.userName};Pwd={Config.password};Charset=utf8mb4;SslMode=none";
 			return result;
 		}
 	}

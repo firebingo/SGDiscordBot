@@ -9,7 +9,7 @@ namespace SGMessageBot
 	class SGMessageBot
 	{
 		private static DiscordMain DiscordThread;
-		private static SteamMain SteamThread;
+		public static SteamMain SteamThread;
 		public static TimeThread TimeThread;
 
 		public static BotConfig BotConfig { get; private set; }

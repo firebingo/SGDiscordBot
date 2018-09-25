@@ -137,6 +137,9 @@ namespace SGMessageBot.Config
 		public string aiCorpusExtraPath = string.Empty;
 		public List<ulong> ownerIds = new List<ulong>();
 		public List<ulong> commandRoleIds = new List<ulong>();
+		public List<ulong> ignoreCommandsFrom = new List<ulong>();
+		public bool ignoreOtherBots = true;
+		public bool escapeMentionsChat = true;
 		public Dictionary<ulong, MessageCountTracker> messageCount = new Dictionary<ulong, MessageCountTracker>();
 		public Dictionary<string, RandomMessageInfo> randomMessageSend = new Dictionary<string, RandomMessageInfo>();
 		public List<ulong> statServerIds = new List<ulong>();
@@ -169,5 +172,13 @@ namespace SGMessageBot.Config
 		public string AuthCode = string.Empty;
 		public string TwoFactorCode = string.Empty;
 		public string SentryFileLocation = string.Empty;
+		public List<SteamGroupToUse> Groups = new List<SteamGroupToUse>();
+	}
+
+	[Serializable]
+	public class SteamGroupToUse
+	{
+		public ulong GroupId = 0;
+		public ulong ChatId = 0;
 	}
 }

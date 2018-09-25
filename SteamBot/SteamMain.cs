@@ -1,4 +1,5 @@
-﻿using SGMessageBot.Config;
+﻿using Microsoft.Extensions.DependencyInjection;
+using SGMessageBot.Config;
 using SGMessageBot.Helpers;
 using SteamKit2;
 using System;
@@ -14,31 +15,44 @@ namespace SGMessageBot.SteamBot
 {
 	public class SteamMain
 	{
-		private static SteamClient steamClient;
-		private static CallbackManager callbackManager;
-		private static SteamUser steamUser;
-		private static bool isRunning;
+		private SteamClient steamClient;
+		private CallbackManager callbackManager;
+		private SteamActions steamHandler;
+		private SteamUser steamUser;
+		private SteamFriends steamFriends;
+		private IServiceProvider serviceProvider = null;
+
+		private bool isRunning;
+		public bool isConnected;
+		public string steamNonce = string.Empty;
+		public EAccountFlags AccountFlags;
+		public ulong SteamID;
 
 		public Task RunBot()
 		{
 			steamClient = new SteamClient();
 			callbackManager = new CallbackManager(steamClient);
+			steamHandler = new SteamActions();
 
 			steamUser = steamClient.GetHandler<SteamUser>();
+			steamFriends = steamClient.GetHandler<SteamFriends>();
 
 			callbackManager.Subscribe<SteamClient.ConnectedCallback>(OnConnected);
 			callbackManager.Subscribe<SteamClient.DisconnectedCallback>(OnDisconnected);
 
 			callbackManager.Subscribe<SteamUser.LoggedOnCallback>(OnLoggedOn);
 			callbackManager.Subscribe<SteamUser.LoggedOffCallback>(OnLoggedOff);
+			callbackManager.Subscribe<SteamFriends.ChatMsgCallback>(OnMessageReceived);
 
-			//used for steamguard
+			//steamguard
 			callbackManager.Subscribe<SteamUser.UpdateMachineAuthCallback>(OnMachineAuth);
 
 			isRunning = true;
 			Console.WriteLine("Connecting to Steam...");
 			steamClient.Connect();
 
+			serviceProvider = ConfigureServices();
+			steamHandler.InstallServiceMap(serviceProvider);
 			Task.Run(() => DoCallbackLoop());
 			return Task.CompletedTask;
 		}
@@ -48,12 +62,25 @@ namespace SGMessageBot.SteamBot
 			while (isRunning)
 			{
 				// in order for the callbacks to get routed, they need to be handled by the manager
-				callbackManager.RunWaitCallbacks(TimeSpan.FromSeconds(1));
+				callbackManager.RunWaitAllCallbacks(TimeSpan.FromMilliseconds(500));
 			}
 			return Task.CompletedTask;
 		}
 
-		private static void OnConnected(SteamClient.ConnectedCallback callback)
+		private IServiceProvider ConfigureServices()
+		{
+			//setup and add command service.
+			var services = new ServiceCollection()
+				.AddSingleton(steamClient)
+				.AddSingleton(SGMessageBot.BotConfig)
+				.AddSingleton(callbackManager)
+				.AddSingleton(steamUser)
+				.AddSingleton(steamFriends);
+			var provider = new DefaultServiceProviderFactory().CreateServiceProvider(services);
+			return provider;
+		}
+
+		private void OnConnected(SteamClient.ConnectedCallback callback)
 		{
 			Console.WriteLine($"Connected to Steam! Logging in '{SGMessageBot.BotConfig.BotInfo.SteamConfig.Username}'...");
 
@@ -73,18 +100,20 @@ namespace SGMessageBot.SteamBot
 				TwoFactorCode = sentryHash == null ? SGMessageBot.BotConfig.BotInfo.SteamConfig.TwoFactorCode : null,
 				SentryFileHash = sentryHash ?? null
 			});
+			isConnected = true;
 		}
 
-		private static void OnDisconnected(SteamClient.DisconnectedCallback callback)
+		private void OnDisconnected(SteamClient.DisconnectedCallback callback)
 		{
-			Console.WriteLine("Disconnected from Steam, reconnecting in 5...");
+			isConnected = false;
+			Console.WriteLine("Disconnected from Steam, reconnecting in 10...");
 
-			Thread.Sleep(TimeSpan.FromSeconds(5));
+			Thread.Sleep(TimeSpan.FromSeconds(10));
 
 			steamClient.Connect();
 		}
 
-		private static void OnLoggedOn(SteamUser.LoggedOnCallback callback)
+		private void OnLoggedOn(SteamUser.LoggedOnCallback callback)
 		{
 			bool isSteamGuard = callback.Result == EResult.AccountLogonDenied;
 			bool is2fa = callback.Result == EResult.AccountLoginDeniedNeedTwoFactor;
@@ -118,15 +147,19 @@ namespace SGMessageBot.SteamBot
 
 			Console.WriteLine("Successfully logged on!");
 
-			// at this point, we'd be able to perform actions on Steam
+			AccountFlags = callback.AccountFlags;
+			SteamID = callback.ClientSteamID;
+
+			steamHandler.GetGroups();
+			steamHandler.ConnectToGroupChats();
 		}
 
-		private static void OnLoggedOff(SteamUser.LoggedOffCallback callback)
+		private void OnLoggedOff(SteamUser.LoggedOffCallback callback)
 		{
 			Console.WriteLine("Logged off of Steam: {0}", callback.Result);
 		}
 
-		static void OnMachineAuth(SteamUser.UpdateMachineAuthCallback callback)
+		private void OnMachineAuth(SteamUser.UpdateMachineAuthCallback callback)
 		{
 			Console.WriteLine("Updating Steam sentryfile...");
 			var fileName = $"Data/{callback.FileName}";
@@ -167,6 +200,11 @@ namespace SGMessageBot.SteamBot
 
 			SGMessageBot.BotConfig.BotInfo.SteamConfig.SentryFileLocation = fileName;
 			SGMessageBot.BotConfig.SaveCredConfig();
+		}
+
+		private void OnMessageReceived(SteamFriends.ChatMsgCallback callback)
+		{
+			Task.Run(() => steamHandler.HandleMessageReceived(callback));
 		}
 	}
 }
