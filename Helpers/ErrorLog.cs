@@ -11,9 +11,7 @@ namespace SGMessageBot.Helpers
 		{
 			folderLocation = "Data/Logs";
 			if (!Directory.Exists(folderLocation))
-			{
 				Directory.CreateDirectory(folderLocation);
-			}
 		}
 
 		public static void WriteLog(string log)
@@ -22,13 +20,14 @@ namespace SGMessageBot.Helpers
 			{
 				lock (locker)
 				{
-					var dateString = DateTime.Now.ToString("yyyyMMdd");
-					var path = $"Data/Logs/{dateString}_Errors.log";
+					var now = DateTime.Now;
+					var dateString = now.ToString("yyyyMMdd");
+					var path = $"{folderLocation}/{dateString}_Errors.log";
 					if (!File.Exists(path))
 						using (File.Create(path)) { }
 					using (var writer = File.AppendText(path))
 					{
-						var fullDateString = DateTime.Now.ToString("[yyyy-MM-dd hh:MM:ss]");
+						var fullDateString = now.ToString("[yyyy-MM-dd hh:mm:ss]");
 						writer.WriteLine($"{fullDateString} - {log}");
 					}
 				}
@@ -45,13 +44,14 @@ namespace SGMessageBot.Helpers
 			{
 				lock (locker)
 				{
-					var dateString = DateTime.Now.ToString("yyyyMMdd");
+					var now = DateTime.Now;
+					var dateString = now.ToString("yyyyMMdd");
 					var path = $"Data/Logs/{dateString}_Errors.log";
 					if (!File.Exists(path))
 						using (File.Create(path)) { }
 					using (var writer = File.AppendText(path))
 					{
-						var fullDateString = DateTime.Now.ToString("[yyyy-MM-dd hh:MM:ss]");
+						var fullDateString = now.ToString("[yyyy-MM-dd hh:mm:ss]");
 						writer.WriteLine($"{fullDateString} - Message: {e.Message}, Stack Trace: {e.StackTrace}");
 					}
 				}

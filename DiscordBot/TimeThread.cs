@@ -47,20 +47,28 @@ namespace SGMessageBot.DiscordBot
 			doRun = false;
 		}
 
-		public void AddBindings(TimePassedHandler onHourChanged = null, TimePassedHandler onDayChanged = null, 
+		public void AddBindings(TimePassedHandler onHourChanged = null, TimePassedHandler onDayChanged = null,
 			TimePassedHandler onWeekChanged = null, TimePassedHandler onMonthChanged = null, TimePassedHandler onYearChanged = null)
 		{
-			if (onHourChanged != null)
-				OnHourPassed += onHourChanged;
-			if (onDayChanged != null)
-				onDayChanged += onDayChanged;
-			if (onWeekChanged != null)
-				onWeekChanged += onWeekChanged;
-			if (onMonthChanged != null)
-				onMonthChanged += onMonthChanged;
-			if (onYearChanged != null)
-				onYearChanged += onYearChanged;
+			try
+			{
+				if (onHourChanged != null)
+					OnHourPassed += onHourChanged;
+				if (onDayChanged != null)
+					onDayChanged += onDayChanged;
+				if (onWeekChanged != null)
+					onWeekChanged += onWeekChanged;
+				if (onMonthChanged != null)
+					onMonthChanged += onMonthChanged;
+				if (onYearChanged != null)
+					onYearChanged += onYearChanged;
+			}
+			catch (Exception ex)
+			{
+				ErrorLog.WriteError(ex);
+			}
 		}
+
 
 		public void RemoveBindings(TimePassedHandler onHourChanged = null, TimePassedHandler onDayChanged = null,
 			TimePassedHandler onWeekChanged = null, TimePassedHandler onMonthChanged = null, TimePassedHandler onYearChanged = null)
@@ -78,7 +86,7 @@ namespace SGMessageBot.DiscordBot
 				if (onYearChanged != null)
 					onYearChanged -= onYearChanged;
 			}
-			catch(Exception ex)
+			catch (Exception ex)
 			{
 				ErrorLog.WriteError(ex);
 			}
@@ -88,30 +96,50 @@ namespace SGMessageBot.DiscordBot
 		{
 			do
 			{
-				var now = DateTime.UtcNow;
-				if (now.Hour != lastHour)
+				try
 				{
-					OnHourPassed?.Invoke(this, now);
-					lastHour = now.Hour;
+					DebugLog.WriteLog(DebugLogTypes.StatTracker, () => "TimeThread.RunThread looping");
+					var now = DateTime.UtcNow;
+					DebugLog.WriteLog(DebugLogTypes.StatTracker, () => $"now.Hour: {now.Hour}, lastHour: {lastHour}");
+					if (now.Hour != lastHour)
+					{
+						DebugLog.WriteLog(DebugLogTypes.StatTracker, () => $"Invoking OnHourPassed, InvocationList.Length: {OnHourPassed.GetInvocationList().Length}");
+						OnHourPassed?.Invoke(this, now);
+						lastHour = now.Hour;
+					}
+					DebugLog.WriteLog(DebugLogTypes.StatTracker, () => $"now.Day: {now.Day}, lastDay: {lastDay}");
+					if (now.Day != lastDay)
+					{
+						DebugLog.WriteLog(DebugLogTypes.StatTracker, () => $"Invoking OnDayPassed, InvocationList.Length: {OnDayPassed.GetInvocationList().Length}");
+						OnDayPassed?.Invoke(this, now);
+						lastDay = now.Day;
+						DebugLog.WriteLog(DebugLogTypes.StatTracker, () => $"now.DayOfWeek: {now.DayOfWeek}, FirstDayOfWeek: {culture.DateTimeFormat.FirstDayOfWeek}");
+						if (now.DayOfWeek == culture.DateTimeFormat.FirstDayOfWeek)
+						{
+							DebugLog.WriteLog(DebugLogTypes.StatTracker, () => $"Invoking OnWeekPassed, InvocationList.Length: {OnWeekPassed.GetInvocationList().Length}");
+							OnWeekPassed?.Invoke(this, now);
+						}
+					}
+					DebugLog.WriteLog(DebugLogTypes.StatTracker, () => $"now.Month: {now.Month}, lastMonth: {lastMonth}");
+					if (now.Month != lastMonth)
+					{
+						DebugLog.WriteLog(DebugLogTypes.StatTracker, () => $"Invoking OnMonthPassed, InvocationList.Length: {OnMonthPassed.GetInvocationList().Length}");
+						OnMonthPassed?.Invoke(this, now);
+						lastMonth = now.Month;
+					}
+					DebugLog.WriteLog(DebugLogTypes.StatTracker, () => $"now.Year: {now.Year}, lastYear: {lastYear}");
+					if (now.Year != lastYear)
+					{
+						DebugLog.WriteLog(DebugLogTypes.StatTracker, () => $"Invoking OnYearPassed, InvocationList.Length: {OnYearPassed.GetInvocationList().Length}");
+						OnYearPassed?.Invoke(this, now);
+						lastYear = now.Year;
+					}
 				}
-				if (now.Day != lastDay)
+				catch (Exception ex)
 				{
-					OnDayPassed?.Invoke(this, now);
-					lastDay = now.Day;
-					if(now.DayOfWeek == culture.DateTimeFormat.FirstDayOfWeek)
-						OnWeekPassed?.Invoke(this, now);
+					ErrorLog.WriteError(ex);
 				}
-				if (now.Month != lastMonth)
-				{
-					OnMonthPassed?.Invoke(this, now);
-					lastMonth = now.Month;
-				}
-				if (now.Year != lastYear)
-				{
-					OnYearPassed?.Invoke(this, now);
-					lastYear = now.Year;
-				}
-				Thread.Sleep(5000);
+				Thread.Sleep(300000); //5 minutes
 			} while (doRun);
 		}
 	}

@@ -1,5 +1,6 @@
 ﻿using MySql.Data.MySqlClient;
 using SGMessageBot.DataBase;
+using SGMessageBot.Helpers;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -22,12 +23,19 @@ namespace SGMessageBot.DiscordBot
 		{
 			foreach (var server in SGMessageBot.BotConfig.BotInfo.DiscordConfig.statServerIds)
 			{
-				var res = await CalculateStat(StatType.userCount, server, time.AddHours(-1.0));
-				res.dateGroup = DateGroup.hour;
-				InsertRow(res);
-				res = await CalculateStat(StatType.uniqueUsers, server, time.AddHours(-1.0));
-				res.dateGroup = DateGroup.hour;
-				InsertRow(res);
+				try
+				{
+					var res = await CalculateStat(StatType.userCount, server, time.AddHours(-1.0));
+					res.dateGroup = DateGroup.hour;
+					InsertRow(res);
+					res = await CalculateStat(StatType.uniqueUsers, server, time.AddHours(-1.0));
+					res.dateGroup = DateGroup.hour;
+					InsertRow(res);
+				}
+				catch (Exception ex)
+				{
+					ErrorLog.WriteError(ex);
+				}
 			}
 		}
 
@@ -35,12 +43,19 @@ namespace SGMessageBot.DiscordBot
 		{
 			foreach (var server in SGMessageBot.BotConfig.BotInfo.DiscordConfig.statServerIds)
 			{
-				var res = await CalculateStat(StatType.userCount, server, time.AddHours(-24.0));
-				res.dateGroup = DateGroup.day;
-				InsertRow(res);
-				res = await CalculateStat(StatType.uniqueUsers, server, time.AddHours(-24.0));
-				res.dateGroup = DateGroup.day;
-				InsertRow(res);
+				try
+				{
+					var res = await CalculateStat(StatType.userCount, server, time.AddHours(-24.0));
+					res.dateGroup = DateGroup.day;
+					InsertRow(res);
+					res = await CalculateStat(StatType.uniqueUsers, server, time.AddHours(-24.0));
+					res.dateGroup = DateGroup.day;
+					InsertRow(res);
+				}
+				catch (Exception ex)
+				{
+					ErrorLog.WriteError(ex);
+				}
 			}
 		}
 
@@ -48,12 +63,19 @@ namespace SGMessageBot.DiscordBot
 		{
 			foreach (var server in SGMessageBot.BotConfig.BotInfo.DiscordConfig.statServerIds)
 			{
-				var res = await CalculateStat(StatType.userCount, server, time.AddDays(-7.0));
-				res.dateGroup = DateGroup.week;
-				InsertRow(res);
-				res = await CalculateStat(StatType.uniqueUsers, server, time.AddDays(-7.0));
-				res.dateGroup = DateGroup.week;
-				InsertRow(res);
+				try
+				{
+					var res = await CalculateStat(StatType.userCount, server, time.AddDays(-7.0));
+					res.dateGroup = DateGroup.week;
+					InsertRow(res);
+					res = await CalculateStat(StatType.uniqueUsers, server, time.AddDays(-7.0));
+					res.dateGroup = DateGroup.week;
+					InsertRow(res);
+				}
+				catch (Exception ex)
+				{
+					ErrorLog.WriteError(ex);
+				}
 			}
 		}
 
@@ -61,12 +83,19 @@ namespace SGMessageBot.DiscordBot
 		{
 			foreach (var server in SGMessageBot.BotConfig.BotInfo.DiscordConfig.statServerIds)
 			{
-				var res = await CalculateStat(StatType.userCount, server, time.AddMonths(-1));
-				res.dateGroup = DateGroup.month;
-				InsertRow(res);
-				res = await CalculateStat(StatType.uniqueUsers, server, time.AddMonths(-1));
-				res.dateGroup = DateGroup.month;
-				InsertRow(res);
+				try
+				{
+					var res = await CalculateStat(StatType.userCount, server, time.AddMonths(-1));
+					res.dateGroup = DateGroup.month;
+					InsertRow(res);
+					res = await CalculateStat(StatType.uniqueUsers, server, time.AddMonths(-1));
+					res.dateGroup = DateGroup.month;
+					InsertRow(res);
+				}
+				catch (Exception ex)
+				{
+					ErrorLog.WriteError(ex);
+				}
 			}
 		}
 
@@ -74,12 +103,19 @@ namespace SGMessageBot.DiscordBot
 		{
 			foreach (var server in SGMessageBot.BotConfig.BotInfo.DiscordConfig.statServerIds)
 			{
-				var res = await CalculateStat(StatType.userCount, server, time.AddYears(-1));
-				res.dateGroup = DateGroup.year;
-				InsertRow(res);
-				res = await CalculateStat(StatType.uniqueUsers, server, time.AddYears(-1));
-				res.dateGroup = DateGroup.year;
-				InsertRow(res);
+				try
+				{
+					var res = await CalculateStat(StatType.userCount, server, time.AddYears(-1));
+					res.dateGroup = DateGroup.year;
+					InsertRow(res);
+					res = await CalculateStat(StatType.uniqueUsers, server, time.AddYears(-1));
+					res.dateGroup = DateGroup.year;
+					InsertRow(res);
+				}
+				catch (Exception ex)
+				{
+					ErrorLog.WriteError(ex);
+				}
 			}
 		}
 

@@ -126,6 +126,7 @@ namespace SGMessageBot.Config
 		public bool SteamEnabled = false;
 		public DiscordConfig DiscordConfig = new DiscordConfig();
 		public SteamConfig SteamConfig = new SteamConfig();
+		public List<DebugLogTypes> debugLogIds = new List<DebugLogTypes>();
 	}
 
 	//Don't rename/recase these variables since they have already created configs with these names

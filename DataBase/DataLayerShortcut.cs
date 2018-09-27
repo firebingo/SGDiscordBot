@@ -2,7 +2,6 @@
 using SGMessageBot.Config;
 using System;
 using System.Data;
-using System.Data.SQLite;
 using SGMessageBot.Helpers;
 using System.Threading.Tasks;
 using System.Data.Common;
@@ -13,7 +12,6 @@ namespace SGMessageBot.DataBase
 	{
 		public static DBConfig DBConfig { get; private set; }
 		public static bool SchemaExists { get; private set; } = true;
-		private static SQLiteConnection liteDBConn;
 		public static bool HasNadeko { get; private set; } = false;
 
 		public static BaseResult LoadConfig()
@@ -79,7 +77,7 @@ namespace SGMessageBot.DataBase
 				MySqlCommand cmd = new MySqlCommand(query, connection);
 				DbDataReader reader = null;
 				if (parameters != null)
-					DataHelper.addParams(ref cmd, parameters);
+					DataHelper.AddParams(ref cmd, parameters);
 
 				reader = await cmd.ExecuteReaderAsync();
 
@@ -106,7 +104,7 @@ namespace SGMessageBot.DataBase
 						CommandType = CommandType.Text
 					};
 					if (parameters != null)
-						DataHelper.addParams(ref cmd, parameters);
+						DataHelper.AddParams(ref cmd, parameters);
 
 					await cmd.ExecuteNonQueryAsync();
 					cmd.Dispose();
@@ -133,7 +131,7 @@ namespace SGMessageBot.DataBase
 				CommandType = CommandType.Text
 			};
 			if (parameters != null)
-				DataHelper.addParams(ref cmd, parameters);
+				DataHelper.AddParams(ref cmd, parameters);
 
 			await cmd.ExecuteNonQueryAsync();
 			cmd.Dispose();
@@ -153,7 +151,7 @@ namespace SGMessageBot.DataBase
 					CommandType = CommandType.Text
 				};
 				if (parameters != null)
-					DataHelper.addParams(ref cmd, parameters);
+					DataHelper.AddParams(ref cmd, parameters);
 
 				object scalar = await cmd.ExecuteScalarAsync();
 				try
@@ -187,7 +185,7 @@ namespace SGMessageBot.DataBase
 					CommandType = CommandType.Text
 				};
 				if (parameters != null)
-					DataHelper.addParams(ref cmd, parameters);
+					DataHelper.AddParams(ref cmd, parameters);
 
 				object scalar = await cmd.ExecuteScalarAsync();
 				try
@@ -206,99 +204,6 @@ namespace SGMessageBot.DataBase
 			}
 			connection.Close();
 			connection.Dispose();
-			return result;
-		}
-
-		public static BaseResult OpenLiteConnection(ulong serverId)
-		{
-			var result = new BaseResult();
-			try
-			{
-				//if(!DBConfig.config.nadekoDbPath.ContainsKey(serverId))
-				//{
-				//	result.success = false;
-				//	result.message = "No db path specified for this server.";
-				//	return result;
-				//}
-				//if (DBConfig.config.nadekoDbPath == null || DBConfig.config.nadekoDbPath[serverId] == string.Empty)
-				//{
-				//	result.success = false;
-				//	result.message = "No path specified for NadekoBot Database.";
-				//}
-				//if (!File.Exists(DBConfig.config.nadekoDbPath[serverId]))
-				//{
-				//	result.success = false;
-				//	result.message = "No NadekoBot Database at given path.";
-				//}
-				//liteDBConn = new SQLiteConnection($"Data Source={DBConfig.config.nadekoDbPath[serverId]};Version=3;");
-				//liteDBConn.Open();
-			}
-			catch (SQLiteException e)
-			{
-				ErrorLog.WriteError(e);
-				result.Success = false;
-				result.Message = e.Message;
-			}
-			HasNadeko = true;
-			result.Success = true;
-			return result;
-		}
-
-		public static BaseResult CloseLiteConnection()
-		{
-			var result = new BaseResult();
-			try
-			{
-				if (liteDBConn != null)
-				{
-					liteDBConn.Close();
-					liteDBConn = null;
-				}
-			}
-			catch (SQLiteException e)
-			{
-				ErrorLog.WriteError(e);
-				result.Success = false;
-				result.Message = e.Message;
-			}
-			result.Success = true;
-			return result;
-		}
-
-		public static int? ExecuteScalarLite(ulong serverId, string query, params SQLiteParameter[] parameters)
-		{
-			int? result = null;
-			var isOpen = OpenLiteConnection(serverId);
-			if(!isOpen.Success)
-			{
-				return result;
-			}
-			try
-			{
-				SQLiteCommand command = new SQLiteCommand(query, liteDBConn);
-				if (parameters != null)
-					DataHelper.addLiteParams(ref command, parameters);
-				command.CommandType = CommandType.Text;
-				object scalar = command.ExecuteScalar(CommandBehavior.CloseConnection);
-				try
-				{
-					result = Convert.ToInt32(scalar);
-				}
-				catch (Exception e)
-				{
-					ErrorLog.WriteError(e);
-					command.Dispose();
-					CloseLiteConnection();
-					return result;
-				}
-				command.Dispose();
-			}
-			catch(SQLiteException e)
-			{
-				ErrorLog.WriteError(e);
-				CloseLiteConnection();
-				return result = null;
-			}
 			return result;
 		}
 	}

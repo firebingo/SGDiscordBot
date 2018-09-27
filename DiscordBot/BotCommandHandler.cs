@@ -227,6 +227,24 @@ namespace SGMessageBot.DiscordBot
 
 			await Context.Channel.SendMessageAsync("Operation Complete");
 		}
+
+		[Command("debuglog"), Summary("Enable/disable a debuglog id")]
+		public async Task EnableDebugLog(int number, bool enable)
+		{
+			if (!Enum.IsDefined(typeof(DebugLogTypes), number))
+				await Context.Channel.SendMessageAsync($"Debug log {number} does not exist");
+
+			var type = (DebugLogTypes)number;
+			if (enable)
+			{
+				SGMessageBot.BotConfig.BotInfo.debugLogIds.RemoveAll(x => x == type);
+				SGMessageBot.BotConfig.BotInfo.debugLogIds.Add(type);
+			}
+			else
+				SGMessageBot.BotConfig.BotInfo.debugLogIds.RemoveAll(x => x == type);
+
+			await Context.Channel.SendMessageAsync($"Debug log {type} {(enable ? "enabled" : "disabled")}");
+		}
 	}
 
 	//[Group("||")]
@@ -390,21 +408,6 @@ namespace SGMessageBot.DiscordBot
 				return;
 			}
 		}
-
-		//This no longer works with newer versions of nadeko so its commented until i figure out an alternative.
-		//[Command("nadekocount"), Summary("Gets counts of commands sent to Nadeko Bot")]
-		//public async Task nadekoCount([Summary("The user to get counts for")] SocketUser user = null)
-		//{
-		//	var result = "";
-		//	if (user == null)
-		//	{
-		//		await Context.Channel.SendMessageAsync("Must Specify User");
-		//		return;
-		//	}
-		//	result = await processor.calculateNadekoUserCounts(user, Context);
-		//	await Context.Channel.SendMessageAsync(result);
-		//	return;
-		//}
 	}
 
 	public class BotCommandsRunning

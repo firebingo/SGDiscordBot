@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
-using System.Data.SQLite;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -558,26 +557,6 @@ namespace SGMessageBot.DiscordBot
 		#region Other Functions
 		#endregion
 
-		#region Nadeko Counts
-		public Task<string> CalculateNadekoUserCounts(SocketUser user, CommandContext context)
-		{
-			var result = "";
-			int? totalCommandCount = 0;
-			int? userCommandCount = 0;
-			var query = "SELECT COUNT(*) FROM Command WHERE ServerId = @serverId";
-			totalCommandCount = DataLayerShortcut.ExecuteScalarLite(context.Guild.Id, query, new SQLiteParameter("@serverId", context.Guild.Id));
-			query = "SELECT COUNT(*) FROM Command WHERE UserId = @userId AND ServerId = @serverId";
-			userCommandCount = DataLayerShortcut.ExecuteScalarLite(context.Guild.Id, query, new SQLiteParameter("@userId", user.Id), new SQLiteParameter("@serverId", context.Guild.Id));
-			if (!totalCommandCount.HasValue || !userCommandCount.HasValue)
-			{
-				result = "Failed to get command counts. Possible failure to connect to db.";
-				return Task.FromResult(result);
-			}
-			var percent = Math.Round(((float)userCommandCount.Value / (float)totalCommandCount.Value) * 100, 2);
-			result = $"{user.Mention} has sent {userCommandCount} commands to NadekoBot, which is {percent}% of commands sent.";
-			return Task.FromResult(result);
-		}
-		#endregion
 		#endregion
 
 		#region Data Readers
