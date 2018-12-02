@@ -313,7 +313,7 @@ namespace SGMessageBot.DiscordBot
 									if (mesRes != String.Empty)
 									{
 										ErrorLog.WriteLog(mesRes);
-										return mesRes;
+										exceptionsResult.Add(mesRes);
 									}
 								}
 								if (emojiRows.Count > 0)
@@ -323,7 +323,7 @@ namespace SGMessageBot.DiscordBot
 									if (mesRes != String.Empty)
 									{
 										ErrorLog.WriteLog(mesRes);
-										return mesRes;
+										exceptionsResult.Add(mesRes);
 									}
 								}
 							}
@@ -369,7 +369,7 @@ namespace SGMessageBot.DiscordBot
 				}
 			}
 			if (exceptionsResult.Count > 0)
-				return $"Operation complete with exceptions, {string.Join(",", exceptionsResult)}";
+				return $"Operation complete with {exceptionsResult.Count} exception(s), Check log for details.";
 
 			return "Operation Complete";
 		}

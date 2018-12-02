@@ -55,13 +55,13 @@ namespace SGMessageBot.DiscordBot
 				if (onHourChanged != null)
 					OnHourPassed += onHourChanged;
 				if (onDayChanged != null)
-					onDayChanged += onDayChanged;
+					OnDayPassed += onDayChanged;
 				if (onWeekChanged != null)
-					onWeekChanged += onWeekChanged;
+					OnWeekPassed += onWeekChanged;
 				if (onMonthChanged != null)
-					onMonthChanged += onMonthChanged;
+					OnMonthPassed += onMonthChanged;
 				if (onYearChanged != null)
-					onYearChanged += onYearChanged;
+					OnYearPassed += onYearChanged;
 			}
 			catch (Exception ex)
 			{
@@ -78,13 +78,13 @@ namespace SGMessageBot.DiscordBot
 				if (onHourChanged != null)
 					OnHourPassed -= onHourChanged;
 				if (onDayChanged != null)
-					onDayChanged -= onDayChanged;
+					OnDayPassed -= onDayChanged;
 				if (onWeekChanged != null)
-					onWeekChanged -= onWeekChanged;
+					OnWeekPassed -= onWeekChanged;
 				if (onMonthChanged != null)
-					onMonthChanged -= onMonthChanged;
+					OnMonthPassed -= onMonthChanged;
 				if (onYearChanged != null)
-					onYearChanged -= onYearChanged;
+					OnYearPassed -= onYearChanged;
 			}
 			catch (Exception ex)
 			{
