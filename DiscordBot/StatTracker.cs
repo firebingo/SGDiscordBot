@@ -139,8 +139,8 @@ namespace SGMessageBot.DiscordBot
 					}
 				case StatType.uniqueUsers:
 					{
-						query = "SELECT COUNT(*) FROM (SELECT COUNT(*) from MESSAGES WHERE mesTime > @statTime GROUP BY userID) cqu";
-						var res = await DataLayerShortcut.ExecuteScalarInt(query, new MySqlParameter("@statTime", fromDate));
+						query = "SELECT COUNT(*) FROM (SELECT COUNT(*) from MESSAGES WHERE mesTime > @statTime AND serverID=@serverID GROUP BY userID) cqu";
+						var res = await DataLayerShortcut.ExecuteScalarInt(query, new MySqlParameter("@statTime", fromDate), new MySqlParameter("@serverID", serverid));
 						retVal.statValue = res ?? 0;
 						break;
 					}
