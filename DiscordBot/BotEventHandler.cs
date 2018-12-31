@@ -281,9 +281,13 @@ namespace SGMessageBot.DiscordBot
 						VALUES (@serverID, @userID, @channelID, @messageID, @rawText, @mesText, @mesStatus, @mesTime)
 						ON DUPLICATE KEY UPDATE serverID=@serverID, userID=@userID, channelID=@channelID, messageID=@messageID, 
 						rawText=@rawText, mesText=@mesText, mesStatus=@mesStatus, mesTime=@mesTime";
-						await DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", gChannel.Guild.Id), new MySqlParameter("@userID", e.Author.Id),
+						var res = await DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", gChannel.Guild.Id), new MySqlParameter("@userID", e.Author.Id),
 						new MySqlParameter("@channelID", e.Channel.Id), new MySqlParameter("@messageID", e.Id), new MySqlParameter("@rawText", e.Content),
 						new MySqlParameter("@mesText", e.Content), new MySqlParameter("@mesStatus", 0), new MySqlParameter("@mesTime", e.Timestamp.UtcDateTime));
+
+						if (!string.IsNullOrWhiteSpace(res))
+							_ = Task.Run(() => DebugLog.WriteLog(DebugLogTypes.MissingUserId, () => $"Error in adding message: UserId: {e.Author.Id}, ChannelId: {e.Channel.Id}, Id: {e.Id}"));
+
 						queryString = @"UPDATE usersinservers SET mesCount = mesCount+1 WHERE userID=@userID AND serverID=@serverID";
 						Tasks.Add(DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", gChannel.Guild.Id), new MySqlParameter("@userID", e.Author.Id)));
 
@@ -305,6 +309,7 @@ namespace SGMessageBot.DiscordBot
 				}
 				catch (Exception ex)
 				{
+					ErrorLog.WriteLog($"Error in adding message: UserId: {e.Author.Id}, ChannelId: {e.Channel.Id}, Id: {e.Id}");
 					ErrorLog.WriteError(ex);
 				}
 			}
@@ -320,10 +325,13 @@ namespace SGMessageBot.DiscordBot
 						VALUES (@serverID, @userID, @channelID, @messageID, @mesText, @rawText, @editedRawText, @editedMesText, @mesStatus, @mesEditedTime)
 						ON DUPLICATE KEY UPDATE serverID=@serverID, userID=@userID, channelID=@channelID, messageID=@messageID, 
 						editedRawText=@editedRawText, editedMesText=@editedMesText, mesStatus=@mesStatus, mesEditedTime=@mesEditedTime";
-						await DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", gChannel.Guild.Id), new MySqlParameter("@userID", after.Author.Id),
+						var res = await DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", gChannel.Guild.Id), new MySqlParameter("@userID", after.Author.Id),
 						new MySqlParameter("@channelID", after.Channel.Id), new MySqlParameter("@messageID", after.Id), new MySqlParameter("@editedRawText", after.Content),
 						new MySqlParameter("@editedMesText", after.Content), new MySqlParameter("@mesStatus", 0), new MySqlParameter("@mesEditedTime", editedDateTime),
 						new MySqlParameter("@mesText", before.HasValue ? before.Value.Content : ""), new MySqlParameter("@rawText", before.HasValue ? before.Value.Content : ""));
+
+						if (!string.IsNullOrWhiteSpace(res))
+							_ = Task.Run(() => DebugLog.WriteLog(DebugLogTypes.MissingUserId, () => $"Error in updating message: UserId: {after.Author.Id}, ChannelId: {after.Channel.Id}, Id: {after.Id}"));
 
 						foreach (var attach in after.Attachments)
 						{
@@ -339,6 +347,7 @@ namespace SGMessageBot.DiscordBot
 				}
 				catch (Exception ex)
 				{
+					ErrorLog.WriteLog($"Error in updating message: UserId: {after.Author.Id}, ChannelId: {after.Channel.Id}, Id: {after.Id}");
 					ErrorLog.WriteError(ex);
 				}
 			}
@@ -394,11 +403,11 @@ namespace SGMessageBot.DiscordBot
 			#region User
 			public static async Task ProcessUserJoined(SocketGuildUser e)
 			{
-				var queryString = @"INSERT INTO users (userID, userName, mention, isBot)
-				VALUES(@userID, @userName, @mention, @isBot)
-				ON DUPLICATE KEY UPDATE userID=@userID, userName=@userName, mention=@mention, isBot=@isBot";
+				var queryString = @"INSERT INTO users (userID, userName, mention, isBot, isWebHook)
+				VALUES(@userID, @userName, @mention, @isBot, @isWebHook)
+				ON DUPLICATE KEY UPDATE userID=@userID, userName=@userName, mention=@mention, isBot=@isBot, isWebHook=@isWebHook";
 				await DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@userID", e.Id), new MySqlParameter("@userName", e.Username),
-				new MySqlParameter("@mention", e.Mention.Replace("!", String.Empty)), new MySqlParameter("@isBot", e.IsBot));
+				new MySqlParameter("@mention", e.Mention.Replace("!", String.Empty)), new MySqlParameter("@isBot", e.IsBot), new MySqlParameter("@isWebHook", e.IsWebhook));
 
 				var roleIds = new List<ulong>();
 				foreach (var role in e.Roles)
@@ -431,11 +440,11 @@ namespace SGMessageBot.DiscordBot
 
 			public static async Task ProcessUserUpdated(SocketUser before, SocketUser after)
 			{
-				var queryString = @"INSERT INTO users (userID, userName, mention, isBot)
-				VALUES(@userID, @userName, @mention, @isBot)
+				var queryString = @"INSERT INTO users (userID, userName, mention, isBot, isWebHook)
+				VALUES(@userID, @userName, @mention, @isBot, isWebHook=@isWebHook)
 				ON DUPLICATE KEY UPDATE userID=@userID, userName=@userName, mention=@mention, isBot=@isBot";
 				await DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@userID", after.Id), new MySqlParameter("@userName", after.Username),
-				new MySqlParameter("@mention", after.Mention.Replace("!", String.Empty)), new MySqlParameter("@isBot", after.IsBot));
+				new MySqlParameter("@mention", after.Mention.Replace("!", String.Empty)), new MySqlParameter("@isBot", after.IsBot), new MySqlParameter("@isWebHook", after.IsWebhook));
 			}
 
 			public static async Task ProcessUserServerUpdated(SocketGuildUser before, SocketGuildUser after)

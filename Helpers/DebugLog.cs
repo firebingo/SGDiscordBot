@@ -7,7 +7,8 @@ namespace SGMessageBot.Helpers
 	public enum DebugLogTypes
 	{
 		Undefined = 0,
-		StatTracker = 1
+		StatTracker = 1,
+		MissingUserId = 2
 	}
 
 	public static class DebugLog

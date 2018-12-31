@@ -60,6 +60,8 @@ namespace SGMessageBot.DataBase
 			buildQueries.Add(9, new List<string>());
 			buildQueries[9].Add("ALTER TABLE stats ADD COLUMN dateGroup INT UNSIGNED NOT NULL DEFAULT 1");
 			buildQueries[9].Add("ALTER TABLE stats ADD id INT NOT NULL AUTO_INCREMENT PRIMARY KEY");
+			buildQueries.Add(10, new List<string>());
+			buildQueries[10].Add("ALTER TABLE users ADD COLUMN isWebHook BOOL DEFAULT FALSE;");
 		}
 
 		public async Task<BaseResult> CreateDatabase()

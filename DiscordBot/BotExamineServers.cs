@@ -83,11 +83,11 @@ namespace SGMessageBot.DiscordBot
 				}
 				foreach (var user in server.Users)
 				{
-					queryString = @"INSERT INTO users (userID, userName, mention, isBot)
-					VALUES(@userID, @userName, @mention, @isBot)
-					ON DUPLICATE KEY UPDATE userID=@userID, userName=@userName, mention=@mention, isBot=@isBot";
+					queryString = @"INSERT INTO users (userID, userName, mention, isBot, isWebHook)
+					VALUES(@userID, @userName, @mention, @isBot, @isWebHook)
+					ON DUPLICATE KEY UPDATE userID=@userID, userName=@userName, mention=@mention, isBot=@isBot, isWebHook=@isWebHook";
 					await DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@userID", user.Id), new MySqlParameter("@userName", user.Username),
-						new MySqlParameter("@mention", user.Mention.Replace("!", String.Empty)), new MySqlParameter("@isBot", user.IsBot));
+						new MySqlParameter("@mention", user.Mention.Replace("!", String.Empty)), new MySqlParameter("@isBot", user.IsBot), new MySqlParameter("@isWebHook", user.IsWebhook));
 
 					var roleIds = new List<ulong>();
 					foreach(var role in user.Roles)
@@ -102,6 +102,35 @@ namespace SGMessageBot.DiscordBot
 						new MySqlParameter("@discriminator", user.Discriminator), new MySqlParameter("@nickName", user.Nickname), new MySqlParameter("@nickNameMention", user.Mention.Replace("!", String.Empty)),
 						new MySqlParameter("@joinedDate", joinedAtDateTime), new MySqlParameter("@avatarID", user.AvatarId), new MySqlParameter("@avatarUrl", user.GetAvatarUrl()),
 						new MySqlParameter("@lastOnline", joinedAtDateTime), new MySqlParameter("@roleIds", JsonConvert.SerializeObject(roleIds)), new MySqlParameter("@mesCount", value:0));
+				}
+				try
+				{
+					foreach (var hook in await server.GetWebhooksAsync())
+					{
+						queryString = @"INSERT INTO users (userID, userName, mention, isBot, isWebHook)
+					VALUES(@userID, @userName, @mention, @isBot, @isWebHook)
+					ON DUPLICATE KEY UPDATE userID=@userID, userName=@userName, mention=@mention, isBot=@isBot, isWebHook=@isWebHook";
+						await DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@userID", hook.Id), new MySqlParameter("@userName", hook.Name),
+							new MySqlParameter("@mention", string.Empty), new MySqlParameter("@isBot", true), new MySqlParameter("@isWebHook", true));
+
+						var roleIds = new List<ulong>();
+
+						DateTime joinedAtDateTime = hook.CreatedAt.UtcDateTime;
+						queryString = @"INSERT INTO usersInServers (serverID, userID, discriminator, nickName, nickNameMention, joinedDate, avatarID, avatarUrl, lastOnline, roleIDs, mesCount)
+					VALUES(@serverID, @userID, @discriminator, @nickName, @nickNameMention, @joinedDate, @avatarID, @avatarUrl, @lastOnline, @roleIds, @mesCount)
+					ON DUPLICATE KEY UPDATE serverID=@serverID, userID=@userID, discriminator=@discriminator, nickName=@nickName, nickNameMention=@nickNameMention, 
+					joinedDate=@joinedDate, avatarID=@avatarID, avatarUrl=@avatarUrl, lastOnline=@lastOnline, roleIDs=@roleIds";
+						await DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", hook.GuildId), new MySqlParameter("@userID", hook.Id),
+							new MySqlParameter("@discriminator", 0000), new MySqlParameter("@nickName", null), new MySqlParameter("@nickNameMention", string.Empty),
+							new MySqlParameter("@joinedDate", joinedAtDateTime), new MySqlParameter("@avatarID", hook.AvatarId), new MySqlParameter("@avatarUrl", hook.GetAvatarUrl()),
+							new MySqlParameter("@lastOnline", joinedAtDateTime), new MySqlParameter("@roleIds", JsonConvert.SerializeObject(roleIds)), new MySqlParameter("@mesCount", value: 0));
+					}
+				}
+				catch (Exception e)
+				{
+					ErrorLog.WriteLog($"Error getting webhooks for server: {server.Id}");
+					ErrorLog.WriteError(e);
+					return;
 				}
 			}
 			catch (Exception e)

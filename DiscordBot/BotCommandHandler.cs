@@ -243,6 +243,8 @@ namespace SGMessageBot.DiscordBot
 			else
 				SGMessageBot.BotConfig.BotInfo.debugLogIds.RemoveAll(x => x == type);
 
+			SGMessageBot.BotConfig.SaveCredConfig();
+
 			await Context.Channel.SendMessageAsync($"Debug log {type} {(enable ? "enabled" : "disabled")}");
 		}
 	}
