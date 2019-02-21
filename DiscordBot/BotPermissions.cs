@@ -11,15 +11,22 @@ namespace SGMessageBot.DiscordBot
 		public override Task<PreconditionResult> CheckPermissionsAsync(ICommandContext context, CommandInfo command, IServiceProvider services)
 		{
 			if (!(context.User is SocketGuildUser gUser))
-			{
 				return Task.FromResult(PreconditionResult.FromError("Could not find user for command."));
-			}
+
 			var hasPerm = false;
-			foreach (var permRole in SGMessageBot.BotConfig.BotInfo.DiscordConfig.commandRoleIds)
+			foreach (var id in SGMessageBot.BotConfig.BotInfo.DiscordConfig.ownerIds)
 			{
-				var checkMatch = gUser.Roles.Where(r => r.Id == permRole).FirstOrDefault()?.Id;
-				if (checkMatch.HasValue && checkMatch.Value != 0)
+				if (gUser.Id == id)
 					hasPerm = true;
+			}
+			if (!hasPerm)
+			{
+				foreach (var permRole in SGMessageBot.BotConfig.BotInfo.DiscordConfig.commandRoleIds)
+				{
+					var checkMatch = gUser.Roles.Where(r => r.Id == permRole).FirstOrDefault()?.Id;
+					if (checkMatch.HasValue && checkMatch.Value != 0)
+						hasPerm = true;
+				}
 			}
 			if (hasPerm)
 				return Task.FromResult(PreconditionResult.FromSuccess());
