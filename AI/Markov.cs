@@ -17,107 +17,156 @@ namespace SGMessageBot.AI
 	public class Markov
 	{
 		private const string dataDirectory = @"Data\AICorpus.json";
-		private Dictionary<string, string[]> AICorpus;
+		private List<string> AICorpusKeys = null;
 		private static SemaphoreSlim sem = new SemaphoreSlim(1, 1);
-		private static readonly object corpusLock = new object();
+		private static readonly int blockSize = 500000;
 
-		private async Task BuildCorpus()
+		private async Task BuildCorpus(bool forceRebuild = false)
 		{
 			try
 			{
-				var wordDict = new ConcurrentDictionary<string, ConcurrentBag<string>>();
-				List<MessageTextModel> messages = new List<MessageTextModel>();
+				var metaData = await DatebaseCreate.GetMetaData();
+				var sql = string.Empty;
+				var minDate = DateTime.MinValue;
+				if (forceRebuild || !metaData.Success || !metaData.metaData.lastCorpusDate.HasValue)
+				{
+					sql = "TRUNCATE TABLE messageCorpus";
+					await DataLayerShortcut.ExecuteNonQuery(sql);
+					sql = "SELECT COUNT(*) FROM messages WHERE isDeleted = false";
+				}
+				else
+				{
+					minDate = metaData.metaData.lastCorpusDate.Value;
+					sql = "SELECT COUNT(*) FROM messages WHERE isDeleted = false AND mesTime > @date";
+				}
+
+				var totalMesCount = await DataLayerShortcut.ExecuteScalarInt(sql, new MySqlParameter("@date", minDate));
+				var currentSkip = 0;
+
+				do
+				{
+					await ProcessMessageBlock(null, currentSkip, blockSize, minDate);
+					currentSkip += blockSize;
+				} while (currentSkip < totalMesCount);
+
 				if (!string.IsNullOrWhiteSpace(SGMessageBot.BotConfig.BotInfo.DiscordConfig.aiCorpusExtraPath))
 				{
+					var extraMessages = new List<MessageTextModel>();
 					try
 					{
 						var lines = File.ReadAllLines(SGMessageBot.BotConfig.BotInfo.DiscordConfig.aiCorpusExtraPath);
 						lines = lines.Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
 						for (var i = 0; i < lines.Length; ++i)
 						{
-							messages.Add(new MessageTextModel(lines[i]));
+							extraMessages.Add(new MessageTextModel(lines[i]));
 						}
 					}
 					catch
 					{
 						throw;
 					}
+
+					await ProcessMessageBlock(extraMessages, 0, 0, minDate);
 				}
-				var tempMes = await BotCommandProcessor.LoadMessages();
-				messages.AddRange(tempMes);
-				//https://stackoverflow.com/questions/5306729/how-do-markov-chain-chatbots-work
-				Parallel.ForEach(messages, (message) =>
-				{
-					try
-					{
-						var split = message.MesText.Trim().Split(' ');
-						var length = split.Length;
-						if (length < 3)
-							return;
-						var i = 0;
-						var operate = true;
-						while (operate)
-						{
-							var key = string.Empty;
-							var value = string.Empty;
-							if (i + 2 < length)
-							{
-								key = $"{split[i]} {split[++i]}";
-								value = split[i + 1];
-								if (wordDict.ContainsKey(key))
-								{
-									wordDict[key].Add(value);
-								}
-								else
-								{
-									wordDict.AddOrUpdate(key, new ConcurrentBag<string>() { value }, (xKey, xExistingVal) =>
-									{
-										xExistingVal.Add(value);
-										return xExistingVal;
-									});
-								}
-							}
-							else
-							{
-								operate = false;
-								break;
-							}
-						}
-					}
-					catch(Exception ex)
-					{
-						ErrorLog.WriteLog($"Exception on message in buildCorpus, Message: \"{message.MesText}\", Exception: {ex.Message}, Stack: {ex.StackTrace}");
-						return;
-					}
-				});
-				lock (corpusLock)
-				{
-					AICorpus = wordDict.ToDictionary(x => x.Key, x => x.Value.ToArray());
-					using (var file = new StreamWriter(File.Open(dataDirectory, FileMode.Create)))
-					{
-						foreach (var word in AICorpus)
-						{
-							file.WriteLine(JsonConvert.SerializeObject(word));
-						}
-						file.Close();
-					}
-				}
+
+				sql = "UPDATE metadata SET lastCorpusDate = @lastdate, updatedDate = @lastdate WHERE mkey = @mkey";
+				await DataLayerShortcut.ExecuteNonQuery(sql, new MySqlParameter("@lastdate", DateTime.UtcNow), new MySqlParameter("@mkey", DatebaseCreate.mkey));
 			}
-			catch(Exception ex)
+			catch (Exception ex)
 			{
 				ErrorLog.WriteError(ex);
 				throw ex;
 			}
 		}
 
-		public async Task RebuildCorpus()
+		public async Task ProcessMessageBlock(List<MessageTextModel> messages, int skip, int limit, DateTime minDate)
+		{
+			var wordDict = new ConcurrentDictionary<string, ConcurrentBag<string>>();
+			if (messages == null)
+				messages = await BotCommandProcessor.LoadMessages(minDate, skip, limit);
+
+			//https://stackoverflow.com/questions/5306729/how-do-markov-chain-chatbots-work
+			Parallel.ForEach(messages, (message) =>
+			{
+				try
+				{
+					var split = message.MesText.Trim().Split(' ');
+					var length = split.Length;
+					if (length < 3)
+						return;
+					var i = 0;
+					var operate = true;
+					while (operate)
+					{
+						var key = string.Empty;
+						var value = string.Empty;
+						if (i + 2 < length)
+						{
+							key = $"{split[i]} {split[++i]}";
+							if (key.Length >= 255)
+								continue;
+							value = split[i + 1];
+							if (wordDict.ContainsKey(key))
+							{
+								wordDict[key].Add(value);
+							}
+							else
+							{
+								wordDict.AddOrUpdate(key, new ConcurrentBag<string>() { value }, (xKey, xExistingVal) =>
+								{
+									xExistingVal.Add(value);
+									return xExistingVal;
+								});
+							}
+						}
+						else
+						{
+							operate = false;
+							break;
+						}
+					}
+				}
+				catch (Exception ex)
+				{
+					ErrorLog.WriteLog($"Exception on message in buildCorpus, Message: \"{message.MesText}\", Exception: {ex.Message}, Stack: {ex.StackTrace}");
+					return;
+				}
+			});
+
+			var sql = string.Empty;
+			var rows = new List<CorpusRowModel>();
+			CorpusRowModel row = null;
+			foreach (var word in wordDict)
+			{
+				rows.Clear();
+				row = null;
+				sql = "SELECT * FROM messageCorpus WHERE keyword = @key";
+				await DataLayerShortcut.ExecuteReader(ReadCorpusRow, rows, sql, new MySqlParameter("@key", word.Key));
+				row = rows.FirstOrDefault();
+				if (row != null)
+				{
+					foreach (var val in row.Values)
+					{
+						word.Value.Add(val);
+					}
+
+					sql = "UPDATE messageCorpus SET wordValues = @values WHERE keyword = @key";
+					await DataLayerShortcut.ExecuteNonQuery(sql, new MySqlParameter("@key", word.Key), new MySqlParameter("@values", string.Join(",", word.Value)));
+				}
+				else
+				{
+					sql = "INSERT INTO messageCorpus (keyword, wordValues) VALUES (@key, @values)";
+					await DataLayerShortcut.ExecuteNonQuery(sql, new MySqlParameter("@key", word.Key), new MySqlParameter("@values", string.Join(",", word.Value)));
+				}
+			}
+		}
+
+		public async Task RebuildCorpus(bool forceRebuild = false)
 		{
 			await sem.WaitAsync();
 			try
 			{
-				if (File.Exists(dataDirectory))
-					File.Delete(dataDirectory);
-
+				await BuildCorpus(forceRebuild);
 				await LoadCorpus();
 			}
 			catch (Exception ex)
@@ -134,36 +183,11 @@ namespace SGMessageBot.AI
 		{
 			try
 			{
-				var wordDict = new Dictionary<string, string[]>();
-				if (!File.Exists(dataDirectory))
-				{
-					await BuildCorpus();
-					return;
-				}
-				else
-				{
-					using (var file = new StreamReader(File.OpenRead(dataDirectory)))
-					{
-						var line = string.Empty;
-						while ((line = file.ReadLine()) != null)
-						{
-							try
-							{
-								KeyValuePair<string, string[]> item = JsonConvert.DeserializeObject<KeyValuePair<string, string[]>>(line);
-								wordDict.Add(item.Key, item.Value);
-							}
-							catch
-							{
-								continue;
-							}
-						}
-						file.Close();
-					}
-					lock (corpusLock)
-					{
-						AICorpus = wordDict;
-					}
-				}
+				var keyList = new List<string>();
+				var sql = "SELECT keyword FROM messageCorpus";
+				await DataLayerShortcut.ExecuteReader(ReadCorpusRowKeys, keyList, sql);
+
+				AICorpusKeys = keyList;
 			}
 			catch
 			{
@@ -176,10 +200,8 @@ namespace SGMessageBot.AI
 			try
 			{
 				await sem.WaitAsync();
-				if (AICorpus == null)
-				{
+				if (AICorpusKeys == null)
 					await LoadCorpus();
-				}
 			}
 			catch
 			{
@@ -192,54 +214,47 @@ namespace SGMessageBot.AI
 			try
 			{
 				var result = string.Empty;
-				lock (corpusLock)
+				var startTime = DateTime.UtcNow;
+				Random rand = new Random();
+
+				var startWordKeys = new List<string>();
+				if (startWord != string.Empty)
+					startWordKeys = AICorpusKeys.Where(x => x.StartsWith(startWord)).ToList();
+				if (startWord != string.Empty && startWordKeys.Count == 0)
+					return $"Could not find a key starting with {startWord}";
+
+				string startValue = string.Empty;
+				if (startWordKeys.Count > 0)
+					startValue = startWordKeys[rand.Next(startWordKeys.Count)];
+				else
+					startValue = AICorpusKeys[rand.Next(AICorpusKeys.Count)];
+				result += startValue;
+				string nextValue = startValue;
+				var operate = true;
+				var splitLength = 0;
+				do
 				{
-					var startTime = DateTime.UtcNow;
-					Random rand = new Random();
-					List<string> keys = Enumerable.ToList(AICorpus.Keys);
-
-					var startWordKeys = new List<string>();
-					if (startWord != string.Empty)
-						startWordKeys = keys.Where(x => x.StartsWith(startWord)).ToList();
-					if (startWord != string.Empty && startWordKeys.Count == 0)
-						return $"Could not find a key starting with {startWord}";
-
-					string startValue = string.Empty;
-					if (startWordKeys.Count > 0)
-						startValue = startWordKeys[rand.Next(startWordKeys.Count)];
-					else
-						startValue = keys[rand.Next(keys.Count)];
-					result += startValue;
-					string nextValue = startValue;
-					var operate = true;
-					var splitLength = 0;
-					do
+					//If we have taken longer than 15 seconds just kill it because its probably in some weird loop.
+					if ((DateTime.UtcNow - startTime).TotalSeconds > 15)
 					{
-						//If we have taken longer than 15 seconds just kill it because its probably in some weird loop.
-						if((DateTime.UtcNow - startTime).TotalSeconds > 15)
+						operate = false;
+						break;
+					}
+					var idx = AICorpusKeys.IndexOf(nextValue);
+					if (idx != -1)
+					{
+						var values = await GetRowForKey(nextValue);
+						if (values != null && values.Values.Length > 0)
 						{
-							operate = false;
-							break;
-						}
-						if (AICorpus.ContainsKey(nextValue))
-						{
-							if (AICorpus[nextValue].Length > 0)
+							var toAdd = values.Values[rand.Next(values.Values.Length)];
+							splitLength += 1 + toAdd.Length;
+							result += $" {toAdd}";
+							var split = result.Split(' ');
+							nextValue = $"{split[split.Length - 2]} {split[split.Length - 1]}";
+							if (splitLength > 1900)
 							{
-								var toAdd = AICorpus[nextValue][(rand.Next(AICorpus[nextValue].Length))];
-								splitLength += 1 + toAdd.Length;
-								result += $" {toAdd}";
-								var split = result.Split(' ');
-								nextValue = $"{split[split.Length - 2]} {split[split.Length - 1]}";
-								if (splitLength > 1900)
-								{
-									result += $"|?|";
-									splitLength = 0;
-								}
-							}
-							else
-							{
-								operate = false;
-								break;
+								result += $"|?|";
+								splitLength = 0;
 							}
 						}
 						else
@@ -247,8 +262,14 @@ namespace SGMessageBot.AI
 							operate = false;
 							break;
 						}
-					} while (operate);
-				}
+					}
+					else
+					{
+						operate = false;
+						break;
+					}
+				} while (operate);
+
 				return result;
 			}
 			catch
@@ -256,5 +277,34 @@ namespace SGMessageBot.AI
 				throw;
 			}
 		}
+
+		private async Task<CorpusRowModel> GetRowForKey(string key)
+		{
+			var sql = "SELECT * FROM messageCorpus WHERE keyword = '@key'";
+			var values = new List<CorpusRowModel>();
+			await DataLayerShortcut.ExecuteReader(ReadCorpusRow, values, sql, new MySqlParameter("@key", key));
+			return values.FirstOrDefault();
+		}
+
+		private void ReadCorpusRow(IDataReader reader, List<CorpusRowModel> data)
+		{
+			var row = new CorpusRowModel
+			{
+				Key = reader.GetString(0),
+				Values = reader.GetString(1)?.Split(',') ?? new string[0]
+			};
+			data.Add(row);
+		}
+
+		private void ReadCorpusRowKeys(IDataReader reader, List<string> data)
+		{
+			data.Add(reader.GetString(0));
+		}
+	}
+
+	public class CorpusRowModel
+	{
+		public string Key;
+		public string[] Values;
 	}
 }

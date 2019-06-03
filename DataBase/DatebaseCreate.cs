@@ -12,7 +12,7 @@ namespace SGMessageBot.DataBase
 	{
 		private readonly List<string> createQueries;
 		private readonly Dictionary<int, List<string>> buildQueries;
-		private const int mkey = 345; //this is just so metadata can be updated.
+		public const int mkey = 345; //this is just so metadata can be updated.
 
 		public DatebaseCreate()
 		{
@@ -62,6 +62,9 @@ namespace SGMessageBot.DataBase
 			buildQueries[9].Add("ALTER TABLE stats ADD id INT NOT NULL AUTO_INCREMENT PRIMARY KEY");
 			buildQueries.Add(10, new List<string>());
 			buildQueries[10].Add("ALTER TABLE users ADD COLUMN isWebHook BOOL DEFAULT FALSE;");
+			buildQueries.Add(11, new List<string>());
+			buildQueries[11].Add("CREATE TABLE messageCorpus (keyword VARCHAR(128), wordValues MEDIUMTEXT, PRIMARY KEY(keyword));");
+			buildQueries[11].Add("ALTER TABLE metaData ADD COLUMN lastCorpusDate DATETIME;");
 		}
 
 		public async Task<BaseResult> CreateDatabase()
@@ -157,14 +160,14 @@ namespace SGMessageBot.DataBase
 			return result;
 		}
 
-		private async Task<MetaDataModelResult> GetMetaData()
+		public static async Task<MetaDataModelResult> GetMetaData()
 		{
 			var result = new MetaDataModelResult();
 			try
 			{
 				var metaData = new MetaDataModel();
 				var getVersion = "SELECT * FROM metaData";
-				await DataLayerShortcut.ExecuteReader<MetaDataModel>(ReadMetaData, metaData, getVersion);
+				await DataLayerShortcut.ExecuteReader(ReadMetaData, metaData, getVersion);
 				result.metaData = metaData;
 				result.Success = true;
 				return result;
@@ -178,7 +181,7 @@ namespace SGMessageBot.DataBase
 			}
 		}
 
-		private void ReadMetaData(IDataReader reader, MetaDataModel data)
+		private static void ReadMetaData(IDataReader reader, MetaDataModel data)
 		{
 			reader = reader as DbDataReader;
 			if (reader != null)
@@ -189,19 +192,22 @@ namespace SGMessageBot.DataBase
 					data.version = temp.HasValue ? (int)temp.Value : -1;
 					data.createdDate = reader.GetDateTime(2);
 					data.updatedDate = reader.GetDateTime(3);
+					if(data.version > 10)
+						data.lastCorpusDate = reader.GetValue(4) as DateTime?;
 				}
 			}
 		}
 
 		[Serializable]
-		private class MetaDataModel
+		public class MetaDataModel
 		{
 			public int version;
 			public DateTime createdDate;
 			public DateTime updatedDate;
+			public DateTime? lastCorpusDate;
 		}
 
-		private class MetaDataModelResult : BaseResult
+		public class MetaDataModelResult : BaseResult
 		{
 			public MetaDataModel metaData;
 		}

@@ -658,12 +658,29 @@ namespace SGMessageBot.DiscordBot
 			return result;
 		}
 
-		public static async Task<List<MessageTextModel>> LoadMessages()
+		public static async Task<List<MessageTextModel>> LoadMessages(DateTime? minDate = null, int? skip = null, int? limit = null)
 		{
 			var result = new List<MessageTextModel>();
+			if (!minDate.HasValue)
+				minDate = DateTime.MinValue;
 
-			var query = "SELECT txt FROM (SELECT COALESCE(mesText, editedMesText) AS txt FROM messages WHERE NOT isDeleted AND userId != @botId) x WHERE txt != '' AND txt NOT LIKE '%@botId%'";
-			await DataLayerShortcut.ExecuteReader<List<MessageTextModel>>(ReadMessagesText, result, query, new MySqlParameter("@botId", SGMessageBot.BotConfig.BotInfo.DiscordConfig.botId));
+			var paramlist = new List<MySqlParameter>
+			{
+				new MySqlParameter("@botId", SGMessageBot.BotConfig.BotInfo.DiscordConfig.botId),
+				new MySqlParameter("@date", minDate),
+			};
+
+			var query = string.Empty;
+			if (skip.HasValue && limit.HasValue)
+			{
+				query = "SELECT txt FROM (SELECT COALESCE(mesText, editedMesText) AS txt FROM messages WHERE NOT isDeleted AND userId != @botId AND mesTime > @date) x WHERE txt != '' AND txt NOT LIKE '%@botId%' LIMIT @skip, @limit";
+				paramlist.Add(new MySqlParameter("@skip", skip.Value));
+				paramlist.Add(new MySqlParameter("@limit", limit.Value));
+			}
+			else
+				query = "SELECT txt FROM (SELECT COALESCE(mesText, editedMesText) AS txt FROM messages WHERE NOT isDeleted AND userId != @botId AND mesTime > @date) x WHERE txt != '' AND txt NOT LIKE '%@botId%'";
+
+			await DataLayerShortcut.ExecuteReader<List<MessageTextModel>>(ReadMessagesText, result, query, paramlist.ToArray());
 
 			return result;
 		}

@@ -176,11 +176,11 @@ namespace SGMessageBot.DiscordBot
 		}
 
 		[Command("buildcorpus"), Summary("Rebuilds the corpus for AI chat commands")]
-		public async Task BuildCorpus()
+		public async Task BuildCorpus([Summary("Will force a dump of the corpus table and full rebuild")] bool forceRebuild = false)
 		{
 			try
 			{
-				await markovAi.RebuildCorpus();
+				await markovAi.RebuildCorpus(forceRebuild);
 			}
 			catch(Exception ex)
 			{
