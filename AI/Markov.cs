@@ -102,7 +102,7 @@ namespace SGMessageBot.AI
 						var value = string.Empty;
 						if (i + 2 < length)
 						{
-							key = $"{split[i]} {split[++i]}";
+							key = $"{split[i]} {split[++i]}".Trim(';');
 							if (key.Length >= 255)
 								continue;
 							value = split[i + 1];
@@ -280,7 +280,7 @@ namespace SGMessageBot.AI
 
 		private async Task<CorpusRowModel> GetRowForKey(string key)
 		{
-			var sql = "SELECT * FROM messageCorpus WHERE keyword = '@key'";
+			var sql = "SELECT * FROM messageCorpus WHERE keyword = @key";
 			var values = new List<CorpusRowModel>();
 			await DataLayerShortcut.ExecuteReader(ReadCorpusRow, values, sql, new MySqlParameter("@key", key));
 			return values.FirstOrDefault();
