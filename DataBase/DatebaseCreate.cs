@@ -65,6 +65,9 @@ namespace SGMessageBot.DataBase
 			buildQueries.Add(11, new List<string>());
 			buildQueries[11].Add("CREATE TABLE messageCorpus (keyword VARCHAR(128), wordValues MEDIUMTEXT, PRIMARY KEY(keyword));");
 			buildQueries[11].Add("ALTER TABLE metaData ADD COLUMN lastCorpusDate DATETIME;");
+			buildQueries.Add(12, new List<string>());
+			buildQueries[12].Add("ALTER TABLE messageCorpus MODIFY keyword VARCHAR(128) BINARY;");
+			
 		}
 
 		public async Task<BaseResult> CreateDatabase()

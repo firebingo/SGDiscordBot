@@ -102,7 +102,7 @@ namespace SGMessageBot.AI
 						var value = string.Empty;
 						if (i + 2 < length)
 						{
-							key = $"{split[i]} {split[++i]}".Trim(';');
+							key = $"{split[i]} {split[++i]}";
 							if (key.Length >= 255)
 								continue;
 							value = split[i + 1];
@@ -134,8 +134,13 @@ namespace SGMessageBot.AI
 			});
 
 			var sql = string.Empty;
+			var insertValuesParam = new List<MySqlParameter>();
+			var insertValuesSql = string.Empty;
+			var insertI = 0;
+			var addTasks = new List<Task>();
 			var rows = new List<CorpusRowModel>();
 			CorpusRowModel row = null;
+			
 			foreach (var word in wordDict)
 			{
 				rows.Clear();
@@ -149,14 +154,37 @@ namespace SGMessageBot.AI
 					{
 						word.Value.Add(val);
 					}
-
+					var values = word.Value.Where(x => x.Trim().Length != 0);
 					sql = "UPDATE messageCorpus SET wordValues = @values WHERE keyword = @key";
-					await DataLayerShortcut.ExecuteNonQuery(sql, new MySqlParameter("@key", word.Key), new MySqlParameter("@values", string.Join(",", word.Value)));
+					addTasks.Add(DataLayerShortcut.ExecuteNonQuery(sql, new MySqlParameter("@key", word.Key), new MySqlParameter("@values", string.Join("||", values))));
 				}
 				else
 				{
-					sql = "INSERT INTO messageCorpus (keyword, wordValues) VALUES (@key, @values)";
-					await DataLayerShortcut.ExecuteNonQuery(sql, new MySqlParameter("@key", word.Key), new MySqlParameter("@values", string.Join(",", word.Value)));
+					var values = string.Join("||", word.Value.Where(x => x.Trim().Length != 0));
+					insertValuesParam.Add(new MySqlParameter($"@keyword{insertI}", word.Key));
+					insertValuesParam.Add(new MySqlParameter($"@values{insertI}", values));
+					if (insertI == 0)
+						insertValuesSql = $"(@keyword{insertI}, @values{insertI})";
+					else
+						insertValuesSql += $",(@keyword{insertI}, @values{insertI})";
+					//$"({MySqlHelper.EscapeString(word.Key)}, {MySqlHelper.EscapeString(values)})"
+					if (insertI == 100)
+					{
+						sql = $"INSERT INTO messageCorpus (keyword, wordValues) VALUES {insertValuesSql}";
+						addTasks.Add(DataLayerShortcut.ExecuteNonQuery(sql, insertValuesParam.ToArray()));
+						insertValuesParam.Clear();
+						insertValuesSql = string.Empty;
+						insertI = 0;
+					}
+					else
+					{
+						insertI++;
+					}
+				}
+				if (addTasks.Count > 50)
+				{
+					await Task.WhenAll(addTasks);
+					addTasks.Clear();
 				}
 			}
 		}
@@ -291,7 +319,7 @@ namespace SGMessageBot.AI
 			var row = new CorpusRowModel
 			{
 				Key = reader.GetString(0),
-				Values = reader.GetString(1)?.Split(',') ?? new string[0]
+				Values = reader.GetString(1)?.Split(new string[] { "||" }, StringSplitOptions.None) ?? new string[0]
 			};
 			data.Add(row);
 		}
