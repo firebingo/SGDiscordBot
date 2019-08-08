@@ -376,6 +376,7 @@ namespace SGMessageBot.DiscordBot
 			}
 			catch (Exception e)
 			{
+				ErrorLog.WriteError(e);
 				await Context.Channel.SendMessageAsync(e.Message);
 				return;
 			}

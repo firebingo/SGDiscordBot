@@ -239,10 +239,9 @@ namespace SGMessageBot.DiscordBot
 		{
 			var result = "";
 			var earliest = await GetEarliestMessage(context);
-			var emojiUseModels = new List<EmojiUseModel>();
 			var totalCount = 0;
 			var nextSplitLength = 2000;
-			GetEmojiModels(context, ref emojiUseModels);
+			var emojiUseModels = await GetEmojiModels(context);
 			var topEmojis = new Dictionary<string, EmojiCountModel>();
 			foreach(var use in emojiUseModels)
 			{
@@ -339,11 +338,10 @@ namespace SGMessageBot.DiscordBot
 				return Task.FromResult<string>("Could not get user from mention.").Result;
 			}
 			var earliest = await GetEarliestMessage(context);
-			var emojiUseModels = new List<EmojiUseModel>();
 			var totalCount = 0;
 			var totalUserCount = 0;
 			var nextSplitLength = 2000;
-			GetEmojiModels(context, ref emojiUseModels);
+			var emojiUseModels = await GetEmojiModels(context);
 			var topEmojis = new Dictionary<string, EmojiCountModel>();
 			var topEmojisUser = new Dictionary<string, EmojiCountModel>();
 			foreach (var use in emojiUseModels)
@@ -433,10 +431,9 @@ namespace SGMessageBot.DiscordBot
 			if (emojiID == 0)
 				return "Failed to find id from emoji";
 			var earliest = await GetEarliestMessage(context);
-			var emojiUseModels = new List<EmojiUseModel>();
 			var totalCount = 0;
 			var reqEmojiCount = 0;
-			GetEmojiModels(context, ref emojiUseModels);
+			var emojiUseModels = await GetEmojiModels(context);
 
 			var topEmojis = new Dictionary<string, EmojiCountModel>();
 			foreach (var use in emojiUseModels)
@@ -498,9 +495,8 @@ namespace SGMessageBot.DiscordBot
 			if (userID == 0)
 				return "Failed to find id from user mention";
 			var earliest = await GetEarliestMessage(context);
-			var emojiUseModels = new List<EmojiUseModel>();
 			var totalCount = 0;
-			GetEmojiModels(context, ref emojiUseModels);
+			var emojiUseModels = await GetEmojiModels(context);
 			var totalUserCount = 0;
 			var topEmojis = new Dictionary<string, EmojiCountModel>();
 			var topEmojisUser = new Dictionary<string, EmojiCountModel>();
@@ -632,8 +628,9 @@ namespace SGMessageBot.DiscordBot
 		#endregion
 
 		#region Helper Functions
-		private void GetEmojiModels(ICommandContext context, ref List<EmojiUseModel> emojiModels)
+		private async Task<List<EmojiUseModel>> GetEmojiModels(ICommandContext context)
 		{
+			var emojiModels = new List<EmojiUseModel>();
 			var queryParams = new MySqlParameter[] {
 				new MySqlParameter("@serverID", context.Guild.Id),
 				new MySqlParameter("@botID", SGMessageBot.BotConfig.BotInfo.DiscordConfig.botId)
@@ -642,8 +639,8 @@ namespace SGMessageBot.DiscordBot
 			var queryString = $"SELECT eU.emojiID, eU.emojiName, eU.userID, uS.nickNameMention " +
 				$"FROM emojiuses AS eU LEFT JOIN messages as mS ON eU.messageID = mS.messageID LEFT JOIN usersinservers AS uS ON eU.userID = uS.userID " +
 			    $"WHERE uS.serverID = @serverID AND eU.serverID = @serverID AND eU.isDeleted = 0 AND eU.userID != @botID AND mS.mesText NOT LIKE '%emojicount%'";
-			var ret = DataLayerShortcut.ExecuteReader<List<EmojiUseModel>>(ReadEmojiCounts, emojiModels, queryString, queryParams);
-			ret.RunSynchronously();
+			await DataLayerShortcut.ExecuteReader<List<EmojiUseModel>>(ReadEmojiCounts, emojiModels, queryString, queryParams);
+			return emojiModels;
 		}
 
 		private ulong GetIDFromMention(string mention)
