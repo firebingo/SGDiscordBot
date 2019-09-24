@@ -18,16 +18,14 @@ namespace SGMessageBot.DiscordBot
 	{
 		private CommandService commands;
 		private DiscordSocketClient socketClient;
-		private BotCommandProcessor processor;
-		private Markov markovAi;
+		//private BotCommandProcessor processor;
+		//private Markov markovAi;
 		private IServiceProvider dependencyMap;
 		private BotCommandsRunning running;
 
 		public async Task InstallCommandService(IServiceProvider _map)
 		{
 			socketClient = _map.GetService(typeof(DiscordSocketClient)) as DiscordSocketClient;
-			processor = _map.GetService(typeof(BotCommandProcessor)) as BotCommandProcessor;
-			markovAi = _map.GetService(typeof(Markov)) as Markov;
 			running = new BotCommandsRunning();
 			commands = new CommandService();
 			dependencyMap = _map;
@@ -85,8 +83,8 @@ namespace SGMessageBot.DiscordBot
 	[RequireModRole]
 	public class AdminModule : ModuleBase
 	{
-		private BotCommandProcessor processor;
-		private Markov markovAi;
+		private readonly BotCommandProcessor processor;
+		private readonly Markov markovAi;
 
 		public AdminModule(IServiceProvider m)
 		{
@@ -148,20 +146,18 @@ namespace SGMessageBot.DiscordBot
 		[Command("rolecounts"), Summary("Gets user role counts for server.")]
 		public async Task RoleCounts([Summary("Whether to mention the roles in the list")]bool useMentions = true)
 		{
-			var result = "";
 			if (!(Context.Channel is SocketTextChannel textChannel))
 			{
 				await Context.Channel.SendMessageAsync("Channel is not a text channel");
 				return;
 			}
-			result = await processor.CalculateRoleCounts(textChannel, useMentions, Context);
+			var result = await processor.CalculateRoleCounts(useMentions, Context);
 			await textChannel.SendMessageAsync(result);
 		}
 
 		[Command("rolecounts"), Summary("Gets user role counts for server.")]
 		public async Task RoleCounts([Summary("The channel to output the list to.")] SocketChannel outputChannel = null, [Summary("Whether to mention the roles in the list")]bool useMentions = true)
 		{
-			var result = "";
 			if (outputChannel == null)
 			{
 				outputChannel = Context.Channel as SocketChannel;
@@ -171,7 +167,7 @@ namespace SGMessageBot.DiscordBot
 				await Context.Channel.SendMessageAsync("Channel is not a text channel");
 				return;
 			}
-			result = await processor.CalculateRoleCounts(textChannel, useMentions, Context);
+			var result = await processor.CalculateRoleCounts(useMentions, Context);
 			await textChannel.SendMessageAsync(result);
 		}
 
@@ -253,8 +249,8 @@ namespace SGMessageBot.DiscordBot
 	[RequireGuildMessage]
 	public class StatsModule : ModuleBase
 	{
-		private BotCommandProcessor processor;
-		private Markov markovAi;
+		private readonly BotCommandProcessor processor;
+		private readonly Markov markovAi;
 
 		public StatsModule(IServiceProvider m)
 		{
@@ -265,9 +261,8 @@ namespace SGMessageBot.DiscordBot
 		[Command("messagecount"), Summary("Gets message counts for the server.")]
 		public async Task MessageCounts([Summary("the user to get message counts for")] string input = null)
 		{
-			var result = "";
-			var inputParsed = -1;
-			bool pRes = int.TryParse(input, out inputParsed);
+			string result;
+			bool pRes = int.TryParse(input, out var inputParsed);
 			inputParsed = pRes ? inputParsed : -1;
 			if (input == null || input == String.Empty)
 				inputParsed = 0;
@@ -308,9 +303,8 @@ namespace SGMessageBot.DiscordBot
 		public async Task EmojiCounts([Summary("The emoji or user to get counts for")] string input = null,
 			[Summary("The emoji to get for a specific user, or the user to get top counts for")] string input2 = null)
 		{
-			var result = "";
-			var inputParsed = -1;
-			bool pRes = int.TryParse(input, out inputParsed);
+			string result;
+			bool pRes = int.TryParse(input, out var inputParsed);
 			inputParsed = pRes ? inputParsed : -1;
 			if (input == null || input == String.Empty)
 				inputParsed = 0;
@@ -418,7 +412,7 @@ namespace SGMessageBot.DiscordBot
 		private Dictionary<Guid, SocketTextChannel> _commands;
 		private object _commandsLock;
 		private readonly TimerCallback timerCallback;
-		private Timer timer;
+		private readonly Timer timer;
 
 		public BotCommandsRunning()
 		{

@@ -28,14 +28,14 @@ namespace SGMessageBot.DiscordBot
 
 		public async Task<int> GetTotalMessageCount(ICommandContext context)
 		{
-			int? result = 0;
+			int? result;
 			var queryString = "SELECT COUNT(*) FROM messages WHERE isDeleted = false AND serverID = @serverID";
 			result = await DataLayerShortcut.ExecuteScalarInt(queryString, new MySqlParameter("@serverID", context.Guild.Id));
 			return result ?? 0;
 		}
 
 		#region Admin Functions
-		public async Task<string> CalculateRoleCounts(SocketTextChannel channel, bool useMentions, ICommandContext context)
+		public async Task<string> CalculateRoleCounts(bool useMentions, ICommandContext context)
 		{
 			var result = "";
 			try
@@ -648,8 +648,7 @@ namespace SGMessageBot.DiscordBot
 			var match = Regex.Match(mention, @"\d+");
 			if(!match.Success)
 				return 0;
-			var result = (ulong)0;
-			var success = UInt64.TryParse(match.Value, out result);
+			var success = UInt64.TryParse(match.Value, out var result);
 			if (!success)
 				return 0;
 			return result;
