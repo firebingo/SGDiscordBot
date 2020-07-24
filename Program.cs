@@ -17,7 +17,7 @@ namespace SGMessageBot
 		static void Main(string[] args)
 		{
 			BotConfig = new BotConfig();
-			var botCResult = BotConfig.LoadConfig();
+			BotConfig.LoadConfig();
 			BotConfig.SaveCredConfig();
 
 			TimeThread = new TimeThread();

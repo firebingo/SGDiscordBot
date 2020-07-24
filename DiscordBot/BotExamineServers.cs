@@ -163,7 +163,7 @@ namespace SGMessageBot.DiscordBot
 				delRes = await DataLayerShortcut.ExecuteNonQuery(emojiRemove, new MySqlParameter("@channelID", channel.Id));
 				if (delRes != String.Empty)
 					return delRes;
-				var messages = channel.GetMessagesAsync(Int32.MaxValue).ToList().Result;
+				var messages = await channel.GetMessagesAsync(Int32.MaxValue).ToListAsync();
 				var cCount = 0;
 				var totalMessages = messages.Sum(m => m.Count);
 				foreach (var messageList in messages)
@@ -176,7 +176,7 @@ namespace SGMessageBot.DiscordBot
 					foreach (var message in messageList)
 					{
 						++cCount;
-						mesRows.Add($"({context.Guild.Id}, {message.Author.Id}, {channel.Id}, {message.Id}, '{MySqlHelper.EscapeString(message.Content)}', '{MySqlHelper.EscapeString(message.Content)}', 0, {message.Timestamp.UtcDateTime.ToString("yyyyMMddHHmmss")})");
+						mesRows.Add($"({context.Guild.Id}, {message.Author.Id}, {channel.Id}, {message.Id}, '{MySqlHelper.EscapeString(message.Content)}', '{MySqlHelper.EscapeString(message.Content)}', 0, {message.Timestamp.UtcDateTime:yyyyMMddHHmmss})");
 						foreach (var attach in message.Attachments)
 						{
 							attachRows.Add($"({message.Id}, {attach.Id}, '{MySqlHelper.EscapeString(attach.Filename)}', {(attach.Height ?? -1)}, {(attach.Width ?? -1)}, '{MySqlHelper.EscapeString(attach.ProxyUrl)}', '{MySqlHelper.EscapeString(attach.Url)}', {attach.Size})");
@@ -286,7 +286,7 @@ namespace SGMessageBot.DiscordBot
 						//Voice channels will be null obviously.
 						if (channel is IMessageChannel messageChannel)
 						{
-							var messages = messageChannel.GetMessagesAsync(Int32.MaxValue).ToList().Result;
+							var messages = await messageChannel.GetMessagesAsync(Int32.MaxValue).ToListAsync();
 							var cCount = 0;
 							var totalMessages = messages.Sum(m => m.Count);
 							foreach (var messageList in messages)
@@ -299,7 +299,7 @@ namespace SGMessageBot.DiscordBot
 								foreach (var message in messageList)
 								{
 									++cCount;
-									mesRows.Add($"({context.Guild.Id}, {message.Author.Id}, {messageChannel.Id}, {message.Id}, '{MySqlHelper.EscapeString(message.Content)}', '{MySqlHelper.EscapeString(message.Content)}', 0, {message.Timestamp.UtcDateTime.ToString("yyyyMMddHHmmss")})");
+									mesRows.Add($"({context.Guild.Id}, {message.Author.Id}, {messageChannel.Id}, {message.Id}, '{MySqlHelper.EscapeString(message.Content)}', '{MySqlHelper.EscapeString(message.Content)}', 0, {message.Timestamp.UtcDateTime:yyyyMMddHHmmss})");
 									foreach (var attach in message.Attachments)
 									{
 										attachRows.Add($"({message.Id}, {attach.Id}, '{MySqlHelper.EscapeString(attach.Filename)}', {(attach.Height ?? -1)}, {(attach.Width ?? -1)}, '{MySqlHelper.EscapeString(attach.ProxyUrl)}', '{MySqlHelper.EscapeString(attach.Url)}', {attach.Size})");

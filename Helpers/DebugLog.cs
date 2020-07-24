@@ -38,11 +38,9 @@ namespace SGMessageBot.Helpers
 					var path = $"{folderLocation}/{dateString}_DebugLog_{(int)filterId}.log";
 					if (!File.Exists(path))
 						using (File.Create(path)) { }
-					using (var writer = File.AppendText(path))
-					{
-						var fullDateString = now.ToString("[yyyy-MM-dd hh:mm:ss]");
-						writer.WriteLine($"{fullDateString} - {logText()}");
-					}
+					var writer = File.AppendText(path);
+					var fullDateString = now.ToString("[yyyy-MM-dd hh:mm:ss]");
+					writer.WriteLine($"{fullDateString} - {logText()}");
 				}
 			}
 			catch (Exception ex)

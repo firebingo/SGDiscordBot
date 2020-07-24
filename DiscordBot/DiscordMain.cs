@@ -65,7 +65,7 @@ namespace SGMessageBot.DiscordBot
 			}
 			catch (Exception ex)
 			{
-				Console.WriteLine($"Discord Failed To Start:{ex.ToString()}");
+				Console.WriteLine($"Discord Failed To Start: {ex}");
 				ErrorLog.WriteError(ex);
 				return;
 			}

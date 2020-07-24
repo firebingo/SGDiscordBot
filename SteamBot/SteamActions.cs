@@ -34,7 +34,7 @@ namespace SGMessageBot.SteamBot
 
 		public Task GetGroups()
 		{
-			var config = dependencyMap.GetService(typeof(BotConfig)) as BotConfig;
+			//var config = dependencyMap.GetService(typeof(BotConfig)) as BotConfig;
 			var steamFriends = dependencyMap.GetService(typeof(SteamFriends)) as SteamFriends;
 			var groups = new List<SteamID>();
 			for(var i =0; i < steamFriends.GetClanCount(); ++i)

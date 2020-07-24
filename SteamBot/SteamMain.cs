@@ -173,10 +173,8 @@ namespace SGMessageBot.SteamBot
 				fileSize = (int)fs.Length;
 
 				fs.Seek(0, SeekOrigin.Begin);
-				using (var sha = SHA1.Create())
-				{
-					sentryHash = sha.ComputeHash(fs);
-				}
+				using var sha = SHA1.Create();
+				sentryHash = sha.ComputeHash(fs);
 			}
 
 			// inform the steam servers that we're accepting this sentry file

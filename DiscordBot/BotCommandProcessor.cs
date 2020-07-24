@@ -247,7 +247,7 @@ namespace SGMessageBot.DiscordBot
 			{
 				var key = string.Empty;
 				if (context.Guild.Emotes.FirstOrDefault(x => x.Id == use.emojiID) != null)
-					key = $"<:{use.emojiName}:{use.emojiID.ToString()}>";
+					key = $"<:{use.emojiName}:{use.emojiID}>";
 				else
 					key = $":{use.emojiName}:";
 				if (topEmojis.ContainsKey(key))
@@ -348,7 +348,7 @@ namespace SGMessageBot.DiscordBot
 			{
 				var key = string.Empty;
 				if (context.Guild.Emotes.FirstOrDefault(x => x.Id == use.emojiID) != null)
-					key = $"<:{use.emojiName}:{use.emojiID.ToString()}>";
+					key = $"<:{use.emojiName}:{use.emojiID}>";
 				else
 					key = $":{use.emojiName}:";
 				if (topEmojis.ContainsKey(key))
@@ -440,7 +440,7 @@ namespace SGMessageBot.DiscordBot
 			{
 				var key = string.Empty;
 				if (context.Guild.Emotes.FirstOrDefault(x => x.Id == use.emojiID) != null)
-					key = $"<:{use.emojiName}:{use.emojiID.ToString()}>";
+					key = $"<:{use.emojiName}:{use.emojiID}>";
 				else
 					key = $":{use.emojiName}:";
 				if (topEmojis.ContainsKey(key))
@@ -505,7 +505,7 @@ namespace SGMessageBot.DiscordBot
 			{
 				var key = string.Empty;
 				if (context.Guild.Emotes.FirstOrDefault(x => x.Id == use.emojiID) != null)
-					key = $"<:{use.emojiName}:{use.emojiID.ToString()}>";
+					key = $"<:{use.emojiName}:{use.emojiID}>";
 				else
 					key = $":{use.emojiName}:";
 				if (topEmojis.ContainsKey(key))

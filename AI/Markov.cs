@@ -16,9 +16,8 @@ namespace SGMessageBot.AI
 {
 	public class Markov
 	{
-		private const string dataDirectory = @"Data\AICorpus.json";
 		private List<string> AICorpusKeys = null;
-		private static SemaphoreSlim sem = new SemaphoreSlim(1, 1);
+		private static readonly SemaphoreSlim sem = new SemaphoreSlim(1, 1);
 		private static readonly int blockSize = 500000;
 
 		private async Task BuildCorpus(bool forceRebuild = false)
@@ -278,7 +277,7 @@ namespace SGMessageBot.AI
 							splitLength += 1 + toAdd.Length;
 							result += $" {toAdd}";
 							var split = result.Split(' ');
-							nextValue = $"{split[split.Length - 2]} {split[split.Length - 1]}";
+							nextValue = $"{split[^2]} {split[^1]}";
 							if (splitLength > 1900)
 							{
 								result += $"|?|";
