@@ -6,7 +6,9 @@ using SGMessageBot.DataBase;
 using SGMessageBot.Helpers;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SGMessageBot.DiscordBot
@@ -18,7 +20,7 @@ namespace SGMessageBot.DiscordBot
 		{
 			try
 			{
-				await BotEventProcessor.ProcessMessageReceived(e).ConfigureAwait(false);
+				await BotEventProcessor.ProcessMessageReceived(e);
 			}
 			catch (Exception ex)
 			{
@@ -30,7 +32,7 @@ namespace SGMessageBot.DiscordBot
 		{
 			try
 			{
-				await BotEventProcessor.ProcessMessageUpdated(before, after).ConfigureAwait(false);
+				await BotEventProcessor.ProcessMessageUpdated(before, after);
 			}
 			catch (Exception e)
 			{
@@ -42,7 +44,19 @@ namespace SGMessageBot.DiscordBot
 		{
 			try
 			{
-				await BotEventProcessor.ProcessMessageDeleted(mes).ConfigureAwait(false);
+				await BotEventProcessor.ProcessMessageDeleted(mes);
+			}
+			catch (Exception e)
+			{
+				ErrorLog.WriteError(e);
+			}
+		}
+
+		public static async Task ClientMessageBulkDeleted(IReadOnlyCollection<Cacheable<IMessage, ulong>> messages, ISocketMessageChannel channel)
+		{
+			try
+			{
+				await BotEventProcessor.ProcessMessagesBulkDeleted(messages, channel);
 			}
 			catch (Exception e)
 			{
@@ -171,7 +185,7 @@ namespace SGMessageBot.DiscordBot
 				ErrorLog.WriteError(e);
 			}
 		}
-		
+
 		public static async Task ClientRoleDeleted(SocketRole e)
 		{
 			try
@@ -226,7 +240,7 @@ namespace SGMessageBot.DiscordBot
 		{
 			try
 			{
-				await BotEventProcessor.ProcessReactionAdded(mes, channel, react).ConfigureAwait(false);
+				await BotEventProcessor.ProcessReactionAdded(mes, channel, react);
 			}
 			catch (Exception e)
 			{
@@ -238,7 +252,7 @@ namespace SGMessageBot.DiscordBot
 		{
 			try
 			{
-				await BotEventProcessor.ClientReactionRemoved(mes, channel, react).ConfigureAwait(false);
+				await BotEventProcessor.ClientReactionRemoved(mes, channel, react);
 			}
 			catch (Exception e)
 			{
@@ -250,7 +264,19 @@ namespace SGMessageBot.DiscordBot
 		{
 			try
 			{
-				await BotEventProcessor.ClientReactionsCleared(mes, channel).ConfigureAwait(false);
+				await BotEventProcessor.ClientReactionsCleared(mes, channel);
+			}
+			catch (Exception e)
+			{
+				ErrorLog.WriteError(e);
+			}
+		}
+
+		public static async Task ClientReactionsEmoteRemoved(Cacheable<IUserMessage, ulong> mes, ISocketMessageChannel channel, IEmote emote)
+		{
+			try
+			{
+				await BotEventProcessor.ClientReactionsEmoteRemoved(mes, channel, emote);
 			}
 			catch (Exception e)
 			{
@@ -365,13 +391,10 @@ namespace SGMessageBot.DiscordBot
 					Tasks.Add(DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@isDeleted", true), new MySqlParameter("@messageID", mes.Id)));
 					queryString = "UPDATE emojiUses SET isDeleted=@isDeleted WHERE messageID=@messageID";
 					Tasks.Add(DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@isDeleted", true), new MySqlParameter("@messageID", mes.Id)));
-					if (mes.HasValue)
+					if (mes.HasValue && mes.Value.Channel is SocketGuildChannel gChannel)
 					{
-						if (mes.Value.Channel is SocketGuildChannel gChannel)
-						{
-							queryString = @"UPDATE usersinservers SET mesCount = mesCount-1 WHERE userID=@userID AND serverID=@serverID";
-							Tasks.Add(DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", gChannel.Guild.Id), new MySqlParameter("@userID", mes.Value.Author.Id)));
-						}
+						queryString = @"UPDATE usersinservers SET mesCount = mesCount-1 WHERE userID=@userID AND serverID=@serverID";
+						Tasks.Add(DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", gChannel.Guild.Id), new MySqlParameter("@userID", mes.Value.Author.Id)));
 					}
 				}
 				catch (Exception ex)
@@ -379,6 +402,25 @@ namespace SGMessageBot.DiscordBot
 					ErrorLog.WriteError(ex);
 				}
 				await Task.WhenAll(Tasks.ToArray());
+			}
+
+			public static async Task ProcessMessagesBulkDeleted(IReadOnlyCollection<Cacheable<IMessage, ulong>> messages, ISocketMessageChannel channel)
+			{
+				//Im hoping this is reasonable?
+				using var sem = new SemaphoreSlim(5);
+				var tasks = messages.Select(async message =>
+				{
+					await sem.WaitAsync();
+					try
+					{
+						await ProcessMessageDeleted(message);
+					}
+					finally
+					{
+						sem.Release();
+					}
+				});
+				await Task.WhenAll(tasks);
 			}
 			#endregion
 			#region Server
@@ -421,7 +463,7 @@ namespace SGMessageBot.DiscordBot
 				await DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", e.Guild.Id), new MySqlParameter("@userID", e.Id),
 				new MySqlParameter("@discriminator", e.Discriminator), new MySqlParameter("@nickName", e.Nickname), new MySqlParameter("@nickNameMention", e.Mention.Replace("!", String.Empty)),
 				new MySqlParameter("@joinedDate", joinedAtDateTime), new MySqlParameter("@avatarID", e.AvatarId), new MySqlParameter("@avatarUrl", e.GetAvatarUrl()),
-				new MySqlParameter("@lastOnline", joinedAtDateTime), new MySqlParameter("@isDeleted", false), new MySqlParameter("@roleIds", JsonConvert.SerializeObject(roleIds)), new MySqlParameter("@mesCount", value:0));
+				new MySqlParameter("@lastOnline", joinedAtDateTime), new MySqlParameter("@isDeleted", false), new MySqlParameter("@roleIds", JsonConvert.SerializeObject(roleIds)), new MySqlParameter("@mesCount", value: 0));
 			}
 
 			public static async Task ProcessUserBannedStatus(SocketUser u, SocketGuild s, bool banned)
@@ -461,7 +503,7 @@ namespace SGMessageBot.DiscordBot
 				await DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", after.Guild.Id), new MySqlParameter("@userID", after.Id),
 				new MySqlParameter("@discriminator", after.Discriminator), new MySqlParameter("@nickName", after.Nickname), new MySqlParameter("@nickNameMention", after.Mention.Replace("!", String.Empty)),
 				new MySqlParameter("@joinedDate", joinedAtDateTime), new MySqlParameter("@avatarID", after.AvatarId), new MySqlParameter("@avatarUrl", after.GetAvatarUrl()),
-				new MySqlParameter("@lastOnline", joinedAtDateTime), new MySqlParameter("@roleIds", JsonConvert.SerializeObject(roleIds)), new MySqlParameter("@mesCount", value:0));
+				new MySqlParameter("@lastOnline", joinedAtDateTime), new MySqlParameter("@roleIds", JsonConvert.SerializeObject(roleIds)), new MySqlParameter("@mesCount", value: 0));
 			}
 			#endregion
 			#region Role
@@ -537,7 +579,7 @@ namespace SGMessageBot.DiscordBot
 				VALUES(@serverID, @userID, @channelID, @messageID, @emojiID, @emojiName, @isDeleted)
 				ON DUPLICATE KEY UPDATE serverID=@serverID, userID=@userID, channelID=@channelID, messageID=@messageID, emojiID=@emojiID, emojiName=@emojiName, isDeleted=@isDeleted";
 				await DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", (channel as SocketTextChannel).Guild.Id), new MySqlParameter("@channelID", channel.Id),
-				new MySqlParameter("@userID", react.UserId), new MySqlParameter("@messageID", react.MessageId), new MySqlParameter("@emojiID", (emote == null ? 0 : emote.Id)), new MySqlParameter("@emojiName", react.Emote.Name), 
+				new MySqlParameter("@userID", react.UserId), new MySqlParameter("@messageID", react.MessageId), new MySqlParameter("@emojiID", (emote == null ? 0 : emote.Id)), new MySqlParameter("@emojiName", react.Emote.Name),
 				new MySqlParameter("@isDeleted", false));
 			}
 
@@ -556,6 +598,16 @@ namespace SGMessageBot.DiscordBot
 					messageId = mes.Value.Id;
 				var queryString = "UPDATE reactions SET isDeleted=@isDeleted WHERE messageID=@messageID";
 				await DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@isDeleted", true), new MySqlParameter("@messageID", messageId));
+			}
+
+			public static async Task ClientReactionsEmoteRemoved(Cacheable<IUserMessage, ulong> mes, ISocketMessageChannel channel, IEmote emote)
+			{
+				ulong messageId = 0;
+				if (mes.HasValue)
+					messageId = mes.Value.Id;
+				var queryString = "UPDATE reactions SET isDeleted=@isDeleted WHERE channelID=@channelID AND messageID=@messageID AND emojiName=@emojiName";
+				await DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@isDeleted", true), new MySqlParameter("@channelID", channel.Id), new MySqlParameter("@messageID", messageId),
+					new MySqlParameter("@emojiName", emote.Name));
 			}
 			#endregion
 			#region Other Functions
@@ -581,7 +633,7 @@ namespace SGMessageBot.DiscordBot
 						continue;
 					}
 				}
-				if(emojiRows.Count > 0)
+				if (emojiRows.Count > 0)
 				{
 					var emojiQueryString = $"INSERT emojiUses (serverID, userID, channelID, messageID, emojiID, emojiName) VALUES {string.Join(",", emojiRows)}";
 					await DataLayerShortcut.ExecuteNonQuery(emojiQueryString);

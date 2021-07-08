@@ -72,47 +72,6 @@ namespace SGMessageBot.DiscordBot
 			#endregion
 		}
 
-
-
-		private async Task OnDisconnected(Exception arg)
-		{
-			try
-			{
-				await cDiscordHandler.RemoveCommandService();
-				cDiscordHandler = null;
-				cDiscordProcessor = null;
-				DiscordClient.MessageReceived -= BotEventHandler.ClientMessageReceived;
-				DiscordClient.MessageUpdated -= BotEventHandler.ClientMessageUpdated;
-				DiscordClient.MessageDeleted -= BotEventHandler.ClientMessageDeleted;
-				DiscordClient.JoinedGuild -= BotEventHandler.ClientJoinedServer;
-				DiscordClient.GuildUpdated -= BotEventHandler.ClientServerUpdated;
-				DiscordClient.UserJoined -= BotEventHandler.ClientUserJoined;
-				DiscordClient.UserUnbanned -= BotEventHandler.ClientUserUnbanned;
-				DiscordClient.UserBanned -= BotEventHandler.ClientUserBanned;
-				DiscordClient.UserLeft -= BotEventHandler.ClientUserLeft;
-				DiscordClient.UserUpdated -= BotEventHandler.ClientUserUpdated;
-				DiscordClient.GuildMemberUpdated -= BotEventHandler.ClientServerUserUpdated;
-				DiscordClient.RoleCreated -= BotEventHandler.ClientRoleCreated;
-				DiscordClient.RoleUpdated -= BotEventHandler.ClientRoleUpdated;
-				DiscordClient.RoleDeleted -= BotEventHandler.ClientRoleDeleted;
-				DiscordClient.ChannelCreated -= BotEventHandler.ClientChannelCreated;
-				DiscordClient.ChannelUpdated -= BotEventHandler.ClientChannelUpdated;
-				DiscordClient.ChannelDestroyed -= BotEventHandler.ClientChannelDestroyed;
-				DiscordClient.ReactionAdded -= BotEventHandler.ClientReactionAdded;
-				DiscordClient.ReactionRemoved -= BotEventHandler.ClientReactionRemoved;
-				DiscordClient.ReactionsCleared -= BotEventHandler.ClientReactionsCleared;
-			}
-			catch (Exception e)
-			{
-				ErrorLog.WriteError(e);
-				Console.WriteLine(e.Message);
-			}
-
-			Console.WriteLine("Discord Disconnected");
-			Console.WriteLine(arg.Message);
-			DiscordReady = false;
-		}
-
 		private async Task OnConnected()
 		{
 			var serviceProvider = ConfigureServices();
@@ -122,6 +81,7 @@ namespace SGMessageBot.DiscordBot
 			DiscordClient.MessageReceived += BotEventHandler.ClientMessageReceived;
 			DiscordClient.MessageUpdated += BotEventHandler.ClientMessageUpdated;
 			DiscordClient.MessageDeleted += BotEventHandler.ClientMessageDeleted;
+			DiscordClient.MessagesBulkDeleted += BotEventHandler.ClientMessageBulkDeleted;
 			DiscordClient.JoinedGuild += BotEventHandler.ClientJoinedServer;
 			DiscordClient.GuildUpdated += BotEventHandler.ClientServerUpdated;
 			DiscordClient.UserJoined += BotEventHandler.ClientUserJoined;
@@ -139,6 +99,7 @@ namespace SGMessageBot.DiscordBot
 			DiscordClient.ReactionAdded += BotEventHandler.ClientReactionAdded;
 			DiscordClient.ReactionRemoved += BotEventHandler.ClientReactionRemoved;
 			DiscordClient.ReactionsCleared += BotEventHandler.ClientReactionsCleared;
+			DiscordClient.ReactionsRemovedForEmote += BotEventHandler.ClientReactionsEmoteRemoved;
 
 			Task startTask = null;
 			if (discordConnectedTimes == 0)
@@ -147,6 +108,47 @@ namespace SGMessageBot.DiscordBot
 			DiscordReady = true;
 			Console.WriteLine("Discord Ready!");
 			discordConnectedTimes++;
+		}
+
+		private async Task OnDisconnected(Exception arg)
+		{
+			try
+			{
+				await cDiscordHandler.RemoveCommandService();
+				cDiscordHandler = null;
+				cDiscordProcessor = null;
+				DiscordClient.MessageReceived -= BotEventHandler.ClientMessageReceived;
+				DiscordClient.MessageUpdated -= BotEventHandler.ClientMessageUpdated;
+				DiscordClient.MessageDeleted -= BotEventHandler.ClientMessageDeleted;
+				DiscordClient.MessagesBulkDeleted -= BotEventHandler.ClientMessageBulkDeleted;
+				DiscordClient.JoinedGuild -= BotEventHandler.ClientJoinedServer;
+				DiscordClient.GuildUpdated -= BotEventHandler.ClientServerUpdated;
+				DiscordClient.UserJoined -= BotEventHandler.ClientUserJoined;
+				DiscordClient.UserUnbanned -= BotEventHandler.ClientUserUnbanned;
+				DiscordClient.UserBanned -= BotEventHandler.ClientUserBanned;
+				DiscordClient.UserLeft -= BotEventHandler.ClientUserLeft;
+				DiscordClient.UserUpdated -= BotEventHandler.ClientUserUpdated;
+				DiscordClient.GuildMemberUpdated -= BotEventHandler.ClientServerUserUpdated;
+				DiscordClient.RoleCreated -= BotEventHandler.ClientRoleCreated;
+				DiscordClient.RoleUpdated -= BotEventHandler.ClientRoleUpdated;
+				DiscordClient.RoleDeleted -= BotEventHandler.ClientRoleDeleted;
+				DiscordClient.ChannelCreated -= BotEventHandler.ClientChannelCreated;
+				DiscordClient.ChannelUpdated -= BotEventHandler.ClientChannelUpdated;
+				DiscordClient.ChannelDestroyed -= BotEventHandler.ClientChannelDestroyed;
+				DiscordClient.ReactionAdded -= BotEventHandler.ClientReactionAdded;
+				DiscordClient.ReactionRemoved -= BotEventHandler.ClientReactionRemoved;
+				DiscordClient.ReactionsCleared -= BotEventHandler.ClientReactionsCleared;
+				DiscordClient.ReactionsRemovedForEmote -= BotEventHandler.ClientReactionsEmoteRemoved;
+			}
+			catch (Exception e)
+			{
+				ErrorLog.WriteError(e);
+				Console.WriteLine(e.Message);
+			}
+
+			Console.WriteLine("Discord Disconnected");
+			Console.WriteLine(arg.Message);
+			DiscordReady = false;
 		}
 
 		private IServiceProvider ConfigureServices()

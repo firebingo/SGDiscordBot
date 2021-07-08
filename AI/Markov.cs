@@ -74,7 +74,7 @@ namespace SGMessageBot.AI
 			catch (Exception ex)
 			{
 				ErrorLog.WriteError(ex);
-				throw ex;
+				throw;
 			}
 		}
 
@@ -139,7 +139,7 @@ namespace SGMessageBot.AI
 			var addTasks = new List<Task>();
 			var rows = new List<CorpusRowModel>();
 			CorpusRowModel row = null;
-			
+
 			foreach (var word in wordDict)
 			{
 				rows.Clear();
