@@ -78,7 +78,7 @@ namespace SGMessageBot.DiscordBot
 					VALUES(@serverID, @emojiID, @emojiName, @isManaged, @colonsRequired, @isAnimated)
 					ON DUPLICATE KEY UPDATE serverID=@serverID, emojiName=@emojiName, isManaged=@isManaged, colonsRequired=@colonsRequired";
 					await DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", server.Id), new MySqlParameter("@emojiID", emoji.Id),
-						new MySqlParameter("@emojiName", emoji.Name), new MySqlParameter("@isManaged", emoji.IsManaged), new MySqlParameter("@colonsRequired", emoji.RequireColons), 
+						new MySqlParameter("@emojiName", emoji.Name), new MySqlParameter("@isManaged", emoji.IsManaged), new MySqlParameter("@colonsRequired", emoji.RequireColons),
 						new MySqlParameter("@isAnimated", false));
 				}
 				foreach (var user in server.Users)
@@ -90,7 +90,7 @@ namespace SGMessageBot.DiscordBot
 						new MySqlParameter("@mention", user.Mention.Replace("!", String.Empty)), new MySqlParameter("@isBot", user.IsBot), new MySqlParameter("@isWebHook", user.IsWebhook));
 
 					var roleIds = new List<ulong>();
-					foreach(var role in user.Roles)
+					foreach (var role in user.Roles)
 						roleIds.Add(role.Id);
 
 					DateTime? joinedAtDateTime = user.JoinedAt.HasValue ? ((user.JoinedAt.Value.UtcDateTime) as DateTime?) : null;
@@ -101,7 +101,7 @@ namespace SGMessageBot.DiscordBot
 					await DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", user.Guild.Id), new MySqlParameter("@userID", user.Id),
 						new MySqlParameter("@discriminator", user.Discriminator), new MySqlParameter("@nickName", user.Nickname), new MySqlParameter("@nickNameMention", user.Mention.Replace("!", String.Empty)),
 						new MySqlParameter("@joinedDate", joinedAtDateTime), new MySqlParameter("@avatarID", user.AvatarId), new MySqlParameter("@avatarUrl", user.GetAvatarUrl()),
-						new MySqlParameter("@lastOnline", joinedAtDateTime), new MySqlParameter("@roleIds", JsonConvert.SerializeObject(roleIds)), new MySqlParameter("@mesCount", value:0));
+						new MySqlParameter("@lastOnline", joinedAtDateTime), new MySqlParameter("@roleIds", JsonConvert.SerializeObject(roleIds)), new MySqlParameter("@mesCount", value: 0));
 				}
 				try
 				{
@@ -150,7 +150,7 @@ namespace SGMessageBot.DiscordBot
 		{
 			try
 			{
-				if(channel == null)
+				if (channel == null)
 					channel = context.Channel;
 				Console.WriteLine($"Reloading messages for channel{channel.Name}/{channel.Id}");
 				//Old reactions must be removed since they have no identification of their own.
@@ -212,7 +212,7 @@ namespace SGMessageBot.DiscordBot
 							return mesRes;
 						}
 					}
-					if(reactionsRows.Count > 0)
+					if (reactionsRows.Count > 0)
 					{
 						var reactQueryString = $"INSERT reactions (serverID, userID, channelID, messageID, emojiID, emojiName) VALUES {string.Join(",", reactionsRows)}";
 						var mesRes = await DataLayerShortcut.ExecuteNonQuery(reactQueryString);
@@ -222,7 +222,7 @@ namespace SGMessageBot.DiscordBot
 							return mesRes;
 						}
 					}
-					if(emojiRows.Count > 0)
+					if (emojiRows.Count > 0)
 					{
 						var emojiQueryString = $"INSERT emojiUses (serverID, userID, channelID, messageID, emojiID, emojiName) VALUES {string.Join(",", emojiRows)}";
 						var mesRes = await DataLayerShortcut.ExecuteNonQuery(emojiQueryString);
@@ -409,7 +409,7 @@ namespace SGMessageBot.DiscordBot
 			var Matches = emojiRegex.Matches(message.Content);
 			var nameRegex = new Regex(@":(.*?):");
 			var idRegex = new Regex(@":(\d*?)>");
-			foreach(Match m in Matches)
+			foreach (Match m in Matches)
 			{
 				try
 				{

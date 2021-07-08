@@ -67,7 +67,18 @@ namespace SGMessageBot.DataBase
 			buildQueries[11].Add("ALTER TABLE metaData ADD COLUMN lastCorpusDate DATETIME;");
 			buildQueries.Add(12, new List<string>());
 			buildQueries[12].Add("ALTER TABLE messageCorpus MODIFY keyword VARCHAR(128) BINARY;");
-			
+			buildQueries.Add(13, new List<string>());
+			buildQueries[13].Add("ALTER TABLE messages ADD COLUMN flags INT SIGNED default 0;");
+			buildQueries[13].Add(@"CREATE TABLE stickerUses (serverID BIGINT UNSIGNED, userID BIGINT UNSIGNED, channelID BIGINT UNSIGNED, messageID BIGINT UNSIGNED, stickerID BIGINT UNSIGNED, stickerName VARCHAR(64), formatType INT SIGNED, isDeleted BOOL DEFAULT FALSE,
+			CONSTRAINT kf_stickerMesID FOREIGN KEY(messageID) REFERENCES messages(messageID), CONSTRAINT kf_stickerServerID FOREIGN KEY(serverID) REFERENCES servers(serverID), CONSTRAINT kf_stickerChanID FOREIGN KEY(channelID) REFERENCES channels(channelID));");
+			buildQueries[13].Add("CREATE INDEX idx_messagesServerId ON messages(serverId);");
+			buildQueries[13].Add("CREATE INDEX idx_channelsServerId ON channels(serverId);");
+			buildQueries[13].Add("CREATE INDEX idx_rolesServerId ON roles(serverId);");
+			buildQueries[13].Add("CREATE INDEX idx_usersInServersServerId ON usersInServers(serverId);");
+			buildQueries[13].Add("CREATE INDEX idx_reactionsServerId ON reactions(serverId);");
+			buildQueries[13].Add("CREATE INDEX idx_emojisServerId ON emojis(serverId);");
+			buildQueries[13].Add("CREATE INDEX idx_emojiUsesServerId ON emojiUses(serverId);");
+			buildQueries[13].Add("CREATE INDEX idx_stickerUsesServerId ON stickerUses (serverId);");
 		}
 
 		public async Task<BaseResult> CreateDatabase()
@@ -99,13 +110,13 @@ namespace SGMessageBot.DataBase
 			var result = new BaseResult();
 			var metaDataGet = await GetMetaData();
 			//this hopefully should only happen if a db was made on version 1 before the metaData table.
-			if(!metaDataGet.Success)
+			if (!metaDataGet.Success)
 			{
-				Console.WriteLine("Database could not get metadata, this probally means the database was created before metadata was added. \nVersion will be set to 1 then new >version 1 tables will be created.\n" + 
+				Console.WriteLine("Database could not get metadata, this probally means the database was created before metadata was added. \nVersion will be set to 1 then new >version 1 tables will be created.\n" +
 					"If you were somehow above version 1 type n to exit and backup your database before this is run.");
 				var read = Console.ReadLine();
 				read = read.ToLower();
-				if(read == "n")
+				if (read == "n")
 					Environment.Exit(0);
 
 				var metaQuery = "CREATE TABLE metaData (mkey INT, version INT UNSIGNED, createdDate DATETIME, updatedDate DATETIME, PRIMARY KEY(mkey))";
@@ -113,7 +124,7 @@ namespace SGMessageBot.DataBase
 				metaQuery = "INSERT INTO metaData (mkey, version, createdDate, updatedDate) VALUES (@mkey, @version, @createdDate, @updatedDate)";
 				await DataLayerShortcut.ExecuteNonQuery(metaQuery, new MySqlParameter("@mkey", mkey), new MySqlParameter("@version", 1), new MySqlParameter("@createdDate", DateTime.UtcNow), new MySqlParameter("@updatedDate", DateTime.UtcNow));
 				metaDataGet = await GetMetaData();
-				if(!metaDataGet.Success)
+				if (!metaDataGet.Success)
 				{
 					Console.WriteLine("Getting metaData still failed, press any key to exit.");
 					Console.Read();
@@ -140,9 +151,9 @@ namespace SGMessageBot.DataBase
 
 					foreach (var v in versionsToDo)
 					{
-						if(buildQueries.ContainsKey(v))
+						if (buildQueries.ContainsKey(v))
 						{
-							foreach(var query in buildQueries[v])
+							foreach (var query in buildQueries[v])
 							{
 								await DataLayerShortcut.ExecuteNonQuery(query);
 							}
@@ -175,7 +186,7 @@ namespace SGMessageBot.DataBase
 				result.Success = true;
 				return result;
 			}
-			catch(MySqlException e)
+			catch (MySqlException e)
 			{
 				ErrorLog.WriteError(e);
 				result.Success = false;
@@ -195,7 +206,7 @@ namespace SGMessageBot.DataBase
 					data.version = temp.HasValue ? (int)temp.Value : -1;
 					data.createdDate = reader.GetDateTime(2);
 					data.updatedDate = reader.GetDateTime(3);
-					if(data.version > 10)
+					if (data.version > 10)
 						data.lastCorpusDate = reader.GetValue(4) as DateTime?;
 				}
 			}
