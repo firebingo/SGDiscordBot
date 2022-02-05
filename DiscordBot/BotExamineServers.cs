@@ -55,12 +55,22 @@ namespace SGMessageBot.DiscordBot
 				{
 					if (channel is SocketTextChannel tChannel)
 					{
+
 						queryString = @"INSERT INTO channels (serverID, channelID, channelMention, channelName, channelPosition, channelType)
 						VALUES (@serverID, @channelID, @channelMention, @channelName, @channelPosition, @channelType)
 						ON DUPLICATE KEY UPDATE serverID=@serverID, channelMention=@channelMention, channelName=@channelName, channelPosition=@channelPosition, channelType=@channelType";
 						await DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", channel.Guild.Id), new MySqlParameter("@channelID", channel.Id),
 							new MySqlParameter("@channelMention", tChannel.Mention), new MySqlParameter("@channelName", channel.Name), new MySqlParameter("@channelPosition", channel.Position),
 							new MySqlParameter("@channelType", 0));
+						foreach (var thread in tChannel.Threads)
+						{
+							queryString = @"INSERT INTO channels (serverID, channelID, channelMention, channelName, channelPosition, channelType, isDeleted, threadChannelId)
+							VALUES (@serverID, @channelID, @channelMention, @channelName, @channelPosition, @channelType, @isDeleted, @threadChannelId)
+							ON DUPLICATE KEY UPDATE serverID=@serverID, channelMention=@channelMention, channelName=@channelName, channelPosition=@channelPosition, channelType=@channelType, threadChannelId=@threadChannelId";
+							await DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", channel.Guild.Id), new MySqlParameter("@channelID", thread.Id),
+							new MySqlParameter("@channelMention", thread.Mention), new MySqlParameter("@channelName", thread.Name), new MySqlParameter("@channelPosition", thread.Position),
+							new MySqlParameter("@channelType", 0), new MySqlParameter("@isDeleted", false), new MySqlParameter("@threadChannelId", tChannel.Id));
+						}
 					}
 					else if (channel is SocketVoiceChannel vChannel)
 					{
@@ -140,6 +150,7 @@ namespace SGMessageBot.DiscordBot
 			}
 		}
 
+		//TODO: Threads
 		/// <summary>
 		/// Goes through the message history of a channel and gets all messages sent in the channel.
 		/// Note this can be an expensive operation and should not be done commonly.
@@ -163,10 +174,10 @@ namespace SGMessageBot.DiscordBot
 				delRes = await DataLayerShortcut.ExecuteNonQuery(emojiRemove, new MySqlParameter("@channelID", channel.Id));
 				if (delRes != String.Empty)
 					return delRes;
-				var messages = await channel.GetMessagesAsync(Int32.MaxValue).ToListAsync();
+				var messages = channel.GetMessagesAsync(Int32.MaxValue);
 				var cCount = 0;
-				var totalMessages = messages.Sum(m => m.Count);
-				foreach (var messageList in messages)
+				var totalMessages = await messages.SumAsync(m => m.Count);
+				await foreach (var messageList in messages)
 				{
 					List<string> mesRows = new List<string>();
 					List<string> attachRows = new List<string>();
@@ -255,6 +266,7 @@ namespace SGMessageBot.DiscordBot
 			return "Operation Complete";
 		}
 
+		//TODO: Threads
 		/// <summary>
 		/// Goes through the message history of every channel on a server and gets all messages sent in the channel.
 		/// Note this can be an expensive operation and should not be done commonly.
@@ -286,16 +298,16 @@ namespace SGMessageBot.DiscordBot
 						//Voice channels will be null obviously.
 						if (channel is IMessageChannel messageChannel)
 						{
-							var messages = await messageChannel.GetMessagesAsync(Int32.MaxValue).ToListAsync();
+							var messages = messageChannel.GetMessagesAsync(Int32.MaxValue);
 							var cCount = 0;
-							var totalMessages = messages.Sum(m => m.Count);
-							foreach (var messageList in messages)
+							var totalMessages = await messages.SumAsync(m => m.Count);
+							await foreach (var messageList in messages)
 							{
 								Console.WriteLine($"{Math.Round(((float)cCount / (float)totalMessages) * 100, 2)}% complete on current Channel");
-								List<string> mesRows = new List<string>();
-								List<string> attachRows = new List<string>();
-								List<string> reactionsRows = new List<string>();
-								List<string> emojiRows = new List<string>();
+								var mesRows = new List<string>();
+								var attachRows = new List<string>();
+								var reactionsRows = new List<string>();
+								var emojiRows = new List<string>();
 								foreach (var message in messageList)
 								{
 									++cCount;

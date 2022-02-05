@@ -50,7 +50,8 @@ namespace SGMessageBot.DiscordBot
 				{
 					MessageCacheSize = 10,
 					ConnectionTimeout = int.MaxValue,
-					LogLevel = LogSeverity.Warning
+					LogLevel = LogSeverity.Warning,
+					GatewayIntents = GatewayIntents.Guilds | GatewayIntents.GuildMembers | GatewayIntents.GuildEmojis | GatewayIntents.GuildMessages | GatewayIntents.GuildMessageReactions | GatewayIntents.GuildMessageTyping
 				});
 				DiscordClient.Connected += OnConnected;
 				DiscordClient.Disconnected += OnDisconnected;
@@ -96,6 +97,9 @@ namespace SGMessageBot.DiscordBot
 			DiscordClient.ChannelCreated += BotEventHandler.ClientChannelCreated;
 			DiscordClient.ChannelUpdated += BotEventHandler.ClientChannelUpdated;
 			DiscordClient.ChannelDestroyed += BotEventHandler.ClientChannelDestroyed;
+			DiscordClient.ThreadCreated += BotEventHandler.ClientThreadCreated;
+			DiscordClient.ThreadUpdated += BotEventHandler.ClientThreadUpdated;
+			DiscordClient.ThreadDeleted += BotEventHandler.ClientThreadDestroyed;
 			DiscordClient.ReactionAdded += BotEventHandler.ClientReactionAdded;
 			DiscordClient.ReactionRemoved += BotEventHandler.ClientReactionRemoved;
 			DiscordClient.ReactionsCleared += BotEventHandler.ClientReactionsCleared;
@@ -135,6 +139,9 @@ namespace SGMessageBot.DiscordBot
 				DiscordClient.ChannelCreated -= BotEventHandler.ClientChannelCreated;
 				DiscordClient.ChannelUpdated -= BotEventHandler.ClientChannelUpdated;
 				DiscordClient.ChannelDestroyed -= BotEventHandler.ClientChannelDestroyed;
+				DiscordClient.ThreadCreated -= BotEventHandler.ClientThreadCreated;
+				DiscordClient.ThreadUpdated -= BotEventHandler.ClientThreadUpdated;
+				DiscordClient.ThreadDeleted -= BotEventHandler.ClientThreadDestroyed;
 				DiscordClient.ReactionAdded -= BotEventHandler.ClientReactionAdded;
 				DiscordClient.ReactionRemoved -= BotEventHandler.ClientReactionRemoved;
 				DiscordClient.ReactionsCleared -= BotEventHandler.ClientReactionsCleared;

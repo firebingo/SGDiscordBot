@@ -79,6 +79,9 @@ namespace SGMessageBot.DataBase
 			buildQueries[13].Add("CREATE INDEX idx_emojisServerId ON emojis(serverId);");
 			buildQueries[13].Add("CREATE INDEX idx_emojiUsesServerId ON emojiUses(serverId);");
 			buildQueries[13].Add("CREATE INDEX idx_stickerUsesServerId ON stickerUses (serverId);");
+			buildQueries.Add(14, new List<string>());
+			buildQueries[14].Add("ALTER TABLE channels ADD COLUMN threadChannelId BIGINT UNSIGNED DEFAULT NULL, ADD FOREIGN KEY kf_threadChannel(threadChannelId) REFERENCES channels(channelID);");
+			buildQueries[14].Add("CREATE INDEX idx_threadChannelId ON channels(threadChannelId);");
 		}
 
 		public async Task<BaseResult> CreateDatabase()
