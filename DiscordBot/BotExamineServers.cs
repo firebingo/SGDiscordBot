@@ -55,13 +55,12 @@ namespace SGMessageBot.DiscordBot
 				{
 					if (channel is SocketTextChannel tChannel)
 					{
-
 						queryString = @"INSERT INTO channels (serverID, channelID, channelMention, channelName, channelPosition, channelType)
 						VALUES (@serverID, @channelID, @channelMention, @channelName, @channelPosition, @channelType)
 						ON DUPLICATE KEY UPDATE serverID=@serverID, channelMention=@channelMention, channelName=@channelName, channelPosition=@channelPosition, channelType=@channelType";
 						await DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", channel.Guild.Id), new MySqlParameter("@channelID", channel.Id),
 							new MySqlParameter("@channelMention", tChannel.Mention), new MySqlParameter("@channelName", channel.Name), new MySqlParameter("@channelPosition", channel.Position),
-							new MySqlParameter("@channelType", 0));
+							new MySqlParameter("@channelType", (int)(tChannel.GetChannelType() ?? 0)));
 						foreach (var thread in tChannel.Threads)
 						{
 							queryString = @"INSERT INTO channels (serverID, channelID, channelMention, channelName, channelPosition, channelType, isDeleted, threadChannelId)
@@ -69,17 +68,17 @@ namespace SGMessageBot.DiscordBot
 							ON DUPLICATE KEY UPDATE serverID=@serverID, channelMention=@channelMention, channelName=@channelName, channelPosition=@channelPosition, channelType=@channelType, threadChannelId=@threadChannelId";
 							await DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", channel.Guild.Id), new MySqlParameter("@channelID", thread.Id),
 							new MySqlParameter("@channelMention", thread.Mention), new MySqlParameter("@channelName", thread.Name), new MySqlParameter("@channelPosition", thread.Position),
-							new MySqlParameter("@channelType", 0), new MySqlParameter("@isDeleted", false), new MySqlParameter("@threadChannelId", tChannel.Id));
+							new MySqlParameter("@channelType", (int)(thread.GetChannelType() ?? 0)), new MySqlParameter("@isDeleted", false), new MySqlParameter("@threadChannelId", tChannel.Id));
 						}
 					}
-					else if (channel is SocketVoiceChannel vChannel)
+					else
 					{
 						queryString = @"INSERT INTO channels (serverID, channelID, channelMention, channelName, channelPosition, channelType)
 						VALUES (@serverID, @channelID, @channelMention, @channelName, @channelPosition, @channelType)
 						ON DUPLICATE KEY UPDATE serverID=@serverID, channelMention=@channelMention, channelName=@channelName, channelPosition=@channelPosition, channelType=@channelType";
 						await DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", channel.Guild.Id), new MySqlParameter("@channelID", channel.Id),
-							new MySqlParameter("@channelMention", null), new MySqlParameter("@channelName", channel.Name), new MySqlParameter("@channelPosition", channel.Position),
-							new MySqlParameter("@channelType", 2));
+							new MySqlParameter("@channelMention", DiscordHelpers.GetChannelMention(channel)), new MySqlParameter("@channelName", channel.Name), new MySqlParameter("@channelPosition", channel.Position),
+							new MySqlParameter("@channelType", (int)(channel.GetChannelType() ?? 0)));
 					}
 				}
 				foreach (var emoji in server.Emotes)

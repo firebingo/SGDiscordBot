@@ -9,10 +9,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Discord.Net" Version="3.2.1" />
-    <PackageReference Include="Discord.Net.Rest" Version="3.2.1" />
+    <PackageReference Include="Discord.Net" Version="3.7.1" />
+    <PackageReference Include="Discord.Net.Rest" Version="3.7.1" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
-    <PackageReference Include="MySql.Data" Version="8.0.28" />
+    <PackageReference Include="MySql.Data" Version="8.0.29" />
     <PackageReference Include="SteamKit2" Version="2.3.0" />
   </ItemGroup>
 

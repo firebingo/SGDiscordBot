@@ -337,11 +337,10 @@ namespace SGMessageBot.DiscordBot
 				try
 				{
 					var Tasks = new List<Task>();
-					var gChannel = e.Channel as SocketGuildChannel;
-					var tChannel = e.Channel as SocketThreadChannel;
-					if (gChannel != null || tChannel != null)
+					var guild = DiscordHelpers.GetGuildFromChannel(e.Channel);
+					if (guild != null)
 					{
-						var guildId = gChannel?.Guild?.Id ?? tChannel.Guild.Id;
+						var guildId = guild.Id;
 						var queryString = @"INSERT INTO messages (serverID, userID, channelID, messageID, rawText, mesText, mesStatus, mesTime, flags)
 						VALUES (@serverID, @userID, @channelID, @messageID, @rawText, @mesText, @mesStatus, @mesTime, @flags)
 						ON DUPLICATE KEY UPDATE serverID=@serverID, userID=@userID, channelID=@channelID, messageID=@messageID, 
@@ -368,7 +367,7 @@ namespace SGMessageBot.DiscordBot
 							new MySqlParameter("@proxyURL", attach.ProxyUrl), new MySqlParameter("@attachURL", attach.Url), new MySqlParameter("@attachSize", attach.Size));
 						}
 						Tasks.Add(CheckMessageForEmoji(e, e.Channel.Id, guildId));
-						Tasks.Add(OtherFunctions.SendMessageTrack(gChannel?.Guild ?? tChannel?.Guild));
+						Tasks.Add(OtherFunctions.SendMessageTrack(guild));
 
 						foreach (var sticker in e.Stickers)
 						{
@@ -393,11 +392,10 @@ namespace SGMessageBot.DiscordBot
 			{
 				try
 				{
-					var gChannel = after.Channel as SocketGuildChannel;
-					var tChannel = after.Channel as SocketThreadChannel;
-					if (gChannel != null || tChannel != null)
+					var guild = DiscordHelpers.GetGuildFromChannel(after.Channel);
+					if (guild != null)
 					{
-						var guildId = gChannel?.Guild?.Id ?? tChannel.Guild.Id;
+						var guildId = guild.Id;
 						DateTime? editedDateTime = after.EditedTimestamp.HasValue ? ((after.EditedTimestamp.Value.UtcDateTime) as DateTime?) : null;
 						var queryString = @"INSERT INTO messages (serverID, userID, channelID, messageID, mesText, rawText, editedRawText, editedMesText, mesStatus, mesEditedTime, flags)
 						VALUES (@serverID, @userID, @channelID, @messageID, @mesText, @rawText, @editedRawText, @editedMesText, @mesStatus, @mesEditedTime, @flags)
@@ -431,7 +429,7 @@ namespace SGMessageBot.DiscordBot
 						{
 							queryString = @"INSERT INTO stickerUses (serverID, userID, channelID, messageID, stickerID, stickerName, formatType, isDeleted)
 							VALUES (@serverID, @userID, @channelID, @messageID, @stickerID, @stickerName, @formatType, @isDeleted)";
-							await DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", gChannel.Guild.Id), new MySqlParameter("@userID", after.Author.Id),
+							await DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", guildId), new MySqlParameter("@userID", after.Author.Id),
 							new MySqlParameter("@channelID", after.Channel.Id), new MySqlParameter("@messageID", after.Id), new MySqlParameter("@stickerID", sticker.Id),
 							new MySqlParameter("@stickerName", sticker.Name), new MySqlParameter("@formatType", (int)sticker.Format), new MySqlParameter("@isDeleted", false));
 						}
@@ -459,15 +457,11 @@ namespace SGMessageBot.DiscordBot
 					Tasks.Add(DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@isDeleted", true), new MySqlParameter("@messageID", mes.Id)));
 					queryString = "UPDATE stickerUses SET isDeleted=@isDeleted WHERE messageID=@messageID";
 					Tasks.Add(DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@isDeleted", true), new MySqlParameter("@messageID", mes.Id)));
-					if (mes.HasValue && channel.HasValue && channel.Value is SocketGuildChannel gChannel)
+					var c = await channel.GetOrDownloadAsync();
+					if (mes.HasValue && DiscordHelpers.TryGetGuildFromChannel(c, out var guild))
 					{
 						queryString = @"UPDATE usersinservers SET mesCount = mesCount-1 WHERE userID=@userID AND serverID=@serverID";
-						Tasks.Add(DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", gChannel.Guild.Id), new MySqlParameter("@userID", mes.Value.Author.Id)));
-					}
-					else if (mes.HasValue && channel.HasValue && channel.Value is SocketThreadChannel tChannel)
-					{
-						queryString = @"UPDATE usersinservers SET mesCount = mesCount-1 WHERE userID=@userID AND serverID=@serverID";
-						Tasks.Add(DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", tChannel.Guild.Id), new MySqlParameter("@userID", mes.Value.Author.Id)));
+						Tasks.Add(DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", guild.Id), new MySqlParameter("@userID", mes.Value.Author.Id)));
 					}
 				}
 				catch (Exception ex)
@@ -612,14 +606,13 @@ namespace SGMessageBot.DiscordBot
 			{
 				if (e is SocketGuildChannel gChannel)
 				{
-					var gTChannel = gChannel as SocketTextChannel;
 					var queryString = @"INSERT INTO channels (serverID, channelID, channelMention, channelName, channelPosition, channelType, isDeleted)
 					VALUES(@serverID, @channelID, @channelMention, @channelName, @channelPosition, @channelType, @isDeleted)
 					ON DUPLICATE KEY UPDATE serverID=@serverID, channelID=@channelID, channelMention=@channelMention, channelName=@channelName, channelPosition=@channelPosition,
 					channelType=@channelType, isDeleted=@isDeleted";
 					await DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", gChannel.Guild.Id), new MySqlParameter("@channelID", e.Id),
-					new MySqlParameter("@channelMention", gTChannel?.Mention), new MySqlParameter("@channelName", gChannel.Name), new MySqlParameter("@channelPosition", gChannel.Position),
-					new MySqlParameter("@channelType", gTChannel != null ? 0 : 2), new MySqlParameter("@isDeleted", false));
+					new MySqlParameter("@channelMention", DiscordHelpers.GetChannelMention(gChannel)), new MySqlParameter("@channelName", gChannel.Name), new MySqlParameter("@channelPosition", gChannel.Position),
+					new MySqlParameter("@channelType", (int)(gChannel.GetChannelType() ?? 0)), new MySqlParameter("@isDeleted", false));
 				}
 			}
 
@@ -627,14 +620,13 @@ namespace SGMessageBot.DiscordBot
 			{
 				if (after is SocketGuildChannel gChannel)
 				{
-					var gTChannel = gChannel as SocketTextChannel;
 					var queryString = @"INSERT INTO channels (serverID, channelID, channelMention, channelName, channelPosition, channelType)
 					VALUES(@serverID, @channelID, @channelMention, @channelName, @channelPosition, @channelType)
 					ON DUPLICATE KEY UPDATE serverID=@serverID, channelID=@channelID, channelMention=@channelMention, channelName=@channelName, channelPosition=@channelPosition,
 					channelType=@channelType";
 					await DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", gChannel.Guild.Id), new MySqlParameter("@channelID", after.Id),
-					new MySqlParameter("@channelMention", gTChannel?.Mention), new MySqlParameter("@channelName", gChannel.Name), new MySqlParameter("@channelPosition", gChannel.Position),
-					new MySqlParameter("@channelType", gTChannel != null ? 0 : 2), new MySqlParameter("@isDeleted", false));
+					new MySqlParameter("@channelMention", DiscordHelpers.GetChannelMention(gChannel)), new MySqlParameter("@channelName", gChannel.Name), new MySqlParameter("@channelPosition", gChannel.Position),
+					new MySqlParameter("@channelType", (int)(gChannel.GetChannelType() ?? 0)), new MySqlParameter("@isDeleted", false));
 				}
 			}
 
@@ -652,7 +644,7 @@ namespace SGMessageBot.DiscordBot
 					channelType=@channelType, isDeleted=@isDeleted, threadChannelId=@threadChannelId";
 				await DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", e.Guild.Id), new MySqlParameter("@channelID", e.Id),
 				new MySqlParameter("@channelMention", e?.Mention), new MySqlParameter("@channelName", e.Name), new MySqlParameter("@channelPosition", e.Position),
-				new MySqlParameter("@channelType", 0), new MySqlParameter("@isDeleted", false), new MySqlParameter("@threadChannelId", e.ParentChannel.Id));
+				new MySqlParameter("@channelType", (int)(e.GetChannelType() ?? 0)), new MySqlParameter("@isDeleted", false), new MySqlParameter("@threadChannelId", e.ParentChannel.Id));
 			}
 
 			public static async Task ProcessThreadUpdated(SocketThreadChannel after)
@@ -663,7 +655,7 @@ namespace SGMessageBot.DiscordBot
 					channelType=@channelType, isDeleted=@isDeleted, threadChannelId=@threadChannelId";
 				await DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", after.Guild.Id), new MySqlParameter("@channelID", after.Id),
 				new MySqlParameter("@channelMention", after?.Mention), new MySqlParameter("@channelName", after.Name), new MySqlParameter("@channelPosition", after.Position),
-				new MySqlParameter("@channelType", 0), new MySqlParameter("@isDeleted", false), new MySqlParameter("@threadChannelId", after.ParentChannel.Id));
+				new MySqlParameter("@channelType", (int)(after.GetChannelType() ?? 0)), new MySqlParameter("@isDeleted", false), new MySqlParameter("@threadChannelId", after.ParentChannel.Id));
 			}
 
 			public static async Task ProcessThreadDestroyed(Cacheable<SocketThreadChannel, ulong> e)
@@ -677,7 +669,7 @@ namespace SGMessageBot.DiscordBot
 			{
 				var emote = react.Emote as Emote;
 				var c = await channel.GetOrDownloadAsync();
-				var guildId = (c as SocketGuildChannel)?.Guild?.Id ?? (c as SocketThreadChannel)?.Guild?.Id;
+				var guildId = DiscordHelpers.GetGuildFromChannel(c)?.Id;
 				var queryString = @"INSERT INTO reactions (serverID, userID, channelID, messageID, emojiID, emojiName, isDeleted)
 				VALUES(@serverID, @userID, @channelID, @messageID, @emojiID, @emojiName, @isDeleted)
 				ON DUPLICATE KEY UPDATE serverID=@serverID, userID=@userID, channelID=@channelID, messageID=@messageID, emojiID=@emojiID, emojiName=@emojiName, isDeleted=@isDeleted";

@@ -20,7 +20,7 @@ namespace SGMessageBot.DiscordBot
 			{
 				var tempTimes = JsonConvert.DeserializeObject<Dictionary<string, long>>(File.ReadAllText("Data/SGTimes.json"));
 				times.Clear();
-				foreach(var t in tempTimes)
+				foreach (var t in tempTimes)
 				{
 					times.Add(t.Key, new DateTime(t.Value, DateTimeKind.Utc));
 				}
@@ -44,7 +44,7 @@ namespace SGMessageBot.DiscordBot
 		public static async Task SendMessageTrack(SocketGuild guild)
 		{
 			var config = SGMessageBot.BotConfig.BotInfo.DiscordConfig.messageCount;
-			if(config != null && config.ContainsKey(guild.Id) && config[guild.Id].enabled)
+			if (config != null && config.ContainsKey(guild.Id) && config[guild.Id].enabled)
 			{
 				var count = await DataLayerShortcut.ExecuteScalarInt("SELECT COUNT(*) FROM messages WHERE isDeleted = false AND serverID = @serverId", new MySqlParameter("@serverId", guild.Id));
 				if (count.HasValue && count.Value >= config[guild.Id].messageCount - 1)

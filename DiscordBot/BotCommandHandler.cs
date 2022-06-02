@@ -57,13 +57,14 @@ namespace SGMessageBot.DiscordBot
 					return Task.CompletedTask;
 				var context = new CommandContext(socketClient, uMessage);
 				//This is bad and I should feel bad.
-				//For future the commands themselves shouldnt be dependant on awating the command processor and the
+				//For future the commands themselves shouldnt be dependant on awaiting the command processor and the
 				// processor itself should handle any operations that need to happen after the processing such
 				// as SendMessageAsync.
 				IResult result = null;
-				Thread runThread = new Thread(async () => {
+				Thread runThread = new Thread(async () =>
+				{
 					var guid = Guid.NewGuid();
-					running.Add(guid, context.Channel as SocketTextChannel);
+					running.Add(guid, context.Channel);
 					result = await commands.ExecuteAsync(context, argPos, dependencyMap);
 					running.Remove(guid);
 					if (!result.IsSuccess)
@@ -144,7 +145,7 @@ namespace SGMessageBot.DiscordBot
 		}
 
 		[Command("rolecounts"), Summary("Gets user role counts for server.")]
-		public async Task RoleCounts([Summary("Whether to mention the roles in the list")]bool useMentions = true)
+		public async Task RoleCounts([Summary("Whether to mention the roles in the list")] bool useMentions = true)
 		{
 			if (!(Context.Channel is SocketTextChannel textChannel))
 			{
@@ -156,7 +157,7 @@ namespace SGMessageBot.DiscordBot
 		}
 
 		[Command("rolecounts"), Summary("Gets user role counts for server.")]
-		public async Task RoleCounts([Summary("The channel to output the list to.")] SocketChannel outputChannel = null, [Summary("Whether to mention the roles in the list")]bool useMentions = true)
+		public async Task RoleCounts([Summary("The channel to output the list to.")] SocketChannel outputChannel = null, [Summary("Whether to mention the roles in the list")] bool useMentions = true)
 		{
 			if (outputChannel == null)
 			{
@@ -178,7 +179,7 @@ namespace SGMessageBot.DiscordBot
 			{
 				await markovAi.RebuildCorpus(forceRebuild);
 			}
-			catch(Exception ex)
+			catch (Exception ex)
 			{
 				await Context.Channel.SendMessageAsync($"Exception: {ex.Message}");
 			}
@@ -348,7 +349,7 @@ namespace SGMessageBot.DiscordBot
 					}
 					else
 					{
-						await Context.Channel.SendMessageAsync(result);						
+						await Context.Channel.SendMessageAsync(result);
 						return;
 					}
 				}
@@ -388,18 +389,18 @@ namespace SGMessageBot.DiscordBot
 				var split = input.Split(' ');
 				input = split[0].Trim();
 				var result = await markovAi.GenerateMessage(input);
-				if(SGMessageBot.BotConfig.BotInfo.DiscordConfig.escapeMentionsChat)
+				if (SGMessageBot.BotConfig.BotInfo.DiscordConfig.escapeMentionsChat)
 					result = Regex.Replace(result, "(<@.*?>)", "`$1`");
-				if(result.Contains("|?|"))
+				if (result.Contains("|?|"))
 				{
 					var sendSplit = result.Split(new string[] { "|?|" }, StringSplitOptions.None);
-					foreach(var send in sendSplit)
+					foreach (var send in sendSplit)
 						await Context.Channel.SendMessageAsync(send);
 				}
 				else
 					await Context.Channel.SendMessageAsync(result);
 			}
-			catch(Exception ex)
+			catch (Exception ex)
 			{
 				await Context.Channel.SendMessageAsync(ex.Message);
 				return;
@@ -409,14 +410,14 @@ namespace SGMessageBot.DiscordBot
 
 	public class BotCommandsRunning
 	{
-		private Dictionary<Guid, SocketTextChannel> _commands;
+		private Dictionary<Guid, IMessageChannel> _commands;
 		private object _commandsLock;
 		private readonly TimerCallback timerCallback;
 		private readonly Timer timer;
 
 		public BotCommandsRunning()
 		{
-			_commands = new Dictionary<Guid, SocketTextChannel>();
+			_commands = new Dictionary<Guid, IMessageChannel>();
 			timerCallback = CycleCommandCheck;
 			timer = new Timer(timerCallback, null, 0, 5000);
 			_commandsLock = new object();
@@ -432,7 +433,7 @@ namespace SGMessageBot.DiscordBot
 					{
 						try
 						{
-							if(c.Value != null)
+							if (c.Value != null)
 								c.Value.TriggerTypingAsync();
 						}
 						catch (Exception e)
@@ -445,7 +446,7 @@ namespace SGMessageBot.DiscordBot
 			}
 		}
 
-		public void Add(Guid key, SocketTextChannel value)
+		public void Add(Guid key, IMessageChannel value)
 		{
 			lock (_commandsLock)
 			{
@@ -463,7 +464,7 @@ namespace SGMessageBot.DiscordBot
 
 		public void Clear()
 		{
-			lock(_commandsLock)
+			lock (_commandsLock)
 			{
 				_commands.Clear();
 			}
@@ -473,7 +474,7 @@ namespace SGMessageBot.DiscordBot
 		{
 			lock (_commandsLock)
 			{
-				_commands = new Dictionary<Guid, SocketTextChannel>();
+				_commands = new Dictionary<Guid, IMessageChannel>();
 				timer.Dispose();
 			}
 			_commandsLock = new object();
