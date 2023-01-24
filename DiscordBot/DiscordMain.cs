@@ -51,7 +51,7 @@ namespace SGMessageBot.DiscordBot
 					MessageCacheSize = 10,
 					ConnectionTimeout = int.MaxValue,
 					LogLevel = LogSeverity.Warning,
-					GatewayIntents = GatewayIntents.Guilds | GatewayIntents.GuildMembers | GatewayIntents.GuildEmojis | GatewayIntents.GuildMessages | GatewayIntents.GuildMessageReactions | GatewayIntents.GuildMessageTyping
+					GatewayIntents = GatewayIntents.Guilds | GatewayIntents.GuildMembers | GatewayIntents.GuildEmojis | GatewayIntents.GuildMessages | GatewayIntents.GuildMessageReactions | GatewayIntents.GuildMessageTyping | GatewayIntents.MessageContent
 				});
 				DiscordClient.Connected += OnConnected;
 				DiscordClient.Disconnected += OnDisconnected;
