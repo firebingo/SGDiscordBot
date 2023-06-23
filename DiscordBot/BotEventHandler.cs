@@ -667,23 +667,21 @@ namespace SGMessageBot.DiscordBot
 			#region Reactions
 			public static async Task ProcessReactionAdded(Cacheable<IUserMessage, ulong> mes, Cacheable<IMessageChannel, ulong> channel, SocketReaction react)
 			{
-				var emote = react.Emote as Emote;
 				var c = await channel.GetOrDownloadAsync();
 				var guildId = DiscordHelpers.GetGuildFromChannel(c)?.Id;
 				var queryString = @"INSERT INTO reactions (serverID, userID, channelID, messageID, emojiID, emojiName, isDeleted)
 				VALUES(@serverID, @userID, @channelID, @messageID, @emojiID, @emojiName, @isDeleted)
 				ON DUPLICATE KEY UPDATE serverID=@serverID, userID=@userID, channelID=@channelID, messageID=@messageID, emojiID=@emojiID, emojiName=@emojiName, isDeleted=@isDeleted";
 				await DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@serverID", guildId), new MySqlParameter("@channelID", channel.Id),
-				new MySqlParameter("@userID", react.UserId), new MySqlParameter("@messageID", react.MessageId), new MySqlParameter("@emojiID", (emote == null ? 0 : emote.Id)), new MySqlParameter("@emojiName", react.Emote.Name),
+				new MySqlParameter("@userID", react.UserId), new MySqlParameter("@messageID", react.MessageId), new MySqlParameter("@emojiID", (react.Emote is not Emote emote ? 0 : emote.Id)), new MySqlParameter("@emojiName", react.Emote.Name),
 				new MySqlParameter("@isDeleted", false));
 			}
 
 			public static async Task ClientReactionRemoved(Cacheable<IUserMessage, ulong> mes, Cacheable<IMessageChannel, ulong> channel, SocketReaction react)
 			{
-				var emote = react.Emote as Emote;
 				var queryString = "UPDATE reactions SET isDeleted=@isDeleted WHERE messageID=@messageID AND emojiID=@emojiID AND userID = @userID";
 				await DataLayerShortcut.ExecuteNonQuery(queryString, new MySqlParameter("@isDeleted", true), new MySqlParameter("@messageID", react.MessageId),
-				new MySqlParameter("@emojiID", emote == null ? 0 : emote.Id), new MySqlParameter("@userID", react.UserId));
+				new MySqlParameter("@emojiID", react.Emote is not Emote emote ? 0 : emote.Id), new MySqlParameter("@userID", react.UserId));
 			}
 
 			public static async Task ClientReactionsCleared(Cacheable<IUserMessage, ulong> mes, Cacheable<IMessageChannel, ulong> channel)

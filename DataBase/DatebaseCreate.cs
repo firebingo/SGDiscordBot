@@ -82,6 +82,15 @@ namespace SGMessageBot.DataBase
 			buildQueries.Add(14, new List<string>());
 			buildQueries[14].Add("ALTER TABLE channels ADD COLUMN threadChannelId BIGINT UNSIGNED DEFAULT NULL, ADD FOREIGN KEY kf_threadChannel(threadChannelId) REFERENCES channels(channelID);");
 			buildQueries[14].Add("CREATE INDEX idx_threadChannelId ON channels(threadChannelId);");
+			buildQueries.Add(15, new List<string>());
+			//These indexs were already covered by foreign keys and can cause issues as duplicates.
+			buildQueries[15].Add("DROP INDEX idx_messagesServerId ON messages;");
+			buildQueries[15].Add("DROP INDEX idx_channelsServerId ON channels;");
+			buildQueries[15].Add("DROP INDEX idx_rolesServerId ON roles;");
+			buildQueries[15].Add("DROP INDEX idx_usersInServersServerId ON usersInServers;");
+			buildQueries[15].Add("DROP INDEX idx_reactionsServerId ON reactions;");
+			buildQueries[15].Add("DROP INDEX idx_emojisServerId ON emojis;");
+			buildQueries[15].Add("DROP INDEX idx_emojiUsesServerId ON emojiUses;");
 		}
 
 		public async Task<BaseResult> CreateDatabase()
@@ -154,9 +163,9 @@ namespace SGMessageBot.DataBase
 
 					foreach (var v in versionsToDo)
 					{
-						if (buildQueries.ContainsKey(v))
+						if (buildQueries.TryGetValue(v, out var ver))
 						{
-							foreach (var query in buildQueries[v])
+							foreach (var query in ver)
 							{
 								await DataLayerShortcut.ExecuteNonQuery(query);
 							}
