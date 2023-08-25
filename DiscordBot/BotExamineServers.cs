@@ -32,7 +32,6 @@ namespace SGMessageBot.DiscordBot
 		/// </summary>
 		public static async Task UpdateDatabaseServer(SocketGuild server)
 		{
-			await Task.Delay(0).ConfigureAwait(false);
 			try
 			{
 				var queryString = @"INSERT INTO servers (serverID, ownerID, serverName, userCount, channelCount, roleCount, regionID, createdDate)
@@ -102,7 +101,7 @@ namespace SGMessageBot.DiscordBot
 					foreach (var role in user.Roles)
 						roleIds.Add(role.Id);
 
-					DateTime? joinedAtDateTime = user.JoinedAt.HasValue ? ((user.JoinedAt.Value.UtcDateTime) as DateTime?) : null;
+					DateTime? joinedAtDateTime = user.JoinedAt.HasValue ? user.JoinedAt.Value.UtcDateTime : null;
 					queryString = @"INSERT INTO usersInServers (serverID, userID, discriminator, nickName, nickNameMention, joinedDate, avatarID, avatarUrl, lastOnline, roleIDs, mesCount)
 					VALUES(@serverID, @userID, @discriminator, @nickName, @nickNameMention, @joinedDate, @avatarID, @avatarUrl, @lastOnline, @roleIds, @mesCount)
 					ON DUPLICATE KEY UPDATE serverID=@serverID, userID=@userID, discriminator=@discriminator, nickName=@nickName, nickNameMention=@nickNameMention, 
