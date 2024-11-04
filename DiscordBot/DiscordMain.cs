@@ -5,9 +5,6 @@ using SGMessageBot.AI;
 using SGMessageBot.DataBase;
 using SGMessageBot.Helpers;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace SGMessageBot.DiscordBot
@@ -118,8 +115,11 @@ namespace SGMessageBot.DiscordBot
 		{
 			try
 			{
-				await cDiscordHandler.RemoveCommandService();
-				cDiscordHandler = null;
+				if (cDiscordHandler != null)
+				{
+					await cDiscordHandler.RemoveCommandService();
+					cDiscordHandler = null;
+				}
 				cDiscordProcessor = null;
 				DiscordClient.MessageReceived -= BotEventHandler.ClientMessageReceived;
 				DiscordClient.MessageUpdated -= BotEventHandler.ClientMessageUpdated;
