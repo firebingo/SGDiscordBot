@@ -91,6 +91,10 @@ namespace SGMessageBot.DataBase
 			buildQueries[15].Add("DROP INDEX idx_reactionsServerId ON reactions;");
 			buildQueries[15].Add("DROP INDEX idx_emojisServerId ON emojis;");
 			buildQueries[15].Add("DROP INDEX idx_emojiUsesServerId ON emojiUses;");
+			buildQueries.Add(16, new List<string>());
+			buildQueries[16].Add("CREATE INDEX idx_mesMesTime ON messages(mesTime)");
+			buildQueries[16].Add("CREATE INDEX idx_mesIsDeleted ON messages(isDeleted)");
+			buildQueries[16].Add("CREATE INDEX idx_emoIsDeleted ON emojiUses(isDeleted)");
 		}
 
 		public async Task<BaseResult> CreateDatabase()
